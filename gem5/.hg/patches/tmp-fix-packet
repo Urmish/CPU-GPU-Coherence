@@ -1,0 +1,41 @@
+# HG changeset patch
+# Parent 9cbbb68b8da90dee762b9cc7684a94205a9b20ec
+Add reinitFromRequest back to packet
+This is a temp fix until we change gem5-gpu not to use this function
+
+diff --git a/src/mem/packet.hh b/src/mem/packet.hh
+--- a/src/mem/packet.hh
++++ b/src/mem/packet.hh
+@@ -742,6 +742,32 @@
+     }
+ 
+     /**
++     * Reinitialize packet address and size from the associated
++     * Request object, and reset other fields that may have been
++     * modified by a previous transaction.  Typically called when a
++     * statically allocated Request/Packet pair is reused for multiple
++     * transactions.
++     */
++    void
++    reinitFromRequest()
++    {
++        assert(req->hasPaddr());
++        flags = 0;
++        addr = req->getPaddr();
++        size = req->getSize();
++
++        src = InvalidPortID;
++        dest = InvalidPortID;
++        bytesValidStart = 0;
++        bytesValidEnd = 0;
++        firstWordDelay = 0;
++        lastWordDelay = 0;
++
++        flags.set(VALID_ADDR|VALID_SIZE);
++        deleteData();
++    }
++
++    /**
+      * Take a request packet and modify it in place to be suitable for
+      * returning as a response to that request. The source field is
+      * turned into the destination, and subsequently cleared. Note

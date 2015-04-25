@@ -1,0 +1,563 @@
+# HG changeset patch
+# Parent 1698c37a7a1ed41fff213790d057b396ed9c18cf
+# User Joel Hestness <hestness@cs.utexas.edu>
+Cleanup to fix warnings (errors) to build gem5.fast
+* * *
+Fix warnings for compilation
+* * *
+A patch to test out cleaning up GPGPU-Sim loose ends:
+ - referencing memory when getting operands is invalid behavior
+
+diff --git a/abstract_hardware_model.cc b/abstract_hardware_model.cc
+--- a/abstract_hardware_model.cc
++++ b/abstract_hardware_model.cc
+@@ -186,7 +186,7 @@
+ 
+     bool is_write = is_store();
+ 
+-    mem_access_type access_type;
++    mem_access_type access_type = NUM_MEM_ACCESS_TYPE;
+     switch (space.get_type()) {
+     case param_space_kernel: 
+         access_type = CONST_ACC_R; 
+@@ -560,6 +560,8 @@
+ kernel_info_t::~kernel_info_t()
+ {
+     assert( m_active_threads.empty() );
++// @TODO: Need to clean up arguments to kernel, but this causes segfault
++//    if (m_kernel_entry) delete m_kernel_entry;
+     delete m_param_mem;
+ }
+ 
+diff --git a/cuda-sim/cuda-sim.cc b/cuda-sim/cuda-sim.cc
+--- a/cuda-sim/cuda-sim.cc
++++ b/cuda-sim/cuda-sim.cc
+@@ -138,7 +138,7 @@
+    m_TextureRefToCudaArray[texref] = array;
+    unsigned int texel_size_bits = array->desc.w + array->desc.x + array->desc.y + array->desc.z;
+    unsigned int texel_size = texel_size_bits/8;
+-   unsigned int Tx, Ty;
++   unsigned int Tx = 0, Ty;
+    int r;
+ 
+    printf("GPGPU-Sim PTX:   texel size = %d\n", texel_size);
+@@ -1048,8 +1048,8 @@
+       param_t param_value = p.get_value();
+       param_value.type = type;
+       symbol *param = m_symtab->lookup(name.c_str());
+-      unsigned xtype = param->type()->get_key().scalar_type();
+-      assert(xtype==(unsigned)type);
++//      unsigned xtype = param->type()->get_key().scalar_type();
++      assert(param->type()->get_key().scalar_type()==(unsigned)type);
+       size_t size;
+       size = param_value.size; // size of param in bytes
+       // assert(param_value.offset == param_address);
+diff --git a/cuda-sim/instructions.cc b/cuda-sim/instructions.cc
+--- a/cuda-sim/instructions.cc
++++ b/cuda-sim/instructions.cc
+@@ -258,7 +258,7 @@
+          finalResult.f64 = -finalResult.f64;
+          break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+ 
+    }
+@@ -274,7 +274,7 @@
+       const type_info *typ = sym->type();
+       type_info_key t = typ->get_key();
+       switch( t.scalar_type() ) {
+-      case PRED_TYPE: 
++      case PRED_TYPE:
+          return 1;
+       case B8_TYPE: case S8_TYPE: case U8_TYPE:
+          return 8;
+@@ -287,7 +287,7 @@
+       default:
+          printf("ERROR: unknown register type\n");
+          fflush(stdout);
+-         abort();
++         abort(); break;
+       }
+    } else {
+       printf("ERROR: Need to implement get_operand_nbits() for currently unsupported operand_info type\n");
+@@ -319,7 +319,7 @@
+    if( !dst.is_reg() )
+       return;
+    unsigned dst_size = get_operand_nbits( dst );
+-   if( src_size >= dst_size ) 
++   if( src_size >= dst_size )
+       return;
+    // src_size < dst_size
+    unsigned long long mask = 1;
+@@ -1323,8 +1323,8 @@
+    unsigned i_type = pI->get_type();
+    a = thread->get_operand_value(src1, dst, i_type, thread, 1);
+ 
+-   int max;
+-   unsigned long long mask;
++   int max = 0;
++   unsigned long long mask = 0;
+    d.u64 = 0;
+ 
+    switch ( i_type ) {
+@@ -1403,7 +1403,7 @@
+    case 16: x.mask_and(0,0xFFFF);      break;
+    case 32: x.mask_and(0,0xFFFFFFFF);  break;
+    case 64: break;
+-   default: assert(0);
++   default: assert(0); break;
+    }
+    return x;
+ }
+@@ -1416,7 +1416,7 @@
+    case 16:if ( x.get_bit(15) ) x.mask_or(0xFFFFFFFF,0xFFFF0000);break;
+    case 32: if ( x.get_bit(31) ) x.mask_or(0xFFFFFFFF,0x00000000);break;
+    case 64: break;
+-   default: assert(0);
++   default: assert(0); break;
+    }
+    return x;
+ }
+@@ -1934,7 +1934,7 @@
+          data.f64 = -data.f64;
+          break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+ 
+    }
+@@ -1969,7 +1969,7 @@
+       case shared_space: to_addr_hw = generic_to_shared( smid, from_addr_hw ); break;
+       case local_space:  to_addr_hw = generic_to_local( smid, hwtid, from_addr_hw ); break;
+       case global_space: to_addr_hw = generic_to_global(from_addr_hw ); break;
+-      default: abort();
++      default: abort(); break;
+       }
+    } else {
+       switch( space.get_type() ) {
+@@ -1977,7 +1977,7 @@
+       case local_space:  to_addr_hw =  local_to_generic( smid, hwtid, from_addr_hw )
+                                       + thread->get_local_mem_stack_pointer(); break; // add stack ptr here so that it can be passed as a pointer at function call 
+       case global_space: to_addr_hw = global_to_generic( from_addr_hw ); break;
+-      default: abort();
++      default: abort(); break;
+       }
+    }
+    
+@@ -2149,6 +2149,7 @@
+    case undefined_space:
+    default:
+       abort();
++      break;
+    }
+ }
+ 
+@@ -2201,7 +2202,7 @@
+        }
+    }
+    thread->m_last_effective_address = addr;
+-   thread->m_last_memory_space = space; 
++   thread->m_last_memory_space = space;
+ }
+ 
+ void ld_impl( const ptx_instruction *pI, ptx_thread_info *thread ) 
+@@ -2494,7 +2495,7 @@
+ 
+    if( (src1.is_vector() || dst.is_vector()) && (i_type != BB64_TYPE) && (i_type != BB128_TYPE) && (i_type != FF64_TYPE) ) {
+       // pack or unpack operation
+-      unsigned nbits_to_move;
++      unsigned nbits_to_move = 0;
+       ptx_reg_t tmp_bits;
+ 
+       switch( pI->get_type() ) {
+@@ -3076,22 +3077,22 @@
+       case EQ_OPTION: t = (a.u16 == b.u16); break;
+       case NE_OPTION: t = (a.u16 != b.u16); break;
+       default:
+-         assert(0);
+-      }
++         assert(0); break;
++      } break;
+ 
+    case B32_TYPE: 
+       switch (cmpop) {
+       case EQ_OPTION: t = (a.u32 == b.u32); break;
+       case NE_OPTION: t = (a.u32 != b.u32); break;
+       default:
+-         assert(0);
+-      }
++         assert(0); break;
++      } break;
+    case B64_TYPE:
+       switch (cmpop) {
+       case EQ_OPTION: t = (a.u64 == b.u64); break;
+       case NE_OPTION: t = (a.u64 != b.u64); break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+       break;
+    case S8_TYPE: 
+@@ -3104,7 +3105,7 @@
+       case GT_OPTION: t = (a.s16 > b.s16); break;
+       case GE_OPTION: t = (a.s16 >= b.s16); break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+       break;
+    case S32_TYPE: 
+@@ -3116,7 +3117,7 @@
+       case GT_OPTION: t = (a.s32 > b.s32); break;
+       case GE_OPTION: t = (a.s32 >= b.s32); break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+       break;
+    case S64_TYPE:
+@@ -3128,7 +3129,7 @@
+       case GT_OPTION: t = (a.s64 > b.s64); break;
+       case GE_OPTION: t = (a.s64 >= b.s64); break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+       break;
+    case U8_TYPE: 
+@@ -3145,7 +3146,7 @@
+       case HI_OPTION: t = (a.u16 > b.u16); break;
+       case HS_OPTION: t = (a.u16 >= b.u16); break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+       break;
+    case U32_TYPE: 
+@@ -3161,7 +3162,7 @@
+       case HI_OPTION: t = (a.u32 > b.u32); break;
+       case HS_OPTION: t = (a.u32 >= b.u32); break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+       break;
+    case U64_TYPE:
+@@ -3177,7 +3178,7 @@
+       case HI_OPTION: t = (a.u64 > b.u64); break;
+       case HS_OPTION: t = (a.u64 >= b.u64); break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+       break;
+    case F16_TYPE: assert(0); break;
+@@ -3198,7 +3199,7 @@
+       case NUM_OPTION: t = !isNaN(a.f32) && !isNaN(b.f32); break;
+       case NAN_OPTION: t = isNaN(a.f32) || isNaN(b.f32); break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+       break;
+    case F64_TYPE: 
+@@ -3219,7 +3220,7 @@
+       case NUM_OPTION: t = !isNaN(a.f64) && !isNaN(b.f64); break;
+       case NAN_OPTION: t = isNaN(a.f64) || isNaN(b.f64); break;
+       default:
+-         assert(0);
++         assert(0); break;
+       }
+       break;
+    default: assert(0); break;
+@@ -3467,7 +3468,7 @@
+    switch ( c_type ) {
+    case S32_TYPE: t = c.s32 >= 0; break;
+    case F32_TYPE: t = c.f32 >= 0; break;
+-   default: assert(0);
++   default: assert(0); break;
+    }
+ 
+    switch ( i_type ) {
+@@ -3481,7 +3482,7 @@
+    case FF64_TYPE:
+    case B64_TYPE:
+    case U64_TYPE: d.u64 = t?a.u64:b.u64; break;
+-   default: assert(0);
++   default: assert(0); break;
+    }
+ 
+    thread->set_operand_value(dst,d, i_type, thread, pI);
+@@ -3787,7 +3788,7 @@
+    unsigned int width = 0, height = 0;
+    int x = 0;
+    int y = 0;
+-   unsigned tex_array_index;
++   unsigned tex_array_index = 0;
+    float alpha=0, beta=0;
+ 
+    type_info_key::type_decode(to_type,size,t);
+@@ -4014,7 +4015,7 @@
+       thread->m_last_effective_address = tex_array_base + memreqindex;//tex_array_index;
+       break;
+    default:
+-      assert(0);
++      assert(0); break;
+    }
+    thread->m_last_memory_space = tex_space; 
+ 
+diff --git a/cuda-sim/ptx_ir.cc b/cuda-sim/ptx_ir.cc
+--- a/cuda-sim/ptx_ir.cc
++++ b/cuda-sim/ptx_ir.cc
+@@ -1254,7 +1254,8 @@
+    snprintf(command,1024,"c++filt -p %s",m_name.c_str());
+    FILE *p = popen(command,"r");
+    buffer[0]=0;
+-   fscanf(p,"%1023s",buffer);
++   int scanned = fscanf(p,"%1023s",buffer);
++   if(!scanned) assert(!scanned);
+    fprintf(fp,"%s",buffer);
+    if ( index >= m_instr_mem_size ) {
+       fprintf(fp, "<past last instruction (max pc=%u)>", m_start_PC + m_instr_mem_size - 1 );
+diff --git a/debug.cc b/debug.cc
+--- a/debug.cc
++++ b/debug.cc
+@@ -141,7 +141,7 @@
+       fflush(stdout);
+       
+       char line[1024];
+-      fgets(line,1024,stdin);
++      assert(line == fgets(line,1024,stdin));
+ 
+       char *tok = strtok(line," \t\n");
+       if( !strcmp(tok,"dp") ) {
+@@ -153,7 +153,7 @@
+          fflush(stdout);
+       } else if( !strcmp(tok,"q") || !strcmp(tok,"quit") ) {
+          printf("\nreally quit GPGPU-Sim (y/n)?\n");
+-         fgets(line,1024,stdin);
++         assert(line == fgets(line,1024,stdin));
+          tok = strtok(line," \t\n");
+          if( !strcmp(tok,"y") ) {
+             exit(0);
+diff --git a/gpgpu-sim/gpu-cache.cc b/gpgpu-sim/gpu-cache.cc
+--- a/gpgpu-sim/gpu-cache.cc
++++ b/gpgpu-sim/gpu-cache.cc
+@@ -215,9 +215,9 @@
+ void tag_array::fill( new_addr_type addr, unsigned time )
+ {
+     assert( m_config.m_alloc_policy == ON_FILL );
+-    unsigned idx;
++    unsigned idx = 0;
+     enum cache_request_status status = probe(addr,idx);
+-    assert(status==MISS); // MSHR should have prevented redundant memory request
++    if(status!=MISS) assert(status==MISS); // MSHR should have prevented redundant memory request
+     m_lines[idx].allocate( m_config.tag(addr), m_config.block_addr(addr), time );
+     m_lines[idx].fill(time);
+ }
+diff --git a/gpgpu-sim/gpu-sim.cc b/gpgpu-sim/gpu-sim.cc
+--- a/gpgpu-sim/gpu-sim.cc
++++ b/gpgpu-sim/gpu-sim.cc
+@@ -1407,12 +1407,12 @@
+ 
+ shader_core_ctx* gpgpu_sim::get_shader(int id)
+ {
+-    int clusters = m_config.m_shader_config.n_simt_clusters;
++//    int clusters = m_config.m_shader_config.n_simt_clusters;
+     int shaders_per_cluster = m_config.m_shader_config.n_simt_cores_per_cluster;
+     int cluster = id/shaders_per_cluster;
+     int shader_in_cluster = id%shaders_per_cluster;
+     assert(shader_in_cluster < shaders_per_cluster);
+-    assert(cluster < clusters);
++    assert(cluster < m_config.m_shader_config.n_simt_clusters);
+ 
+     return m_cluster[cluster]->get_core(shader_in_cluster);
+ }
+diff --git a/gpgpu-sim/l2cache.cc b/gpgpu-sim/l2cache.cc
+--- a/gpgpu-sim/l2cache.cc
++++ b/gpgpu-sim/l2cache.cc
+@@ -387,7 +387,7 @@
+                 if ( status == HIT ) {
+                     if( !write_sent ) {
+                         // L2 cache replies
+-                        assert(!read_sent);
++                        if(read_sent) assert(!read_sent);
+                         if( mf->get_access_type() == L1_WRBK_ACC ) {
+                             m_request_tracker.erase(mf);
+                             delete mf;
+@@ -406,7 +406,7 @@
+                     m_icnt_L2_queue->pop();
+                 } else {
+                     assert(!write_sent);
+-                    assert(!read_sent);
++                    if(read_sent) assert(!read_sent);
+                     // L2 cache lock-up: will try again next cycle
+                 }
+             }
+diff --git a/gpgpu-sim/shader.h b/gpgpu-sim/shader.h
+--- a/gpgpu-sim/shader.h
++++ b/gpgpu-sim/shader.h
+@@ -423,12 +423,11 @@
+     {
+         unsigned inner_level_readin;
+         unsigned outer_level_readin; 
+-        int ret = sscanf( config_str,
+-                          "two_level_active:%d:%d:%d",
+-                          &m_max_active_warps,
+-                          &inner_level_readin,
+-                          &outer_level_readin);
+-        assert( 3 == ret );
++        assert( 3 == sscanf( config_str,
++                "two_level_active:%d:%d:%d",
++                &m_max_active_warps,
++                &inner_level_readin,
++                &outer_level_readin) );
+         m_inner_level_prioritization=(scheduler_prioritization_type)inner_level_readin;
+         m_outer_level_prioritization=(scheduler_prioritization_type)outer_level_readin;
+     }
+diff --git a/gpgpu-sim/visualizer.cc b/gpgpu-sim/visualizer.cc
+--- a/gpgpu-sim/visualizer.cc
++++ b/gpgpu-sim/visualizer.cc
+@@ -162,16 +162,16 @@
+    }
+    void check_ld_update(unsigned int uid,unsigned int slot, long int latency) { 
+       if ( ld_time_map.find( uid )!=ld_time_map.end() ) {
+-         int our_latency = ld_time_map[uid][slot] - ld_time_map[uid][IN_ICNT_TO_MEM];
+-         assert( our_latency == latency);
++//         int our_latency = ld_time_map[uid][slot] - ld_time_map[uid][IN_ICNT_TO_MEM];
++         assert( ld_time_map[uid][slot] - ld_time_map[uid][IN_ICNT_TO_MEM] == latency);
+       } else if (slot < NUM_MEM_REQ_STAT ) {
+          abort();
+       }
+    }
+    void check_st_update(unsigned int uid,unsigned int slot, long int latency) { 
+       if ( st_time_map.find( uid )!=st_time_map.end() ) {
+-         int our_latency = st_time_map[uid][slot] - st_time_map[uid][IN_ICNT_TO_MEM];
+-         assert( our_latency == latency);
++//         int our_latency = st_time_map[uid][slot] - st_time_map[uid][IN_ICNT_TO_MEM];
++         assert( st_time_map[uid][slot] - st_time_map[uid][IN_ICNT_TO_MEM] == latency);
+       } else {
+          abort();
+       } 
+diff --git a/intersim/interconnect_interface.cpp b/intersim/interconnect_interface.cpp
+--- a/intersim/interconnect_interface.cpp
++++ b/intersim/interconnect_interface.cpp
+@@ -60,7 +60,7 @@
+             data = buf.front();
+             packet_n--;
+          }
+-         assert(temp_d == buf.front()); //all flits must belong to the same packet
++         if(temp_d != buf.front()) assert(temp_d == buf.front()); //all flits must belong to the same packet
+          buf.pop();
+          tail_flag.pop();
+       }
+@@ -74,7 +74,7 @@
+          if (tail_flag.front()) {
+             data = buf.front();
+          }
+-         assert(temp_d == buf.front()); //all flits must belong to the same packet
++         if(temp_d != buf.front()) assert(temp_d == buf.front()); //all flits must belong to the same packet
+       }
+       return data; 
+    }
+diff --git a/intersim/iq_router.cpp b/intersim/iq_router.cpp
+--- a/intersim/iq_router.cpp
++++ b/intersim/iq_router.cpp
+@@ -341,10 +341,8 @@
+    int         match_vc;
+ 
+    Flit        *f;
+-   bool        watched;
+ 
+    _vc_allocator->Clear( );
+-   watched = false;
+ 
+    for ( int input = 0; input < _inputs; ++input ) {
+       for ( int vc = 0; vc < _vcs; ++vc ) {
+@@ -359,7 +357,6 @@
+                cout << "VC requesting allocation at " << _fullname << endl;
+                cout << "  input_index = " << input*_vcs + vc << endl;
+                cout << *f;
+-               watched = true;
+             }
+ 
+             _AddVCRequests( cur_vc, input*_vcs + vc, f->watch );
+@@ -407,12 +404,11 @@
+    Flit        *f;
+    Credit      *c;
+ 
+-   VC          *cur_vc;
+-   BufferState *dest_vc;
++   VC          *cur_vc = NULL;
++   BufferState *dest_vc = NULL;
+ 
+    int input;
+-   int output;
+-   int vc;
++   int vc = -1;
+ 
+    int expanded_input;
+    int expanded_output;
+@@ -503,7 +499,6 @@
+          }
+ 
+          if ( expanded_output >= 0 ) {
+-            output = expanded_output % _outputs;
+ 
+             if ( _switch_hold_in[expanded_input] == -1 ) {
+                vc = _sw_allocator->ReadRequest( expanded_input, expanded_output );
+diff --git a/intersim/kncube.cpp b/intersim/kncube.cpp
+--- a/intersim/kncube.cpp
++++ b/intersim/kncube.cpp
+@@ -157,7 +157,7 @@
+    int num_fails;
+    unsigned long prev_seed;
+ 
+-   int node, chan;
++   int node = 0; int chan = 0;
+    int i, j, t, n, c;
+    bool *fail_nodes;
+    bool available;
+diff --git a/intersim/router.cpp b/intersim/router.cpp
+--- a/intersim/router.cpp
++++ b/intersim/router.cpp
+@@ -91,7 +91,7 @@
+                            Module *parent, string name, int id,
+                            int inputs, int outputs )
+ {
+-   Router_gpgpu *r;
++   Router_gpgpu *r = NULL;
+    string type;
+ 
+    config.GetStr( "router", type );
+diff --git a/intersim/trafficmanager.cpp b/intersim/trafficmanager.cpp
+--- a/intersim/trafficmanager.cpp
++++ b/intersim/trafficmanager.cpp
+@@ -882,7 +882,7 @@
+ 
+ int TrafficManager::_ComputeAccepted( double *avg, double *min ) const 
+ {
+-   int dmin;
++   int dmin = -1;
+ 
+    *min = 1.0;
+    *avg = 0.0;
+@@ -943,7 +943,6 @@
+    int  iter;
+    int  total_phases;
+    int  converged;
+-   int  max_outstanding;
+    int  empty_steps;
+ 
+    double cur_latency;
+@@ -984,7 +983,6 @@
+    warmup_threshold       = 0.05;
+    iter            = 0;
+    converged       = 0;
+-   max_outstanding = 0;
+    total_phases    = 0;
+ 
+    // warm-up ...

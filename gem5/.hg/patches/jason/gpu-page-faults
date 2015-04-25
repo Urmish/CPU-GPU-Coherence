@@ -1,0 +1,167 @@
+# HG changeset patch
+# Parent b22f5bab07637cd52459118bacfcbb79acc16bd9
+Adds architectural changes required to handle GPU page faults.
+
+This patch makes  changes:
+ 1) Adds a GPU page fault register to the CPU core. This is not architecturally
+    visible. This register holds the state of the GPU page fault. Either
+    0 => Not handling a GPU page fault, or 1 => currently handling a GPU page
+    fault. This register is set by the GPU device MMU before raising a page
+    fault interrupt.
+ 2) Modifies the iret instruction's microcode. Now, when returning from an
+    interrupt, check the GPU page fault register. If the register is 1, then
+    notify the GPU MMU that it's possible a GPU page fault has completed.
+ 3) Adds a gpufaultfinish psuedo-instruction and the microcode implementation.
+    This instruction calls a function on the GPU, gpuFinishPageFault. This
+    function is implemented in gem5-gpu.
+
+diff -r b22f5bab0763 src/arch/x86/isa/insts/general_purpose/control_transfer/interrupts_and_exceptions.py
+--- a/src/arch/x86/isa/insts/general_purpose/control_transfer/interrupts_and_exceptions.py	Wed Jul 16 12:49:39 2014 -0500
++++ b/src/arch/x86/isa/insts/general_purpose/control_transfer/interrupts_and_exceptions.py	Wed Jul 16 12:49:54 2014 -0500
+@@ -62,7 +62,13 @@
+     # Read the handy m5 register for use later
+     rdm5reg t4
+ 
++    # check if this was a GPU fault and notify the GPU.
++    rdval t5, "InstRegIndex(MISCREG_GPU_FAULT)"
++    andi t0, t5, 1, flags=(EZF,)
++    br label("notGPUFaultFallThrough"), flags=(CEZF,)
++    gpufaultfinish
+ 
++notGPUFaultFallThrough:
+ ###
+ ### Handle if we're returning to virtual 8086 mode.
+ ###
+diff -r b22f5bab0763 src/arch/x86/isa/microops/gpu.isa
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/src/arch/x86/isa/microops/gpu.isa	Wed Jul 16 12:49:54 2014 -0500
+@@ -0,0 +1,91 @@
++// Copyright (c) 2013 Mark D. Hill and David A. Wood
++// All rights reserved.
++//
++// The license below extends only to copyright in the software and shall
++// not be construed as granting a license to any other intellectual
++// property including but not limited to intellectual property relating
++// to a hardware implementation of the functionality of the software
++// licensed hereunder.  You may use the software subject to the license
++// terms below provided that you ensure that this notice is replicated
++// unmodified and in its entirety in all distributions of the software,
++// modified or unmodified, in source code or in binary form.
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are
++// met: redistributions of source code must retain the above copyright
++// notice, this list of conditions and the following disclaimer;
++// redistributions in binary form must reproduce the above copyright
++// notice, this list of conditions and the following disclaimer in the
++// documentation and/or other materials provided with the distribution;
++// neither the name of the copyright holders nor the names of its
++// contributors may be used to endorse or promote products derived from
++// this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// Authors: Jason Power
++
++output header {{
++        void gpuFinishPageFault(int gpuId, ThreadContext *tc);
++    class GPUFaultFinish : public X86ISA::X86MicroopBase
++    {
++      public:
++        GPUFaultFinish(ExtMachInst _machInst, const char * instMnem,
++                uint64_t setFlags) :
++            X86MicroopBase(_machInst, "gpufaultfinish", instMnem,
++                           setFlags | (ULL(1) << StaticInst::IsNonSpeculative),
++                           No_OpClass)
++        {
++        }
++
++        %(BasicExecDeclare)s
++
++        std::string generateDisassembly(Addr pc,
++                const SymbolTable *symtab) const;
++    };
++}};
++
++output exec {{
++    Fault
++    GPUFaultFinish::execute(CPU_EXEC_CONTEXT *xc,
++            Trace::InstRecord * traceData) const
++    {
++        gpuFinishPageFault(0, xc->tcBase());
++        return NoFault;
++    }
++}};
++
++output decoder {{
++    std::string GPUFaultFinish::generateDisassembly(Addr pc,
++            const SymbolTable *symtab) const
++    {
++        std::stringstream response;
++
++        printMnemonic(response, instMnem, mnemonic);
++
++        return response.str();
++    }
++}};
++
++let {{
++    class GPUFaultFinish(X86Microop):
++        className = "GPUFaultFinish"
++        def __init__(self):
++            pass
++
++        def getAllocator(self, microFlags):
++            return "new GPUFaultFinish(machInst, macrocodeBlock, %s)" % \
++                    self.microFlagsText(microFlags)
++
++    microopClasses["gpufaultfinish"] = GPUFaultFinish
++}};
+diff -r b22f5bab0763 src/arch/x86/isa/microops/microops.isa
+--- a/src/arch/x86/isa/microops/microops.isa	Wed Jul 16 12:49:39 2014 -0500
++++ b/src/arch/x86/isa/microops/microops.isa	Wed Jul 16 12:49:54 2014 -0500
+@@ -61,3 +61,6 @@
+ 
+ //Microops for printing out debug messages through M5
+ ##include "debug.isa"
++
++//Microops for interacting with the GPU
++##include "gpu.isa"
+diff -r b22f5bab0763 src/arch/x86/regs/misc.hh
+--- a/src/arch/x86/regs/misc.hh	Wed Jul 16 12:49:39 2014 -0500
++++ b/src/arch/x86/regs/misc.hh	Wed Jul 16 12:49:54 2014 -0500
+@@ -396,6 +396,9 @@
+         // "Fake" MSRs for internally implemented devices
+         MISCREG_PCI_CONFIG_ADDRESS,
+ 
++        // GPU fault register
++        MISCREG_GPU_FAULT,
++
+         NUM_MISCREGS
+     };
+ 
+@@ -937,6 +940,14 @@
+         Bitfield<11> enable;
+         Bitfield<8> bsp;
+     EndBitUnion(LocalApicBase)
++
++    /**
++     * Register for active GPU page fault
++     * May need to increase to more bits if more than 1 GPU is in the system
++     */
++    BitUnion64(GPUFaultReg)
++        Bitfield<0> inFault;
++    EndBitUnion(GPUFaultReg)
+ }
+ 
+ #endif // __ARCH_X86_INTREGS_HH__

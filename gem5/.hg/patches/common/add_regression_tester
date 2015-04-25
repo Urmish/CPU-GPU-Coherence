@@ -1,0 +1,53 @@
+# HG changeset patch
+# Parent ef82c2e1091fd809d438f4d0421a0a757bc24099
+# User Joel Hestness <jthestness@gmail.com>
+Regressions: Add gem5 bits and pieces for gem5-gpu regressions
+
+To run gem5-style regressions on gem5-gpu requires updating a few parts of the
+gem5 regress infrastructure. Specifically, (1) add gem5-gpu as a test type in
+the tests SConscript, (2) add the appropriate GPU stats in diff-out to make
+sure we check them, and (3) add symlinks to the regression config scripts.
+
+Notes: To run these tests requires two gem5-gpu patches that include the other
+scripts and initial set of regression tests.
+
+diff --git a/tests/SConscript b/tests/SConscript
+--- a/tests/SConscript
++++ b/tests/SConscript
+@@ -347,6 +347,9 @@
+             'rubytest', 'memtest', 'memtest-filter',
+             'tgen-simple-mem', 'tgen-dram-ctrl']
+ 
++if env['GPGPU_SIM']:
++    configs.append('gem5-gpu')
++
+ if env['PROTOCOL'] != 'None':
+     if env['PROTOCOL'] == 'MI_example':
+         configs += [c + "-ruby" for c in configs]
+diff --git a/tests/configs/gem5-gpu-ruby.py b/tests/configs/gem5-gpu-ruby.py
+new file mode 120000
+--- /dev/null
++++ b/tests/configs/gem5-gpu-ruby.py
+@@ -0,0 +1,1 @@
++../../../gem5-gpu/tests/configs/gem5-gpu-ruby.py
+\ No newline at end of file
+diff --git a/tests/diff-out b/tests/diff-out
+--- a/tests/diff-out
++++ b/tests/diff-out
+@@ -202,7 +202,8 @@
+   'sim_ops',
+   'sim_ticks',
+   'host_inst_rate',
+-  'host_mem_usage'
++  'host_mem_usage',
++  'inst_counts'
+ );
+ 
+ $key_stat_pattern = join('|', @key_stat_list);
+diff --git a/tests/quick/se_gpu b/tests/quick/se_gpu
+new file mode 120000
+--- /dev/null
++++ b/tests/quick/se_gpu
+@@ -0,0 +1,1 @@
++../../../gem5-gpu/tests/quick/se_gpu/
+\ No newline at end of file

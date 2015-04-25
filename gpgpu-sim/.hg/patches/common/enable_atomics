@@ -1,0 +1,149 @@
+# HG changeset patch
+# Parent d048bee387cebc25a9b02363e8d92630c0beb3df
+# User Joel Hestness <jthestness@gmail.com>
+Atomics: Pass appropriate data through to gem5-gpu
+
+In order to re-enable atomic instructions, we need to pass atomic instruction
+addresses and data through to the CudaCore, which in turn passes that info to
+the ShaderLSQ. We also need to disable the atomic callbacks that are used in
+GPGPU-Sim, since these will now be simulated only in timing mode.
+
+diff --git a/abstract_hardware_model.h b/abstract_hardware_model.h
+--- a/abstract_hardware_model.h
++++ b/abstract_hardware_model.h
+@@ -765,6 +765,7 @@
+     unsigned initiation_interval;
+ 
+     unsigned data_size; // what is the size of the word being operated on?
++    int data_type;
+     memory_space_t space;
+     cache_operator_type cache_op;
+ 
+@@ -849,7 +850,7 @@
+     }
+     void set_data( unsigned n, const uint8_t *_data )
+     {
+-        assert( op == STORE_OP );
++        assert( op == STORE_OP || memory_op == memory_store );
+         assert( space == global_space || space == const_space || space == local_space );
+         assert( m_per_scalar_thread_valid );
+         assert( !m_per_scalar_thread[n].data_valid );
+@@ -957,6 +958,8 @@
+     unsigned get_uid() const { return m_uid; }
+     int vectorLength;
+ 
++    int get_atomic() const { return m_atomic_spec; }
++
+ protected:
+ 
+     unsigned m_uid;
+@@ -965,6 +968,7 @@
+     unsigned long long issue_cycle;
+     unsigned cycles; // used for implementing initiation interval delay
+     bool m_isatomic;
++    int m_atomic_spec;
+     bool m_is_printf;
+     unsigned m_warp_id;
+     unsigned m_dynamic_warp_id; 
+diff --git a/cuda-sim/cuda-sim.cc b/cuda-sim/cuda-sim.cc
+--- a/cuda-sim/cuda-sim.cc
++++ b/cuda-sim/cuda-sim.cc
+@@ -1419,6 +1419,7 @@
+       inst.add_callback( lane_id, last_callback().function, last_callback().instruction, this );
+       unsigned to_type = pI->get_type();
+       insn_data_size = datatype2size(to_type);
++      inst.data_type = to_type;
+    }
+ 
+    if (pI->get_opcode() == TEX_OP) {
+@@ -1487,7 +1488,18 @@
+       if (insn_memory_op == memory_store && (insn_space == global_space || insn_space == const_space || insn_space == local_space)) {
+          // Need to save data to be written for stores
+          uint8_t data[MAX_DATA_BYTES_PER_INSN_PER_THREAD];
+-         readRegister(inst, lane_id, (char*)&data[0]);
++         if ( pI->get_opcode() == ATOM_OP ) {
++             unsigned data_src_reg = 2; // Use the second operand as data source
++             readRegister(inst, lane_id, (char*)&data[0], data_src_reg);
++             if (pI->get_atomic() == ATOMIC_CAS) {
++                 data_src_reg = 3; // Third operand is second data source
++                 // There can be at most 2 atomic inst operands of at most
++                 // 64b or 8B each. Store second operand at byte offet 8
++                 readRegister(inst, lane_id, (char*)&data[8], data_src_reg);
++             }
++         } else {
++             readRegister(inst, lane_id, (char*)&data[0]);
++         }
+          inst.set_data(lane_id, data);
+       }
+    } 
+diff --git a/cuda-sim/instructions.cc b/cuda-sim/instructions.cc
+--- a/cuda-sim/instructions.cc
++++ b/cuda-sim/instructions.cc
+@@ -827,8 +827,6 @@
+ 
+ void atom_callback( const inst_t* inst, ptx_thread_info* thread )
+ {
+-    printf("GPGPU-Sim PTX: UNTESTED INSTRUCTION: ATOM\n");
+-    assert(0);
+    const ptx_instruction *pI = dynamic_cast<const ptx_instruction*>(inst);
+ 
+    // "Decode" the output type
+@@ -879,7 +877,7 @@
+ 
+    memory_space *mem = NULL;
+    if(space == global_space)
+-       mem = thread->get_global_memory();
++       panic("gem5-gpu: Global atomics shouldn't call atom_callback!\n");
+    else if(space == shared_space)
+        mem = thread->m_shared_mem;
+    else
+@@ -1141,8 +1139,6 @@
+ // atom_impl will now result in a callback being called in mem_ctrl_pop (gpu-sim.c)
+ void atom_impl( const ptx_instruction *pI, ptx_thread_info *thread )
+ {   
+-    printf("GPGPU-Sim PTX: UNTESTED INSTRUCTION: ATOM\n");
+-    assert(0);
+    // SYNTAX
+    // atom.space.operation.type d, a, b[, c]; (now read in callback)
+ 
+diff --git a/cuda-sim/ptx_ir.h b/cuda-sim/ptx_ir.h
+--- a/cuda-sim/ptx_ir.h
++++ b/cuda-sim/ptx_ir.h
+@@ -945,7 +945,6 @@
+ 
+    memory_space_t get_space() const { return m_space_spec;}
+    unsigned get_vector() const { return m_vector_spec;}
+-   unsigned get_atomic() const { return m_atomic_spec;}
+ 
+    int get_type() const 
+    {
+@@ -1010,7 +1009,7 @@
+       return false;
+    }
+    bool has_memory_write() const {
+-      if( m_opcode == ST_OP ) return true;
++      if( m_opcode == ST_OP || m_opcode == ATOM_OP ) return true;
+       // Check PTXPlus operand type below
+       // Destination operand is a memory operand
+       ptx_instruction::const_iterator op=op_iter_begin();
+@@ -1059,7 +1058,6 @@
+    memory_space_t m_space_spec;
+    int m_geom_spec;
+    int m_vector_spec;
+-   int m_atomic_spec;
+    enum vote_mode_t m_vote_mode;
+    int m_membar_level;
+    int m_instr_mem_index; //index into m_instr_mem array
+diff --git a/gpgpu-sim/shader.cc b/gpgpu-sim/shader.cc
+--- a/gpgpu-sim/shader.cc
++++ b/gpgpu-sim/shader.cc
+@@ -1825,6 +1825,9 @@
+ {
+     if (m_next_wb.empty()) {
+         m_next_wb = inst;
++        if( m_next_wb.isatomic() ) {
++            m_core->decrement_atomic_count(m_next_wb.warp_id(),m_next_wb.active_count());
++        }
+     } else if (m_next_wb.get_uid() != inst.get_uid()) {
+         return false; // WB reg full
+     }

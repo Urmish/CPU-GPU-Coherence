@@ -1,0 +1,286 @@
+# HG changeset patch
+# Parent cf24f524e70ef87f2c4d5b292120158edb13bb2d
+
+diff --git a/src/cpu/testers/rubytest/Check.cc b/src/cpu/testers/rubytest/Check.cc
+--- a/src/cpu/testers/rubytest/Check.cc
++++ b/src/cpu/testers/rubytest/Check.cc
+@@ -48,6 +48,7 @@
+     m_pc = pc;
+     m_access_mode = RubyAccessMode(random() % RubyAccessMode_NUM);
+     m_store_count = 0;
++    m_flushed = false;
+ }
+ 
+ void
+@@ -58,16 +59,20 @@
+ 
+     // currently no protocols support prefetches
+     if (false && (random() & 0xf) == 0) {
++        m_index = random() % m_num_readers;
+         initiatePrefetch(); // Prefetch from random processor
+     }
+ 
+     if (m_tester_ptr->getCheckFlush() && (random() & 0xff) == 0) {
++        m_index = random() % m_num_writers;
+         initiateFlush(); // issue a Flush request from random processor
+     }
+ 
+     if (m_status == TesterStatus_Idle) {
++        m_index = random() % m_num_writers;
+         initiateAction();
+     } else if (m_status == TesterStatus_Ready) {
++        m_index = random() % m_num_readers;
+         initiateCheck();
+     } else {
+         // Pending - do nothing
+@@ -81,8 +86,7 @@
+ {
+     DPRINTF(RubyTest, "initiating prefetch\n");
+ 
+-    int index = random() % m_num_readers;
+-    MasterPort* port = m_tester_ptr->getReadableCpuPort(index);
++    MasterPort* port = m_tester_ptr->getReadableCpuPort(m_index);
+ 
+     Request::Flags flags;
+     flags.set(Request::PREFETCH);
+@@ -94,7 +98,7 @@
+         cmd = MemCmd::ReadReq;
+ 
+         // if necessary, make the request an instruction fetch
+-        if (m_tester_ptr->isInstReadableCpuPort(index)) {
++        if (m_tester_ptr->isInstReadableCpuPort(m_index)) {
+             flags.set(Request::INST_FETCH);
+         }
+     } else {
+@@ -105,7 +109,7 @@
+     // Prefetches are assumed to be 0 sized
+     Request *req = new Request(m_address.getAddress(), 0, flags,
+             m_tester_ptr->masterId(), curTick(), m_pc.getAddress());
+-    req->setThreadContext(index, 0);
++    req->setThreadContext(m_index, 0);
+ 
+     PacketPtr pkt = new Packet(req, cmd);
+ 
+@@ -135,8 +139,7 @@
+ 
+     DPRINTF(RubyTest, "initiating Flush\n");
+ 
+-    int index = random() % m_num_writers;
+-    MasterPort* port = m_tester_ptr->getWritableCpuPort(index);
++    MasterPort* port = m_tester_ptr->getWritableCpuPort(m_index);
+ 
+     Request::Flags flags;
+ 
+@@ -156,6 +159,7 @@
+ 
+     if (port->sendTimingReq(pkt)) {
+         DPRINTF(RubyTest, "initiating Flush - successful\n");
++        m_flushed = true;
+     }
+ }
+ 
+@@ -165,8 +169,7 @@
+     DPRINTF(RubyTest, "initiating Action\n");
+     assert(m_status == TesterStatus_Idle);
+ 
+-    int index = random() % m_num_writers;
+-    MasterPort* port = m_tester_ptr->getWritableCpuPort(index);
++    MasterPort* port = m_tester_ptr->getWritableCpuPort(m_index);
+ 
+     Request::Flags flags;
+ 
+@@ -178,7 +181,7 @@
+             m_tester_ptr->masterId(), curTick(),
+                                m_pc.getAddress());
+ 
+-    req->setThreadContext(index, 0);
++    req->setThreadContext(m_index, 0);
+     Packet::Command cmd;
+ 
+     // 1 out of 8 chance, issue an atomic rather than a write
+@@ -229,13 +232,17 @@
+     DPRINTF(RubyTest, "Initiating Check\n");
+     assert(m_status == TesterStatus_Ready);
+ 
+-    int index = random() % m_num_readers;
+-    MasterPort* port = m_tester_ptr->getReadableCpuPort(index);
++    MasterPort* port = m_tester_ptr->getReadableCpuPort(m_index);
+ 
+     Request::Flags flags;
+ 
++    if (m_tester_ptr->isIncoherentCpuPort(m_index) && !m_flushed) {
++        DPRINTF(RubyTest, "forcing a flush for incoherent port %d\n", m_index);
++        initiateFlush();
++    }
++
+     // If necessary, make the request an instruction fetch
+-    if (m_tester_ptr->isInstReadableCpuPort(index)) {
++    if (m_tester_ptr->isInstReadableCpuPort(m_index)) {
+         flags.set(Request::INST_FETCH);
+     }
+ 
+@@ -243,7 +250,7 @@
+     Request *req = new Request(m_address.getAddress(), CHECK_SIZE, flags,
+                                m_tester_ptr->masterId(), curTick(), m_pc.getAddress());
+ 
+-    req->setThreadContext(index, 0);
++    req->setThreadContext(m_index, 0);
+     PacketPtr pkt = new Packet(req, MemCmd::ReadReq);
+     uint8_t* dataArray = new uint8_t[CHECK_SIZE];
+     pkt->dataDynamicArray(dataArray);
+@@ -258,6 +265,7 @@
+         DPRINTF(RubyTest, "status before check update: %s\n",
+                 TesterStatus_to_string(m_status).c_str());
+         m_status = TesterStatus_Check_Pending;
++        m_flushed = false;
+     } else {
+         // If the packet did not issue, must delete
+         // Note: No need to delete the data, the packet destructor
+@@ -289,7 +297,10 @@
+     DPRINTF(RubyTest, "RubyTester Callback\n");
+     debugPrint();
+ 
+-    if (m_status == TesterStatus_Action_Pending) {
++    if (m_status == TesterStatus_Ready) {
++        DPRINTF(RubyTest, "Forced flush finished, initiating check\n");
++        initiateCheck();
++    } else if (m_status == TesterStatus_Action_Pending) {
+         DPRINTF(RubyTest, "Action callback write value: %d, currently %d\n",
+                 (m_value + m_store_count), data->getByte(0));
+         // Perform store one byte at a time
+diff --git a/src/cpu/testers/rubytest/Check.hh b/src/cpu/testers/rubytest/Check.hh
+--- a/src/cpu/testers/rubytest/Check.hh
++++ b/src/cpu/testers/rubytest/Check.hh
+@@ -67,9 +67,11 @@
+ 
+     void debugPrint();
+ 
++    int m_index;
+     TesterStatus m_status;
+     uint8 m_value;
+     int m_store_count;
++    bool m_flushed;
+     NodeID m_initiatingNode;
+     Address m_address;
+     Address m_pc;
+diff --git a/src/cpu/testers/rubytest/RubyTester.cc b/src/cpu/testers/rubytest/RubyTester.cc
+--- a/src/cpu/testers/rubytest/RubyTester.cc
++++ b/src/cpu/testers/rubytest/RubyTester.cc
+@@ -58,7 +58,8 @@
+     m_deadlock_threshold(p->deadlock_threshold),
+     m_wakeup_frequency(p->wakeup_frequency),
+     m_check_flush(p->check_flush),
+-    m_num_inst_ports(p->port_cpuInstPort_connection_count)
++    m_num_inst_ports(p->port_cpuInstPort_connection_count),
++    m_num_incoherent_ports(p->port_cpuInCoherentDataPort_connection_count)
+ {
+     m_checks_completed = 0;
+ 
+@@ -77,6 +78,12 @@
+         readPorts.push_back(new CpuPort(csprintf("%s-instPort%d", name(), i),
+                                         this, i));
+     }
++    for (int i = 0; i < p->port_cpuInCoherentDataPort_connection_count; ++i) {
++        CpuPort *port = new CpuPort(csprintf("%s-incoherentPort%d", name(), i),
++                                    this, i, true);
++        readPorts.push_back(port);
++        writePorts.push_back(port);
++    }
+     for (int i = 0; i < p->port_cpuDataPort_connection_count; ++i) {
+         CpuPort *port = new CpuPort(csprintf("%s-dataPort%d", name(), i),
+                                     this, i);
+@@ -128,13 +135,22 @@
+             // inst ports directly map to the lowest readPort elements
+             //
+             return *readPorts[idx];
++        } if (if_name == "cpuInCoherentDataPort") {
++            if (idx > m_num_inst_ports + m_num_incoherent_ports) {
++                panic("RubyTester::getMasterPort: unknown incoherent port idx %d\n",
++                      idx);
++            }
++            //
++            // incoherent ports map to the second lowest readPort elements
++            //
++            return *readPorts[m_num_inst_ports + idx];
+         } else {
+             assert(if_name == "cpuDataPort");
+             //
+             // add the inst port offset to translate to the correct read port
+             // index
+             //
+-            int read_idx = idx + m_num_inst_ports;
++            int read_idx = idx + m_num_inst_ports + m_num_incoherent_ports;
+             if (read_idx >= static_cast<int>(readPorts.size())) {
+                 panic("RubyTester::getMasterPort: unknown data port idx %d\n",
+                       idx);
+@@ -172,6 +188,12 @@
+     return idx < m_num_inst_ports;
+ }
+ 
++bool
++RubyTester::isIncoherentCpuPort(int idx) {
++    return (idx < m_num_incoherent_ports + m_num_inst_ports &&
++            idx >= m_num_inst_ports);
++}
++
+ MasterPort*
+ RubyTester::getReadableCpuPort(int idx)
+ {
+diff --git a/src/cpu/testers/rubytest/RubyTester.hh b/src/cpu/testers/rubytest/RubyTester.hh
+--- a/src/cpu/testers/rubytest/RubyTester.hh
++++ b/src/cpu/testers/rubytest/RubyTester.hh
+@@ -57,10 +57,14 @@
+         // RubyPorts that support both types of requests, separate InstOnly
+         // and DataOnly CpuPorts will map to that RubyPort
+ 
+-        CpuPort(const std::string &_name, RubyTester *_tester, PortID _id)
+-            : MasterPort(_name, _tester, _id), tester(_tester)
++        CpuPort(const std::string &_name, RubyTester *_tester, PortID _id,
++                bool _requires_flush=false)
++            : MasterPort(_name, _tester, _id), tester(_tester),
++              requires_flush(_requires_flush)
+         {}
+ 
++        bool requires_flush;
++
+       protected:
+         virtual bool recvTimingResp(PacketPtr pkt);
+         virtual void recvRetry()
+@@ -93,6 +97,7 @@
+                                       int idx = -1);
+ 
+     bool isInstReadableCpuPort(int idx);
++    bool isIncoherentCpuPort(int idx);
+ 
+     MasterPort* getReadableCpuPort(int idx);
+     MasterPort* getWritableCpuPort(int idx);
+@@ -152,6 +157,7 @@
+     int m_wakeup_frequency;
+     bool m_check_flush;
+     int m_num_inst_ports;
++    int m_num_incoherent_ports;
+ };
+ 
+ inline std::ostream&
+diff --git a/src/cpu/testers/rubytest/RubyTester.py b/src/cpu/testers/rubytest/RubyTester.py
+--- a/src/cpu/testers/rubytest/RubyTester.py
++++ b/src/cpu/testers/rubytest/RubyTester.py
+@@ -34,6 +34,7 @@
+     type = 'RubyTester'
+     num_cpus = Param.Int("number of cpus / RubyPorts")
+     cpuDataPort = VectorMasterPort("the cpu data cache ports")
++    cpuInCoherentDataPort = VectorMasterPort("the data cache ports that require a flush before a load")
+     cpuInstPort = VectorMasterPort("the cpu inst cache ports")
+     checks_to_complete = Param.Int(100, "checks to complete")
+     deadlock_threshold = Param.Int(50000, "how often to check for deadlock")
+diff --git a/src/mem/ruby/system/Sequencer.py b/src/mem/ruby/system/Sequencer.py
+--- a/src/mem/ruby/system/Sequencer.py
++++ b/src/mem/ruby/system/Sequencer.py
+@@ -46,6 +46,7 @@
+     system = Param.System(Parent.any, "system object")
+     support_data_reqs = Param.Bool(True, "data cache requests supported")
+     support_inst_reqs = Param.Bool(True, "inst cache requests supported")
++    requires_flush = Param.Bool(False, "requires a flush instruction to be coherent")
+ 
+ 
+ class RubyPortProxy(RubyPort):

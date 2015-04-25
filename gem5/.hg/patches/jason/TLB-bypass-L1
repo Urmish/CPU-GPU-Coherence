@@ -1,0 +1,77 @@
+# HG changeset patch
+# Parent e2ea85c41cf31ccf86d8711693d01039aff06e9b
+Add flag to TLB to optionally bypass L1
+
+Uses bypass option in Ruby to bypass the L1 cache for TLB accesses.
+This may be useful for systems with a small L1 cache that you do not
+want polluted by page walks.
+
+diff --git a/src/arch/x86/X86TLB.py b/src/arch/x86/X86TLB.py
+--- a/src/arch/x86/X86TLB.py
++++ b/src/arch/x86/X86TLB.py
+@@ -49,6 +49,9 @@
+     system = Param.System(Parent.any, "system object")
+     num_squash_per_cycle = Param.Unsigned(4,
+             "Number of outstanding walks that can be squashed per cycle")
++    bypass_l1 = Param.Bool(False, "Bypass the L1 cache when issuing memory \
++                                   accesses for pagetable walks. Useful for \
++                                   caches that may hold stale data.")
+ 
+ class X86TLB(BaseTLB):
+     type = 'X86TLB'
+diff --git a/src/arch/x86/pagetable_walker.cc b/src/arch/x86/pagetable_walker.cc
+--- a/src/arch/x86/pagetable_walker.cc
++++ b/src/arch/x86/pagetable_walker.cc
+@@ -594,6 +594,9 @@
+     entry.vaddr = vaddr;
+ 
+     Request::Flags flags = Request::PHYSICAL;
++    if (walker->bypassL1) {
++        flags.set(Request::BYPASS_L1);
++    }
+     if (cr3.pcd)
+         flags.set(Request::UNCACHEABLE);
+     RequestPtr request = new Request(topAddr, dataSize, flags,
+diff --git a/src/arch/x86/pagetable_walker.hh b/src/arch/x86/pagetable_walker.hh
+--- a/src/arch/x86/pagetable_walker.hh
++++ b/src/arch/x86/pagetable_walker.hh
+@@ -180,6 +180,9 @@
+         // The number of outstanding walks that can be squashed per cycle.
+         unsigned numSquashable;
+ 
++        // If true, send all memory requests with the bypass L1 flag true
++        bool bypassL1;
++
+         // Wrapper for checking for squashes before starting a translation.
+         void startWalkWrapper();
+ 
+@@ -207,7 +210,8 @@
+             MemObject(params), port(name() + ".port", this),
+             funcState(this, NULL, NULL, true), tlb(NULL), sys(params->system),
+             masterId(sys->getMasterId(name())),
+-            numSquashable(params->num_squash_per_cycle)
++            numSquashable(params->num_squash_per_cycle),
++            bypassL1(params->bypass_l1)
+         {
+         }
+     };
+diff --git a/src/mem/request.hh b/src/mem/request.hh
+--- a/src/mem/request.hh
++++ b/src/mem/request.hh
+@@ -140,6 +140,8 @@
+     static const FlagsType PF_EXCLUSIVE                = 0x02000000;
+     /** The request should be marked as LRU. */
+     static const FlagsType EVICT_NEXT                  = 0x04000000;
++    /** The request should bypass the L1 cache. */
++    static const FlagsType BYPASS_L1                   = 0x08000000;
+ 
+     /** The request should be handled by the generic IPR code (only
+      * valid together with MMAPPED_IPR) */
+@@ -631,6 +633,7 @@
+     bool isClearLL() const { return _flags.isSet(CLEAR_LL); }
+     bool isSecure() const { return _flags.isSet(SECURE); }
+     bool isPTWalk() const { return _flags.isSet(PT_WALK); }
++    bool isBypassL1() const { return _flags.isSet(BYPASS_L1); }
+ };
+ 
+ #endif // __MEM_REQUEST_HH__

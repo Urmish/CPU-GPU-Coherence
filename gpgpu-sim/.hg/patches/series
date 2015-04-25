@@ -1,0 +1,36 @@
+
+#######################################################
+# Fixes specific to GPGPU-Sim:
+#   These should be pushed first because they fix
+#   underlying issues with GPGPU-Sim that may be
+#   updated in the GPGPU-Sim public repo later
+#######################################################
+
+common/implement_laneid
+common/fix_64-bit_addressing
+common/empty_vec_reg_fix
+common/slct-signed
+common/fix_c_forward_declares
+
+#######################################################
+# Common patches to integrate with gem5:
+#######################################################
+
+common/add_hgignore
+common/add_generated_code
+common/add_version_file
+common/add_gem5_nature
+common/maintain_issue_order_thru_opcoll
+common/remove_gem5_conflicts
+common/fixes_for_compilation
+common/enable_global_fences
+common/build_local_mem_functionality
+common/enable_atomics
+common/use_env_ptxas
+common/rename-network
+
+#######################################################
+# Personal patches:
+#######################################################
+
+personal_patches_delimiter

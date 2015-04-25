@@ -1,0 +1,51 @@
+# HG changeset patch
+# Parent 6b66f31ef90a55cbc8081cb7345da8fc014f8b1a
+# User Joel Hestness <jthestness@gmail.com>
+ruby: Parameterize connect to IO bus
+
+Changes in gem5 (rev. 10116) now automatically connect Ruby sequencers to the
+IO bus, though not all sequencers are associated with IO-capable controllers
+(e.g. GPU, copy engine and page walk cache). Add a parameter to sequencers to
+disable connection to the IO bus. This param must be set to False by sequencers
+instantiated in gem5-gpu protocol config files.
+
+Note: This is a stop-gap fix until further decisions about GPU, copy engine IO
+capabilities are made
+
+diff --git a/configs/ruby/Ruby.py b/configs/ruby/Ruby.py
+--- a/configs/ruby/Ruby.py
++++ b/configs/ruby/Ruby.py
+@@ -223,11 +223,15 @@
+     # Connect the cpu sequencers and the piobus
+     if piobus != None:
+         for cpu_seq in cpu_sequencers:
+-            cpu_seq.pio_master_port = piobus.slave
+-            cpu_seq.mem_master_port = piobus.slave
++            # gem5-gpu: This is parameterized to not connect components that
++            # are unable to handle IO messages. This is a stop-gap fix until
++            # further decisions about GPU, copy engine IO capabilities are made
++            if cpu_seq.connect_to_io:
++                cpu_seq.pio_master_port = piobus.slave
++                cpu_seq.mem_master_port = piobus.slave
+ 
+-            if buildEnv['TARGET_ISA'] == "x86":
+-                cpu_seq.pio_slave_port = piobus.master
++                if buildEnv['TARGET_ISA'] == "x86":
++                    cpu_seq.pio_slave_port = piobus.master
+ 
+     ruby._cpu_ports = cpu_sequencers
+     ruby.num_of_sequencers = len(cpu_sequencers)
+diff --git a/src/mem/ruby/system/Sequencer.py b/src/mem/ruby/system/Sequencer.py
+--- a/src/mem/ruby/system/Sequencer.py
++++ b/src/mem/ruby/system/Sequencer.py
+@@ -66,6 +66,10 @@
+     deadlock_threshold = Param.Cycles(500000,
+         "max outstanding cycles for a request before deadlock/livelock declared")
+     using_network_tester = Param.Bool(False, "")
++    # gem5-gpu: This is parameterized to not connect components that
++    # are unable to handle IO messages. This is a stop-gap fix until
++    # further decisions about GPU, copy engine IO capabilities are made
++    connect_to_io = Param.Bool(True, "Whether to connect to IO")
+ 
+ class DMASequencer(MemObject):
+     type = 'DMASequencer'

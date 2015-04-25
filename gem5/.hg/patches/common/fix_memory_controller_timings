@@ -1,0 +1,17 @@
+# HG changeset patch
+# Parent 1c0bb4c53c5ade3bc166c7863dd2d05cd2096da4
+# User Joel Hestness <hestness@cs.wisc.edu>
+
+diff --git a/src/mem/ruby/structures/RubyMemoryControl.cc b/src/mem/ruby/structures/RubyMemoryControl.cc
+--- a/src/mem/ruby/structures/RubyMemoryControl.cc
++++ b/src/mem/ruby/structures/RubyMemoryControl.cc
+@@ -514,7 +514,8 @@
+             req->m_is_mem_read? 'R':'W',
+             bank, m_event.scheduled() ? 'Y':'N');
+ 
+-    enqueueToDirectory(req, Cycles(m_mem_ctl_latency + m_mem_fixed_delay));
++    enqueueToDirectory(req, Cycles(m_mem_ctl_latency + m_mem_fixed_delay +
++                       m_bank_busy_time + m_basic_bus_busy_time));
+ 
+     m_oldRequest[bank] = 0;
+     markTfaw(rank);

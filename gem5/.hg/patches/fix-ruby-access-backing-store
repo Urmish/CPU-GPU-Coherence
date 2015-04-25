@@ -1,0 +1,260 @@
+# HG changeset patch
+# Parent cd95d4d516599ce24f4273622ba56702a0ccd294
+Ruby: Update backing store option to propagate through to all RubyPorts
+
+Previously, the user would have to manually set access_backing_store=True
+on all RubyPorts (Sequencers) in the config files.
+Now, instead there is one global option that each RubyPort checks on
+initialization.
+
+diff --git a/configs/ruby/Ruby.py b/configs/ruby/Ruby.py
+--- a/configs/ruby/Ruby.py
++++ b/configs/ruby/Ruby.py
+@@ -235,7 +235,8 @@
+ 
+     # Create a backing copy of physical memory in case required
+     if options.access_backing_store:
+-        ruby.phys_mem = SimpleMemory(range=AddrRange(options.mem_size),
++        ruby.access_backing_store = True
++        ruby.phys_mem = SimpleMemory(range=system.mem_ranges[0],
+                                      in_addr_map=False)
+ 
+ def send_evicts(options):
+diff --git a/src/mem/ruby/system/DMASequencer.cc b/src/mem/ruby/system/DMASequencer.cc
+--- a/src/mem/ruby/system/DMASequencer.cc
++++ b/src/mem/ruby/system/DMASequencer.cc
+@@ -40,7 +40,8 @@
+ DMASequencer::DMASequencer(const Params *p)
+     : MemObject(p), m_version(p->version), m_controller(NULL),
+       m_mandatory_q_ptr(NULL), m_usingRubyTester(p->using_ruby_tester),
+-      slave_port(csprintf("%s.slave", name()), this, 0),
++      slave_port(csprintf("%s.slave", name()), this, 0, p->ruby_system,
++                 p->ruby_system->getAccessBackingStore()),
+       drainManager(NULL), system(p->system), retry(false)
+ {
+     assert(m_version != -1);
+@@ -73,8 +74,10 @@
+ }
+ 
+ DMASequencer::MemSlavePort::MemSlavePort(const std::string &_name,
+-    DMASequencer *_port, PortID id)
+-    : QueuedSlavePort(_name, _port, queue, id), queue(*_port, *this)
++    DMASequencer *_port, PortID id, RubySystem* _ruby_system,
++    bool _access_backing_store)
++    : QueuedSlavePort(_name, _port, queue, id), queue(*_port, *this),
++      ruby_system(_ruby_system), access_backing_store(_access_backing_store)
+ {
+     DPRINTF(RubyDma, "Created slave memport on ruby sequencer %s\n", _name);
+ }
+@@ -208,8 +211,14 @@
+     DPRINTF(RubyDma, "Hit callback needs response %d\n", needsResponse);
+ 
+     // turn packet around to go back to requester if response expected
++
++    if (access_backing_store) {
++        ruby_system->getPhysMem()->access(pkt);
++    } else if (needsResponse) {
++        pkt->makeResponse();
++    }
++
+     if (needsResponse) {
+-        pkt->makeResponse();
+         DPRINTF(RubyDma, "Sending packet back over port\n");
+         // send next cycle
+         schedTimingResp(pkt, curTick() + g_system_ptr->clockPeriod());
+diff --git a/src/mem/ruby/system/DMASequencer.hh b/src/mem/ruby/system/DMASequencer.hh
+--- a/src/mem/ruby/system/DMASequencer.hh
++++ b/src/mem/ruby/system/DMASequencer.hh
+@@ -29,8 +29,8 @@
+ #ifndef __MEM_RUBY_SYSTEM_DMASEQUENCER_HH__
+ #define __MEM_RUBY_SYSTEM_DMASEQUENCER_HH__
+ 
++#include <memory>
+ #include <ostream>
+-#include <memory>
+ 
+ #include "mem/protocol/DMASequencerRequestType.hh"
+ #include "mem/protocol/RequestStatus.hh"
+@@ -38,6 +38,7 @@
+ #include "mem/ruby/network/MessageBuffer.hh"
+ #include "mem/ruby/system/System.hh"
+ #include "mem/mem_object.hh"
++#include "mem/simple_mem.hh"
+ #include "mem/tport.hh"
+ #include "params/DMASequencer.hh"
+ 
+@@ -66,10 +67,13 @@
+     {
+       private:
+         SlavePacketQueue queue;
++        RubySystem* ruby_system;
++        bool access_backing_store;
+ 
+       public:
+         MemSlavePort(const std::string &_name, DMASequencer *_port,
+-                     PortID id);
++                     PortID id, RubySystem *_ruby_system,
++                     bool _access_backing_store);
+         void hitCallback(PacketPtr pkt);
+         void evictionCallback(const Address& address);
+ 
+diff --git a/src/mem/ruby/system/RubyPort.cc b/src/mem/ruby/system/RubyPort.cc
+--- a/src/mem/ruby/system/RubyPort.cc
++++ b/src/mem/ruby/system/RubyPort.cc
+@@ -58,7 +58,7 @@
+       pioSlavePort(csprintf("%s.pio-slave-port", name()), this),
+       memMasterPort(csprintf("%s.mem-master-port", name()), this),
+       memSlavePort(csprintf("%s-mem-slave-port", name()), this,
+-          p->ruby_system, p->access_backing_store, -1),
++          p->ruby_system, p->ruby_system->getAccessBackingStore(), -1),
+       gotAddrRanges(p->port_master_connection_count), drainManager(NULL)
+ {
+     assert(m_version != -1);
+@@ -66,7 +66,8 @@
+     // create the slave ports based on the number of connected ports
+     for (size_t i = 0; i < p->port_slave_connection_count; ++i) {
+         slave_ports.push_back(new MemSlavePort(csprintf("%s.slave%d", name(),
+-            i), this, p->ruby_system, p->access_backing_store, i));
++            i), this, p->ruby_system,
++            p->ruby_system->getAccessBackingStore(), i));
+     }
+ 
+     // create the master ports based on the number of connected ports
+@@ -296,40 +297,40 @@
+                 line_address(Address(pkt->getAddr())).getAddress() +
+                 RubySystem::getBlockSizeBytes());
+ 
+-    bool accessSucceeded = false;
+-    bool needsResponse = pkt->needsResponse();
+-
+-    // Do the functional access on ruby memory
+-    if (pkt->isRead()) {
+-        accessSucceeded = ruby_system->functionalRead(pkt);
+-    } else if (pkt->isWrite()) {
+-        accessSucceeded = ruby_system->functionalWrite(pkt);
+-    } else {
+-        panic("Unsupported functional command %s\n", pkt->cmdString());
+-    }
+-
+-    // Unless the requester explicitly said otherwise, generate an error if
+-    // the functional request failed
+-    if (!accessSucceeded && !pkt->suppressFuncError()) {
+-        fatal("Ruby functional %s failed for address %#x\n",
+-              pkt->isWrite() ? "write" : "read", pkt->getAddr());
+-    }
+-
+     if (access_backing_store) {
+         // The attached physmem contains the official version of data.
+         // The following command performs the real functional access.
+         // This line should be removed once Ruby supplies the official version
+         // of data.
+         ruby_system->getPhysMem()->functionalAccess(pkt);
++    } else {
++        bool accessSucceeded = false;
++        bool needsResponse = pkt->needsResponse();
++
++        // Do the functional access on ruby memory
++        if (pkt->isRead()) {
++            accessSucceeded = ruby_system->functionalRead(pkt);
++        } else if (pkt->isWrite()) {
++            accessSucceeded = ruby_system->functionalWrite(pkt);
++        } else {
++            panic("Unsupported functional command %s\n", pkt->cmdString());
++        }
++
++        // Unless the requester explicitly said otherwise, generate an error if
++        // the functional request failed
++        if (!accessSucceeded && !pkt->suppressFuncError()) {
++            fatal("Ruby functional %s failed for address %#x\n",
++                  pkt->isWrite() ? "write" : "read", pkt->getAddr());
++        }
++
++        // turn packet around to go back to requester if response expected
++        if (needsResponse) {
++            pkt->setFunctionalResponseStatus(accessSucceeded);
++        }
++
++        DPRINTF(RubyPort, "Functional access %s!\n",
++                accessSucceeded ? "successful":"failed");
+     }
+-
+-    // turn packet around to go back to requester if response expected
+-    if (needsResponse) {
+-        pkt->setFunctionalResponseStatus(accessSucceeded);
+-    }
+-
+-    DPRINTF(RubyPort, "Functional access %s!\n",
+-            accessSucceeded ? "successful":"failed");
+ }
+ 
+ void
+@@ -491,7 +492,7 @@
+     DPRINTF(RubyPort, "Hit callback needs response %d\n", needsResponse);
+ 
+     if (accessPhysMem) {
+-        ruby_system->getPhysMem()->functionalAccess(pkt);
++        ruby_system->getPhysMem()->access(pkt);
+     } else if (needsResponse) {
+         pkt->makeResponse();
+     }
+diff --git a/src/mem/ruby/system/RubySystem.py b/src/mem/ruby/system/RubySystem.py
+--- a/src/mem/ruby/system/RubySystem.py
++++ b/src/mem/ruby/system/RubySystem.py
+@@ -47,3 +47,6 @@
+     all_instructions = Param.Bool(False, "")
+     num_of_sequencers = Param.Int("")
+     phys_mem = Param.SimpleMemory(NULL, "")
++
++    access_backing_store = Param.Bool(False, "Use phys_mem as the functional \
++        store and only use ruby for timing.")
+diff --git a/src/mem/ruby/system/Sequencer.py b/src/mem/ruby/system/Sequencer.py
+--- a/src/mem/ruby/system/Sequencer.py
++++ b/src/mem/ruby/system/Sequencer.py
+@@ -45,8 +45,6 @@
+     mem_slave_port = SlavePort("Ruby memory port")
+ 
+     using_ruby_tester = Param.Bool(False, "")
+-    access_backing_store = Param.Bool(False,
+-        "should the rubyport atomically update phys_mem")
+     ruby_system = Param.RubySystem("")
+     system = Param.System(Parent.any, "system object")
+     support_data_reqs = Param.Bool(True, "data cache requests supported")
+diff --git a/src/mem/ruby/system/System.cc b/src/mem/ruby/system/System.cc
+--- a/src/mem/ruby/system/System.cc
++++ b/src/mem/ruby/system/System.cc
+@@ -38,6 +38,7 @@
+ #include "mem/ruby/common/Address.hh"
+ #include "mem/ruby/network/Network.hh"
+ #include "mem/ruby/system/System.hh"
++#include "mem/simple_mem.hh"
+ #include "sim/eventq.hh"
+ #include "sim/simulate.hh"
+ 
+@@ -50,7 +51,7 @@
+ uint32_t RubySystem::m_memory_size_bits;
+ 
+ RubySystem::RubySystem(const Params *p)
+-    : ClockedObject(p)
++    : ClockedObject(p), m_access_backing_store(p->access_backing_store)
+ {
+     if (g_system_ptr != NULL)
+         fatal("Only one RubySystem object currently allowed.\n");
+diff --git a/src/mem/ruby/system/System.hh b/src/mem/ruby/system/System.hh
+--- a/src/mem/ruby/system/System.hh
++++ b/src/mem/ruby/system/System.hh
+@@ -76,6 +76,7 @@
+     static uint32_t getMemorySizeBits() { return m_memory_size_bits; }
+ 
+     SimpleMemory *getPhysMem() { return m_phys_mem; }
++    const bool getAccessBackingStore() { return m_access_backing_store; }
+ 
+     // Public Methods
+     Profiler*
+@@ -125,6 +126,7 @@
+     static uint32_t m_block_size_bits;
+     static uint32_t m_memory_size_bits;
+     SimpleMemory *m_phys_mem;
++    const bool m_access_backing_store;
+ 
+     Network* m_network;
+     std::vector<AbstractController *> m_abs_cntrl_vec;

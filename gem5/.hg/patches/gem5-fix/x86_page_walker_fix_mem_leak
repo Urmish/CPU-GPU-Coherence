@@ -1,0 +1,42 @@
+# HG changeset patch
+# Parent 3c73fbc125ad4f7d266c68e2bd0162c59044275c
+# User Joel Hestness <hestness@cs.utexas.edu>
+x86 Pagetable Walker: Delete in-process packets if WalkerState is deleted
+
+
+diff -r 3c73fbc125ad -r 92d161bdd29a src/arch/x86/pagetable_walker.cc
+--- a/src/arch/x86/pagetable_walker.cc	Thu Mar 01 16:22:50 2012 -0600
++++ b/src/arch/x86/pagetable_walker.cc	Thu Mar 01 16:56:54 2012 -0600
+@@ -88,6 +88,7 @@
+         if (!newState->isTiming()) {
+             currStates.pop_front();
+             delete newState;
++            DPRINTF(PageTableWalker, "Start walk failed, deleting state... Walks in progress: %d\n", currStates.size());
+         }
+         return fault;
+     }
+@@ -191,6 +192,13 @@
+         panic("No page table walker port named %s!\n", if_name);
+ }
+ 
++Walker::WalkerState::~WalkerState()
++{
++    if (read) {
++        delete read;
++    }
++}
++
+ void
+ Walker::WalkerState::initState(ThreadContext * _tc,
+         BaseTLB::Mode _mode, bool _isTiming)
+diff -r 3c73fbc125ad -r 92d161bdd29a src/arch/x86/pagetable_walker.hh
+--- a/src/arch/x86/pagetable_walker.hh	Thu Mar 01 16:22:50 2012 -0600
++++ b/src/arch/x86/pagetable_walker.hh	Thu Mar 01 16:56:54 2012 -0600
+@@ -126,6 +126,7 @@
+                         retrying(false), started(false)
+             {
+             }
++            ~WalkerState();
+             void initState(ThreadContext * _tc, BaseTLB::Mode _mode,
+                            bool _isTiming = false);
+             Fault startWalk();

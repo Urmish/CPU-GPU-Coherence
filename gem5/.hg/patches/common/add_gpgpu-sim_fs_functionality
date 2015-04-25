@@ -1,0 +1,129 @@
+# HG changeset patch
+# Parent 14f0196a137db7f7fd933424235234bbe1a4241f
+# User Joel Hestness <hestness@cs.utexas.edu>
+Setup gem5 magic instructions to handle CUDA calls and build out the
+coordination with an updated version of libcuda
+* * *
+This patch should be folded into the full-system GPGPU-Sim functionality patch
+after appropriate implementation of sending GPU ST data into Ruby through
+write requests.
+* * *
+This patch should be folded into the full-system GPGPU-Sim functionality patch
+after appropriate implementation of requesting GPU LD data from Ruby through
+read requests.
+* * *
+Fold into the gpgpu-sim glue patch
+* * *
+Updating to apply patches to changeset 8929: Update configuration files
+to use the new option parser organization
+* * *
+Changes to the stream processor array to be folded into fs_functionality
+* * *
+Merge the instruction memory access in GPGPU-Sim into the gem5 memory
+hierarchy
+* * *
+Fold into merge_inst_memory patch
+* * *
+Fixup uninitialized values in SP array
+* * *
+Fix the issue of multiple buffered writes to the same data. Ordering
+is defined as last received by buffer will be written to line
+* * *
+Add GPU syscall for registering device memory
+* * *
+GPU Magic Instruction: Modify header for pointer handling
+
+For the inclusion of ARM 32-bit, we will want to pass a single pointer
+type to gem5-gpu through the m5_gpu pseudo-instruction. To avoid separate
+handling for 32- vs. 64-bit architectures, use a uint64_t in the m5op header
+rather than the gpusyscall_t* pointer, which can have different sizes.
+
+NOTE: To use this updated function header will require the updated version
+of libcuda, though this change is backward compatible to allow old binaries
+to still execute correctly
+* * *
+Expand m5_gpu Call Width to 85 Functions
+
+To facilitate GPU local memory allocation in the shared virtual address space,
+we need to add driver functions for a CPU thread to communicate about the local
+memory allocation. A patch on gem5-gpu will add two functions (84 and 85),
+which query the simulator to check whether a local memory allocation is
+necessary, and to pass CPU-side allocated memory (i.e. in unified virtual
+address space) to the simulator for the GPU to use.
+
+diff -r 14f0196a137d src/sim/pseudo_inst.cc
+--- a/src/sim/pseudo_inst.cc	Sat Oct 18 12:17:39 2014 -0500
++++ b/src/sim/pseudo_inst.cc	Wed Dec 03 11:01:48 2014 -0600
+@@ -73,6 +73,12 @@
+ #include "sim/system.hh"
+ #include "sim/vptr.hh"
+ 
++//#include "../../gpgpu-sim/src/gem5/gpu_syscalls.hh"
++struct gpusyscall;
++typedef struct gpusyscall gpusyscall_t;
++typedef uint64_t (*cudaFunc_t)(ThreadContext *, gpusyscall_t *);
++extern cudaFunc_t gpgpu_funcs[];
++
+ using namespace std;
+ 
+ using namespace Stats;
+@@ -707,9 +713,14 @@
+ }
+ 
+ void
+-gpu(ThreadContext *tc, uint64_t param1, uint64_t param2)
++gpu(ThreadContext *tc, uint64_t gpusysno, uint64_t call_params)
+ {
+-    panic("gpu pseudo instruction not yet defined");
++    if (gpusysno > 85) {
++        warn("Ignoring gpu syscall %d\n", gpusysno);
++        return;
++    }
++
++    gpgpu_funcs[gpusysno](tc, (gpusyscall_t*)call_params);
+ }
+ 
+ } // namespace PseudoInst
+diff -r 14f0196a137d src/sim/pseudo_inst.hh
+--- a/src/sim/pseudo_inst.hh	Sat Oct 18 12:17:39 2014 -0500
++++ b/src/sim/pseudo_inst.hh	Wed Dec 03 11:01:48 2014 -0600
+@@ -88,7 +88,7 @@
+ void switchcpu(ThreadContext *tc);
+ void workbegin(ThreadContext *tc, uint64_t workid, uint64_t threadid);
+ void workend(ThreadContext *tc, uint64_t workid, uint64_t threadid);
+-void gpu(ThreadContext *tc, uint64_t param1, uint64_t param2);
++void gpu(ThreadContext *tc, uint64_t gpusysno, uint64_t call_params);
+ 
+ } // namespace PseudoInst
+ 
+diff -r 14f0196a137d util/m5/m5.c
+--- a/util/m5/m5.c	Sat Oct 18 12:17:39 2014 -0500
++++ b/util/m5/m5.c	Wed Dec 03 11:01:48 2014 -0600
+@@ -258,11 +258,12 @@
+ void
+ do_gpu(int argc, char *argv[])
+ {
+-    if (argc != 0)
++    if (argc < 1)
+         usage();
+ 
+-    // @TODO: Figure out params that need to be passed
+-    m5_gpu();
++    uint64_t* callno = (uint64_t*)argv[0];
++
++    m5_gpu(*callno, NULL);
+ }
+ 
+ #ifdef linux
+diff -r 14f0196a137d util/m5/m5op.h
+--- a/util/m5/m5op.h	Sat Oct 18 12:17:39 2014 -0500
++++ b/util/m5/m5op.h	Wed Dec 03 11:01:48 2014 -0600
+@@ -61,7 +61,7 @@
+ void m5_panic(void);
+ void m5_work_begin(uint64_t workid, uint64_t threadid);
+ void m5_work_end(uint64_t workid, uint64_t threadid);
+-void m5_gpu();
++void m5_gpu(uint64_t __gpusysno, uint64_t call_params);
+ 
+ // These operations are for critical path annotation
+ void m5a_bsm(char *sm, const void *id, int flags);

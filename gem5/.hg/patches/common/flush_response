@@ -1,0 +1,52 @@
+# HG changeset patch
+# Parent 199ed52a55879b9d9256c3617eb5a7ecd87bfafe
+Mem: Require flush requests to have a response
+* * *
+Ruby: Fix flush response request leak
+
+The flush-response patch makes the FlushReq MemCmd require a response, which
+causes requests to not be deleted in the packet destructor during cooldown of
+the caches before checkpointing. Requests are 72B, so larger systems with
+reasonably large caches leak a lot of memory for each checkpoint taken.
+
+NOTE: This change will be folded into the jason/flush-responses patch.
+
+diff -r 199ed52a5587 src/mem/packet.cc
+--- a/src/mem/packet.cc	Wed Apr 10 09:36:12 2013 -0500
++++ b/src/mem/packet.cc	Sat Apr 20 15:31:12 2013 -0500
+@@ -165,7 +165,11 @@
+     /* PrintReq */
+     { SET2(IsRequest, IsPrint), InvalidCmd, "PrintReq" },
+     /* Flush Request */
+-    { SET3(IsRequest, IsFlush, NeedsExclusive), InvalidCmd, "FlushReq" },
++    { SET4(IsRequest, IsFlush, NeedsExclusive, NeedsResponse), FlushResp,
++           "FlushReq" },
++    /* Flush Response */
++    { SET3(IsResponse, IsFlush, NeedsExclusive), InvalidCmd,
++           "FlushResp" },
+     /* Invalidation Request */
+     { SET3(NeedsExclusive, IsInvalidate, IsRequest),
+       InvalidCmd, "InvalidationReq" },
+diff -r 199ed52a5587 src/mem/packet.hh
+--- a/src/mem/packet.hh	Wed Apr 10 09:36:12 2013 -0500
++++ b/src/mem/packet.hh	Sat Apr 20 15:31:12 2013 -0500
+@@ -127,6 +127,7 @@
+         // Fake simulator-only commands
+         PrintReq,       // Print state matching address
+         FlushReq,      //request for a cache flush
++        FlushResp,
+         InvalidationReq,   // request for address to be invalidated from lsq
+         NUM_MEM_CMDS
+     };
+diff -r 199ed52a5587 src/mem/ruby/system/Sequencer.cc
+--- a/src/mem/ruby/system/Sequencer.cc	Wed Apr 10 09:36:12 2013 -0500
++++ b/src/mem/ruby/system/Sequencer.cc	Sat Apr 20 15:31:12 2013 -0500
+@@ -546,6 +546,8 @@
+         delete pkt;
+         g_system_ptr->m_cache_recorder->enqueueNextFetchRequest();
+     } else if (g_system_ptr->m_cooldown_enabled) {
++        assert(pkt->req);
++        delete pkt->req;
+         delete pkt;
+         g_system_ptr->m_cache_recorder->enqueueNextFlushRequest();
+     } else {

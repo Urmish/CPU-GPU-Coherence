@@ -1,0 +1,148 @@
+# HG changeset patch
+# Parent fee5168c53af7f09dda5f22fe33902dd89441cdc
+# User Joel Hestness <hestness@cs.wisc.edu>
+Fix GPGPU-Sim 64-bit address handling:
+GPGPU-Sim casts all addresses to 32-bit unsigned integers, thus
+truncating any addresses with more bits even though CUDA supports
+64-bit addresses for compute_20+. This patch removes eliminates
+code with improper casts.
+* * *
+Memory Tracing: Fix 32- vs. 64-bit value comparison
+
+By default, GPU-side memory accesses (mem_fetch) set the PC to -1. This value
+was cast to unsigned, which matched the width (32-bit) of the PC new_addr_type
+in GPGPU-Sim. However, gem5-gpu uses 64-bit addresses for the new_addr_type, so
+the PC would be set to 0xfffffffffffffff by default, while the comparison in
+the memory latency tracer used 0x00000000ffffffff. The comparison would not
+match, and the access would be (incorrectly) sent to the tracer. The tracer
+would try to dereference parts of the mem_fetch that were uninitialized,
+causing segfaults. Fix the comparison to be against (new_addr_type)-1.
+
+diff -r fee5168c53af abstract_hardware_model.cc
+--- a/abstract_hardware_model.cc	Thu Sep 25 21:50:20 2014 -0500
++++ b/abstract_hardware_model.cc	Wed Dec 03 11:03:53 2014 -0600
+@@ -321,7 +321,7 @@
+             if( !active(thread) ) 
+                 continue;
+             new_addr_type addr = m_per_scalar_thread[thread].memreqaddr[0];
+-            unsigned block_address = line_size_based_tag_func(addr,cache_block_size);
++            new_addr_type block_address = line_size_based_tag_func(addr,cache_block_size);
+             accesses[block_address].set(thread);
+             unsigned idx = addr-block_address; 
+             for( unsigned i=0; i < data_size; i++ ) 
+@@ -374,7 +374,7 @@
+ 
+             for(unsigned access=0; access<num_accesses; access++) {
+                 new_addr_type addr = m_per_scalar_thread[thread].memreqaddr[access];
+-                unsigned block_address = line_size_based_tag_func(addr,segment_size);
++                new_addr_type block_address = line_size_based_tag_func(addr,segment_size);
+                 unsigned chunk = (addr&127)/32; // which 32-byte chunk within in a 128-byte chunk does this thread access?
+                 transaction_info &info = subwarp_transactions[block_address];
+ 
+diff -r fee5168c53af abstract_hardware_model.h
+--- a/abstract_hardware_model.h	Thu Sep 25 21:50:20 2014 -0500
++++ b/abstract_hardware_model.h	Wed Dec 03 11:03:53 2014 -0600
+@@ -64,8 +64,8 @@
+ #include <stdio.h>
+ 
+ typedef unsigned long long new_addr_type;
+-typedef unsigned address_type;
+-typedef unsigned addr_t;
++typedef new_addr_type address_type;
++typedef new_addr_type addr_t;
+ 
+ // the following are operations the timing model can see 
+ 
+@@ -715,7 +715,7 @@
+     bool valid() const { return m_decoded; }
+     virtual void print_insn( FILE *fp ) const 
+     {
+-        fprintf(fp," [inst @ pc=0x%04x] ", pc );
++        fprintf(fp," [inst @ pc=0x%04llx] ", pc );
+     }
+     bool is_load() const { return (op == LOAD_OP || memory_op == memory_load); }
+     bool is_store() const { return (op == STORE_OP || memory_op == memory_store); }
+@@ -875,7 +875,7 @@
+     // accessors
+     virtual void print_insn(FILE *fp) const 
+     {
+-        fprintf(fp," [inst @ pc=0x%04x] ", pc );
++        fprintf(fp," [inst @ pc=0x%04llx] ", pc );
+         for (int i=(int)m_config->warp_size-1; i>=0; i--)
+             fprintf(fp, "%c", ((m_warp_active_mask[i])?'1':'0') );
+     }
+diff -r fee5168c53af cuda-sim/instructions.cc
+--- a/cuda-sim/instructions.cc	Thu Sep 25 21:50:20 2014 -0500
++++ b/cuda-sim/instructions.cc	Wed Dec 03 11:03:53 2014 -0600
+@@ -2199,7 +2199,7 @@
+    unsigned vector_spec = pI->get_vector();
+ 
+    memory_space *mem = NULL;
+-   addr_t addr = src1_data.u32;
++   addr_t addr = src1_data.u64;
+ 
+    decode_space(space,thread,src1,mem,addr);
+ 
+@@ -3560,7 +3560,7 @@
+    unsigned vector_spec = pI->get_vector();
+ 
+    memory_space *mem = NULL;
+-   addr_t addr = addr_reg.u32;
++   addr_t addr = addr_reg.u64;
+ 
+    decode_space(space,thread,dst,mem,addr);
+ 
+@@ -3803,7 +3803,7 @@
+    float x_f32,  y_f32;
+    size_t size;
+    int t;
+-   unsigned tex_array_base;
++   unsigned long long tex_array_base;
+    unsigned int width = 0, height = 0;
+    int x = 0;
+    int y = 0;
+@@ -3811,7 +3811,7 @@
+    float alpha=0, beta=0;
+ 
+    type_info_key::type_decode(to_type,size,t);
+-   tex_array_base = cuArray->devPtr32;
++   tex_array_base = (unsigned long long)cuArray->devPtr;
+ 
+    switch (dimension) {
+    case GEOM_MODIFIER_1D:
+diff -r fee5168c53af cuda-sim/ptx_parser.cc
+--- a/cuda-sim/ptx_parser.cc	Thu Sep 25 21:50:20 2014 -0500
++++ b/cuda-sim/ptx_parser.cc	Wed Dec 03 11:03:53 2014 -0600
+@@ -357,7 +357,7 @@
+    int basic_type;
+    int regnum;
+    size_t num_bits;
+-   unsigned addr_pad;
++   address_type addr_pad;
+    new_addr_type addr;
+    ti.type_decode(num_bits,basic_type);
+ 
+diff -r fee5168c53af gpgpu-sim/mem_latency_stat.cc
+--- a/gpgpu-sim/mem_latency_stat.cc	Thu Sep 25 21:50:20 2014 -0500
++++ b/gpgpu-sim/mem_latency_stat.cc	Wed Dec 03 11:03:53 2014 -0600
+@@ -182,7 +182,7 @@
+       }
+       mem_access_type_stats[mf->get_access_type()][dram_id][bank]++;
+    }
+-   if (mf->get_pc() != (unsigned)-1) 
++   if (mf->get_pc() != (new_addr_type)-1)
+       ptx_file_line_stats_add_dram_traffic(mf->get_pc(), mf->get_data_size());
+ }
+ 
+diff -r fee5168c53af gpgpu-sim/shader.h
+--- a/gpgpu-sim/shader.h	Thu Sep 25 21:50:20 2014 -0500
++++ b/gpgpu-sim/shader.h	Wed Dec 03 11:03:53 2014 -0600
+@@ -914,7 +914,7 @@
+ };
+ 
+ struct insn_latency_info {
+-   unsigned pc;
++   address_type pc;
+    unsigned long latency;
+ };
+ 

@@ -1,0 +1,286 @@
+# HG changeset patch
+# Parent 6a482918f0b09b1e581ae1c785bcc1e82eb8f366
+# User Joel Hestness <hestness@cs.utexas.edu>
+Add the x86 magic instruction to do a callback into gem5 when a gpu call
+is made by the application that is being run
+* * *
+Fixed M5 magic instruction m5_gpu to be serializing
+* * *
+ARM ISA: Add m5_gpu magic instruction
+
+Submitter: Jieming Yin <bjm419@gmail.com>
+
+In order to add gem5-gpu ARM support, the ARM ISA needs to include the m5_gpu
+magic instruction. This patch adds that instruction including passing memory
+addresses as 64-bit rather than 32-bit as the underlying architecture.
+* * *
+m5ops: Add ARM32 m5_gpu interface function
+
+Submitter: Jieming Yin <bjm419@gmail.com>
+
+Add the m5 utils function to intercept m5_gpu calls under ARM32. This is a
+required step before building ARM32 CPU functionality for gem5-gpu. NOTE:
+other patches are required for the ARM decoder to know how to handle m5_gpu
+as a pseudo-instruction.
+
+diff --git a/src/arch/arm/isa/formats/m5ops.isa b/src/arch/arm/isa/formats/m5ops.isa
+--- a/src/arch/arm/isa/formats/m5ops.isa
++++ b/src/arch/arm/isa/formats/m5ops.isa
+@@ -68,6 +68,7 @@
+             case 0x54: return new M5panic(machInst);
+             case 0x5a: return new M5workbegin(machInst);
+             case 0x5b: return new M5workend(machInst);
++            case 0x5c: return new M5gpu(machInst);
+         }
+    }
+    '''
+diff --git a/src/arch/arm/isa/insts/m5ops.isa b/src/arch/arm/isa/insts/m5ops.isa
+--- a/src/arch/arm/isa/insts/m5ops.isa
++++ b/src/arch/arm/isa/insts/m5ops.isa
+@@ -563,4 +563,18 @@
+     header_output += BasicDeclare.subst(m5workendIop)
+     decoder_output += BasicConstructor.subst(m5workendIop)
+     exec_output += PredOpExecute.subst(m5workendIop)
++
++    m5gpuCode = '''PseudoInst::gpu(
++                        xc->tcBase(),
++                        join32to64(R1, R0),
++                        join32to64(R3, R2)
++                    );'''
++    m5gpuIop = InstObjParams("m5gpu", "M5gpu", "PredOp",
++                     { "code": m5gpuCode,
++                       "predicate_test": predicateTest },
++                       ["IsNonSpeculative", "IsSerializeAfter"])
++    header_output += BasicDeclare.subst(m5gpuIop)
++    decoder_output += BasicConstructor.subst(m5gpuIop)
++    exec_output += PredOpExecute.subst(m5gpuIop)
++
+ }};
+diff --git a/src/arch/x86/isa/decoder/two_byte_opcodes.isa b/src/arch/x86/isa/decoder/two_byte_opcodes.isa
+--- a/src/arch/x86/isa/decoder/two_byte_opcodes.isa
++++ b/src/arch/x86/isa/decoder/two_byte_opcodes.isa
+@@ -227,6 +227,9 @@
+                     0x5b: m5_work_end({{
+                         PseudoInst::workend(xc->tcBase(), Rdi, Rsi);
+                     }}, IsNonSpeculative);
++                    0x5c: m5_gpu({{
++                            PseudoInst::gpu(xc->tcBase(), Rdi, Rsi);
++                        }}, IsNonSpeculative, IsSerializeAfter);
+                     default: Inst::UD2();
+                 }
+             }
+diff --git a/src/sim/pseudo_inst.cc b/src/sim/pseudo_inst.cc
+--- a/src/sim/pseudo_inst.cc
++++ b/src/sim/pseudo_inst.cc
+@@ -717,4 +717,10 @@
+     }
+ }
+ 
++void
++gpu(ThreadContext *tc, uint64_t param1, uint64_t param2)
++{
++    panic("gpu pseudo instruction not yet defined");
++}
++
+ } // namespace PseudoInst
+diff --git a/src/sim/pseudo_inst.hh b/src/sim/pseudo_inst.hh
+--- a/src/sim/pseudo_inst.hh
++++ b/src/sim/pseudo_inst.hh
+@@ -88,6 +88,7 @@
+ void switchcpu(ThreadContext *tc);
+ void workbegin(ThreadContext *tc, uint64_t workid, uint64_t threadid);
+ void workend(ThreadContext *tc, uint64_t workid, uint64_t threadid);
++void gpu(ThreadContext *tc, uint64_t param1, uint64_t param2);
+ 
+ } // namespace PseudoInst
+ 
+diff --git a/util/m5/Makefile.x86 b/util/m5/Makefile.x86
+--- a/util/m5/Makefile.x86
++++ b/util/m5/Makefile.x86
+@@ -32,6 +32,7 @@
+ LD=ld
+ 
+ CFLAGS=-O2 -DM5OP_ADDR=0xFFFF0000
++LDFLAGS=-static
+ OBJS=m5.o m5op_x86.o
+ 
+ all: m5
+@@ -43,7 +44,7 @@
+ 	$(CC)  $(CFLAGS) -o $@ -c $<
+ 
+ m5: $(OBJS)
+-	$(CC) -o $@ $(OBJS)
++	$(CC) $(LDFLAGS) -o $@ $(OBJS)
+ 
+ clean:
+ 	rm -f *.o m5
+diff --git a/util/m5/m5.c b/util/m5/m5.c
+--- a/util/m5/m5.c
++++ b/util/m5/m5.c
+@@ -101,32 +101,32 @@
+     }
+ }
+ 
+-int
+-write_file(const char *filename)
+-{
+-    fprintf(stderr, "opening %s\n", filename);
+-    int src_fid = open(filename, O_RDONLY);
+-
+-    if (src_fid < 0) {
+-        fprintf(stderr, "error opening %s\n", filename);
+-        return;
+-    }
+-
+-    char buf[256*1024];
+-    int offset = 0;
+-    int len;
+-    int bytes = 0;
+-
+-    memset(buf, 0, sizeof(buf));
+-
+-    while ((len = read(src_fid, buf, sizeof(buf))) > 0) {
+-        bytes += m5_writefile(buf, len, offset, filename);
+-        offset += len;
+-    }
+-    fprintf(stderr, "written %d bytes\n", bytes);
+-
+-    close(src_fid);
+-}
++//int
++//write_file(const char *filename)
++//{
++//    fprintf(stderr, "opening %s\n", filename);
++//    int src_fid = open(filename, O_RDONLY);
++//
++//    if (src_fid < 0) {
++//        fprintf(stderr, "error opening %s\n", filename);
++//        return;
++//    }
++//
++//    char buf[256*1024];
++//    int offset = 0;
++//    int len;
++//    int bytes = 0;
++//
++//    memset(buf, 0, sizeof(buf));
++//
++//    while ((len = read(src_fid, buf, sizeof(buf))) > 0) {
++//        bytes += m5_writefile(buf, len, offset, filename);
++//        offset += len;
++//    }
++//    fprintf(stderr, "written %d bytes\n", bytes);
++//
++//    close(src_fid);
++//}
+ 
+ void
+ do_exit(int argc, char *argv[])
+@@ -183,16 +183,16 @@
+     read_file(STDOUT_FILENO);
+ }
+ 
+-void
+-do_write_file(int argc, char *argv[])
+-{
+-    if (argc != 1)
+-        usage();
+-
+-    const char *filename = argv[0];
+-
+-    write_file(filename);
+-}
++//void
++//do_write_file(int argc, char *argv[])
++//{
++//    if (argc != 1)
++//        usage();
++//
++//    const char *filename = argv[0];
++//
++//    write_file(filename);
++//}
+ 
+ void
+ do_exec_file(int argc, char *argv[])
+@@ -255,6 +255,16 @@
+            (param >> 12) & 0xfff, (param >> 0) & 0xfff);
+ }
+ 
++void
++do_gpu(int argc, char *argv[])
++{
++    if (argc != 0)
++        usage();
++
++    // @TODO: Figure out params that need to be passed
++    m5_gpu();
++}
++
+ #ifdef linux
+ void
+ do_pin(int argc, char *argv[])
+@@ -294,12 +304,13 @@
+     { "dumpstats",      do_dump_stats,       "[delay [period]]" },
+     { "dumpresetstats", do_dump_reset_stats, "[delay [period]]" },
+     { "readfile",       do_read_file,        "" },
+-    { "writefile",      do_write_file,       "<filename>" },
++//    { "writefile",      do_write_file,       "<filename>" },
+     { "execfile",       do_exec_file,        "" },
+     { "checkpoint",     do_checkpoint,       "[delay [period]]" },
+     { "loadsymbol",     do_load_symbol,      "<address> <symbol>" },
+     { "initparam",      do_initparam,        "" },
+     { "sw99param",      do_sw99param,        "" },
++    { "gpu",            do_gpu,              "" },
+ #ifdef linux
+     { "pin",            do_pin,              "<cpu> <program> [args ...]" }
+ #endif
+diff --git a/util/m5/m5op.h b/util/m5/m5op.h
+--- a/util/m5/m5op.h
++++ b/util/m5/m5op.h
+@@ -54,13 +54,14 @@
+ void m5_dump_stats(uint64_t ns_delay, uint64_t ns_period);
+ void m5_dumpreset_stats(uint64_t ns_delay, uint64_t ns_period);
+ uint64_t m5_readfile(void *buffer, uint64_t len, uint64_t offset);
+-uint64_t m5_writefile(void *buffer, uint64_t len, uint64_t offset, const char *filename);
++//uint64_t m5_writefile(void *buffer, uint64_t len, uint64_t offset, const char *filename);
+ void m5_debugbreak(void);
+ void m5_switchcpu(void);
+ void m5_addsymbol(uint64_t addr, char *symbol);
+ void m5_panic(void);
+ void m5_work_begin(uint64_t workid, uint64_t threadid);
+ void m5_work_end(uint64_t workid, uint64_t threadid);
++void m5_gpu();
+ 
+ // These operations are for critical path annotation
+ void m5a_bsm(char *sm, const void *id, int flags);
+diff --git a/util/m5/m5op_arm.S b/util/m5/m5op_arm.S
+--- a/util/m5/m5op_arm.S
++++ b/util/m5/m5op_arm.S
+@@ -89,6 +89,7 @@
+ SIMPLE_OP(m5_panic, panic_func, 0)
+ SIMPLE_OP(m5_work_begin, work_begin_func, 0)
+ SIMPLE_OP(m5_work_end, work_end_func, 0)
++SIMPLE_OP(m5_gpu, gpu_func, 0)
+ 
+ SIMPLE_OP(m5a_bsm, annotate_func, an_bsm)
+ SIMPLE_OP(m5a_esm, annotate_func, an_esm)
+diff --git a/util/m5/m5op_x86.S b/util/m5/m5op_x86.S
+--- a/util/m5/m5op_x86.S
++++ b/util/m5/m5op_x86.S
+@@ -83,3 +83,4 @@
+ TWO_BYTE_OP(m5_panic, panic_func)
+ TWO_BYTE_OP(m5_work_begin, work_begin_func)
+ TWO_BYTE_OP(m5_work_end, work_end_func)
++TWO_BYTE_OP(m5_gpu, gpu_func)
+diff --git a/util/m5/m5ops.h b/util/m5/m5ops.h
+--- a/util/m5/m5ops.h
++++ b/util/m5/m5ops.h
+@@ -61,6 +61,7 @@
+ 
+ #define work_begin_func         0x5a
+ #define work_end_func           0x5b
++#define gpu_func                0x5c
+ 
+ #define syscall_func            0x60 // Reserved for user
+ #define pagefault_func          0x61 // Reserved for user

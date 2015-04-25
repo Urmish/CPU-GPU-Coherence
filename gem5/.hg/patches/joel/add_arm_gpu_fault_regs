@@ -1,0 +1,61 @@
+# HG changeset patch
+# Parent 147988d069efc0c21e7d28a1095ced9ce04d8191
+# User Joel Hestness <jthestness@gmail.com>
+ARM: Add GPU fault registers
+
+These are required to get gem5-gpu to compile and still have mostly
+ISA-agnostic code in the ShaderMMU.
+
+diff --git a/src/arch/arm/miscregs.hh b/src/arch/arm/miscregs.hh
+--- a/src/arch/arm/miscregs.hh
++++ b/src/arch/arm/miscregs.hh
+@@ -691,7 +691,12 @@
+         MISCREG_A64_UNIMPL,             // 603
+         MISCREG_UNKNOWN,                // 604
+ 
+-        NUM_MISCREGS                    // 605
++        // GPU fault register
++        MISCREG_GPU_FAULT,              // 605
++        MISCREG_GPU_FAULTADDR,          // 606
++        MISCREG_GPU_FAULTCODE,          // 607
++
++        NUM_MISCREGS                    // 608
+     };
+ 
+     enum MiscRegInfo {
+@@ -1368,7 +1373,12 @@
+         "cp14_unimpl",
+         "cp15_unimpl",
+         "a64_unimpl",
+-        "unknown"
++        "unknown",
++
++        // GPU fault registers
++        "gpuf",
++        "gpufaddr",
++        "gpufcode"
+     };
+ 
+     static_assert(sizeof(miscRegName) / sizeof(*miscRegName) == NUM_MISCREGS,
+@@ -1834,6 +1844,21 @@
+         Bitfield<9, 0> res1_9_0_el2;
+    EndBitUnion(CPTR)
+ 
++   /**
++   * Register for active GPU page fault
++   * May need to increase to more bits if more than 1 GPU is in the system
++   */
++   BitUnion64(GPUFaultReg)
++      Bitfield<0> inFault;
++   EndBitUnion(GPUFaultReg)
++
++   BitUnion64(GPUFaultCode)
++      Bitfield<0> present;
++      Bitfield<1> write;
++      Bitfield<2> user;
++      Bitfield<3> reserved;
++      Bitfield<4> fetch;
++   EndBitUnion(GPUFaultCode)
+ 
+     // Checks read access permissions to coproc. registers
+     bool canReadCoprocReg(MiscRegIndex reg, SCR scr, CPSR cpsr,

@@ -1,0 +1,1655 @@
+# HG changeset patch
+# Parent df22d063e089df837a19a8a801b6a179b20d276d
+# User Joel Hestness <hestness@cs.wisc.edu>
+Remove all code conflicts with gem5
+* * *
+Fix conflicts between gem5 and GPGPU-Sim code
+* * *
+Fixes to allow GPGPU-Sim to compile in the gem5 enviornment
+
+Errors arise during compile because GPGPU-Sim uses many C++0x
+semantics, which need to be removed in order for the whole
+code base to build using gem5 environment
+
+diff --git a/cuda-sim/cuda-math.h b/cuda-sim/cuda-math.h
+--- a/cuda-sim/cuda-math.h
++++ b/cuda-sim/cuda-math.h
+@@ -345,7 +345,7 @@
+ 
+ #undef __CUDACC__
+ #define __CUDA_INTERNAL_COMPILATION__
+-#include <math_functions.h>
++//#include <math_functions.h>
+ #undef __CUDA_INTERNAL_COMPILATION__
+ #undef __attribute__
+ 
+diff --git a/gpgpu-sim/dram.h b/gpgpu-sim/dram.h
+--- a/gpgpu-sim/dram.h
++++ b/gpgpu-sim/dram.h
+@@ -179,7 +179,7 @@
+    unsigned int bwutil_partial;
+ 
+    struct memory_stats_t *m_stats;
+-   class Stats* mrqq_Dist; //memory request queue inside DRAM  
++   class Stats_gpgpu* mrqq_Dist; //memory request queue inside DRAM
+ 
+    friend class frfcfs_scheduler;
+ };
+diff --git a/gpgpu-sim/gpu-sim.cc b/gpgpu-sim/gpu-sim.cc
+--- a/gpgpu-sim/gpu-sim.cc
++++ b/gpgpu-sim/gpu-sim.cc
+@@ -423,18 +423,18 @@
+                           &g_visualizer_zlevel, "Compression level of the visualizer output log (0=no comp, 9=highest)",
+                           "6");
+     option_parser_register(opp, "-trace_enabled", OPT_BOOL, 
+-                          &Trace::enabled, "Turn on traces",
++                          &Trace_gpgpu::enabled, "Turn on traces",
+                           "0");
+     option_parser_register(opp, "-trace_components", OPT_CSTR, 
+-                          &Trace::config_str, "comma seperated list of traces to enable. "
++                          &Trace_gpgpu::config_str, "comma seperated list of traces to enable. "
+                           "Complete list found in trace_streams.tup. "
+                           "Default none",
+                           "none");
+     option_parser_register(opp, "-trace_sampling_core", OPT_INT32, 
+-                          &Trace::sampling_core, "The core which is printed using CORE_DPRINTF. Default 0",
++                          &Trace_gpgpu::sampling_core, "The core which is printed using CORE_DPRINTF. Default 0",
+                           "0");
+     option_parser_register(opp, "-trace_sampling_memory_partition", OPT_INT32, 
+-                          &Trace::sampling_memory_partition, "The memory partition which is printed using MEMPART_DPRINTF. Default -1 (i.e. all)",
++                          &Trace_gpgpu::sampling_memory_partition, "The memory partition which is printed using MEMPART_DPRINTF. Default -1 (i.e. all)",
+                           "-1");
+    ptx_file_line_stats_options(opp);
+ }
+diff --git a/gpgpu-sim/gpu-sim.h b/gpgpu-sim/gpu-sim.h
+--- a/gpgpu-sim/gpu-sim.h
++++ b/gpgpu-sim/gpu-sim.h
+@@ -290,7 +290,7 @@
+         m_memory_config.init();
+         init_clock_domains(); 
+         power_config::init();
+-        Trace::init();
++        Trace_gpgpu::init();
+ 
+ 
+         // initialize file name if it is not set 
+diff --git a/gpgpu-sim/histogram.cc b/gpgpu-sim/histogram.cc
+--- a/gpgpu-sim/histogram.cc
++++ b/gpgpu-sim/histogram.cc
+@@ -27,6 +27,7 @@
+ 
+ #include "histogram.h"
+ 
++#include <stdio.h>
+ #include <assert.h>
+ 
+ binned_histogram::binned_histogram (std::string name, int nbins, int* bins) 
+diff --git a/gpgpu-sim/l2cache_trace.h b/gpgpu-sim/l2cache_trace.h
+--- a/gpgpu-sim/l2cache_trace.h
++++ b/gpgpu-sim/l2cache_trace.h
+@@ -32,7 +32,7 @@
+ #if TRACING_ON
+ 
+ #define MEMPART_PRINT_STR SIM_PRINT_STR " %d - "
+-#define MEMPART_DTRACE(x)  ( DTRACE(x) && (Trace::sampling_memory_partition == -1 || Trace::sampling_memory_partition == (int)get_mpid()) )
++#define MEMPART_DTRACE(x)  ( GPGPUSIM_DTRACE(x) && (Trace_gpgpu::sampling_memory_partition == -1 || Trace_gpgpu::sampling_memory_partition == (int)get_mpid()) )
+ 
+ // Intended to be called from inside components of a memory partition
+ // Depends on a get_mpid() function
+@@ -40,7 +40,7 @@
+     if (MEMPART_DTRACE(MEMORY_PARTITION_UNIT)) {\
+         printf( MEMPART_PRINT_STR,\
+                 gpu_sim_cycle + gpu_tot_sim_cycle,\
+-                Trace::trace_streams_str[Trace::MEMORY_PARTITION_UNIT],\
++                Trace_gpgpu::trace_streams_str[Trace_gpgpu::MEMORY_PARTITION_UNIT],\
+                 get_mpid() );\
+         printf(__VA_ARGS__);\
+     }\
+diff --git a/gpgpu-sim/shader_trace.h b/gpgpu-sim/shader_trace.h
+--- a/gpgpu-sim/shader_trace.h
++++ b/gpgpu-sim/shader_trace.h
+@@ -36,8 +36,8 @@
+ 
+ #define SHADER_PRINT_STR SIM_PRINT_STR "Core %d - "
+ #define SCHED_PRINT_STR SHADER_PRINT_STR "Scheduler %d - "
+-#define SHADER_DTRACE(x)  (DTRACE(x) && (Trace::sampling_core == get_sid()\
+-                                         || Trace::sampling_core == -1))
++#define SHADER_DTRACE(x)  (GPGPUSIM_DTRACE(x) && (Trace_gpgpu::sampling_core == get_sid()\
++                                         || Trace_gpgpu::sampling_core == -1))
+ 
+ // Intended to be called from inside components of a shader core.
+ // Depends on a get_sid() function
+@@ -45,7 +45,7 @@
+     if (SHADER_DTRACE(x)) {\
+         printf( SHADER_PRINT_STR,\
+                 gpu_sim_cycle + gpu_tot_sim_cycle,\
+-                Trace::trace_streams_str[Trace::x],\
++                Trace_gpgpu::trace_streams_str[Trace_gpgpu::x],\
+                 get_sid() );\
+         printf(__VA_ARGS__);\
+     }\
+@@ -57,7 +57,7 @@
+     if (SHADER_DTRACE(WARP_SCHEDULER)) {\
+         printf( SCHED_PRINT_STR,\
+                 gpu_sim_cycle + gpu_tot_sim_cycle,\
+-                Trace::trace_streams_str[Trace::WARP_SCHEDULER],\
++                Trace_gpgpu::trace_streams_str[Trace_gpgpu::WARP_SCHEDULER],\
+                 get_sid(),\
+                 m_id );\
+         printf(__VA_ARGS__);\
+diff --git a/intersim/arbiter.cpp b/intersim/arbiter.cpp
+--- a/intersim/arbiter.cpp
++++ b/intersim/arbiter.cpp
+@@ -4,23 +4,23 @@
+ #include "arbiter.hpp"
+ 
+ 
+-Arbiter::Arbiter( const Configuration &,
++Arbiter_gpgpu::Arbiter_gpgpu( const Configuration &,
+                   Module *parent, const string& name,
+                   int inputs )
+ : Module( parent, name ), _inputs( inputs )
+ {
+ }
+ 
+-Arbiter::~Arbiter( )
++Arbiter_gpgpu::~Arbiter_gpgpu( )
+ {
+ }
+ 
+-void Arbiter::Clear( )
++void Arbiter_gpgpu::Clear( )
+ {
+    _requests.clear( );
+ }
+ 
+-void Arbiter::AddRequest( int in, int label, int pri )
++void Arbiter_gpgpu::AddRequest( int in, int label, int pri )
+ {
+    sRequest r;
+    list<sRequest>::iterator insert_point;
+@@ -58,7 +58,7 @@
+    }
+ }
+ 
+-void Arbiter::RemoveRequest( int in, int label )
++void Arbiter_gpgpu::RemoveRequest( int in, int label )
+ {
+    list<sRequest>::iterator erase_point;
+ 
+@@ -72,7 +72,7 @@
+    _requests.erase( erase_point );
+ }
+ 
+-int Arbiter::Match( ) const
++int Arbiter_gpgpu::Match( ) const
+ {
+    return _match;
+ }
+@@ -81,19 +81,19 @@
+ // PriorityArbiter
+ //==================================================
+ 
+-PriorityArbiter::PriorityArbiter( const Configuration &config,
++PriorityArbiter_gpgpu::PriorityArbiter_gpgpu( const Configuration &config,
+                                   Module *parent, const string& name,
+                                   int inputs ) 
+-: Arbiter( config, parent, name, inputs )
++: Arbiter_gpgpu( config, parent, name, inputs )
+ {
+    _rr_ptr = 0;
+ }
+ 
+-PriorityArbiter::~PriorityArbiter( )
++PriorityArbiter_gpgpu::~PriorityArbiter_gpgpu( )
+ {
+ }
+ 
+-void PriorityArbiter::Arbitrate( )
++void PriorityArbiter_gpgpu::Arbitrate( )
+ {
+    list<sRequest>::iterator p;
+ 
+diff --git a/intersim/arbiter.hpp b/intersim/arbiter.hpp
+--- a/intersim/arbiter.hpp
++++ b/intersim/arbiter.hpp
+@@ -6,7 +6,7 @@
+ #include "module.hpp"
+ #include "config_utils.hpp"
+ 
+-class Arbiter : public Module {
++class Arbiter_gpgpu : public Module {
+ protected:
+    const int _inputs;
+ 
+@@ -21,10 +21,10 @@
+    int _match;
+ 
+ public:
+-   Arbiter( const Configuration &,
++   Arbiter_gpgpu( const Configuration &,
+             Module *parent, const string& name,
+             int inputs );
+-   virtual ~Arbiter( );
++   virtual ~Arbiter_gpgpu( );
+ 
+    void Clear( );
+ 
+@@ -36,14 +36,14 @@
+    int Match( ) const;
+ };
+ 
+-class PriorityArbiter : public Arbiter {
++class PriorityArbiter_gpgpu : public Arbiter_gpgpu {
+    int _rr_ptr;
+ 
+ public:
+-   PriorityArbiter( const Configuration &config,
++   PriorityArbiter_gpgpu( const Configuration &config,
+                     Module *parent, const string& name,
+                     int inputs );
+-   ~PriorityArbiter( );
++   ~PriorityArbiter_gpgpu( );
+ 
+    void Arbitrate( );
+ };
+diff --git a/intersim/event_router.cpp b/intersim/event_router.cpp
+--- a/intersim/event_router.cpp
++++ b/intersim/event_router.cpp
+@@ -10,7 +10,7 @@
+ EventRouter::EventRouter( const Configuration& config,
+                           Module *parent, string name, int id,
+                           int inputs, int outputs )
+-: Router( config,
++: Router_gpgpu( config,
+           parent, name,
+           id,
+           inputs, outputs )
+@@ -62,21 +62,21 @@
+ 
+    // Alloc arbiters
+ 
+-   _arrival_arbiter = new PriorityArbiter * [_outputs];
++   _arrival_arbiter = new PriorityArbiter_gpgpu * [_outputs];
+ 
+    for ( int o = 0; o < _outputs; ++o ) {
+       module_name << "arrival_arb_output" << o;
+       _arrival_arbiter[o] = 
+-      new PriorityArbiter( config, this, module_name.str( ), _inputs );
++      new PriorityArbiter_gpgpu( config, this, module_name.str( ), _inputs );
+       module_name.seekp( 0, ios::beg );
+    }
+ 
+-   _transport_arbiter = new PriorityArbiter * [_inputs];
++   _transport_arbiter = new PriorityArbiter_gpgpu * [_inputs];
+ 
+    for ( int i = 0; i < _inputs; ++i ) {
+       module_name << "transport_arb_input" << i;
+       _transport_arbiter[i] = 
+-      new PriorityArbiter( config, this, module_name.str( ), _outputs );
++      new PriorityArbiter_gpgpu( config, this, module_name.str( ), _outputs );
+       module_name.seekp( 0, ios::beg );
+    }
+ 
+diff --git a/intersim/event_router.hpp b/intersim/event_router.hpp
+--- a/intersim/event_router.hpp
++++ b/intersim/event_router.hpp
+@@ -68,7 +68,7 @@
+    void SetInputVC( int vc, int in_vc );
+ };
+ 
+-class EventRouter : public Router {
++class EventRouter : public Router_gpgpu {
+    int _vcs;
+    int _vc_size;
+ 
+@@ -103,7 +103,7 @@
+ 
+    PipelineFIFO<tArrivalEvent> *_arrival_pipe;
+    queue<tArrivalEvent *>      *_arrival_queue;
+-   PriorityArbiter             **_arrival_arbiter;
++   PriorityArbiter_gpgpu             **_arrival_arbiter;
+ 
+    struct tTransportEvent {
+       int  input;
+@@ -115,7 +115,7 @@
+    };
+ 
+    queue<tTransportEvent *> *_transport_queue;
+-   PriorityArbiter          **_transport_arbiter;
++   PriorityArbiter_gpgpu          **_transport_arbiter;
+ 
+    bool *_transport_free;
+    int  *_transport_match;
+diff --git a/intersim/examples/fly26_age b/intersim/examples/fly26_age
+--- a/intersim/examples/fly26_age
++++ b/intersim/examples/fly26_age
+@@ -15,7 +15,7 @@
+ 
+ wait_for_tail_credit = 1;
+ 
+-// Router architecture
++// Router_gpgpu architecture
+ 
+ vc_allocator = select;
+ sw_allocator = select;
+diff --git a/intersim/examples/mesh b/intersim/examples/mesh
+--- a/intersim/examples/mesh
++++ b/intersim/examples/mesh
+@@ -15,7 +15,7 @@
+ 
+ wait_for_tail_credit = 1;
+ 
+-// Router architecture
++// Router_gpgpu architecture
+ 
+ vc_allocator = islip;
+ sw_allocator = islip;
+diff --git a/intersim/examples/mesh2 b/intersim/examples/mesh2
+--- a/intersim/examples/mesh2
++++ b/intersim/examples/mesh2
+@@ -15,7 +15,7 @@
+ 
+ wait_for_tail_credit = 1;
+ 
+-// Router architecture
++// Router_gpgpu architecture
+ 
+ vc_allocator = islip;
+ sw_allocator = islip;
+diff --git a/intersim/examples/mesh4 b/intersim/examples/mesh4
+--- a/intersim/examples/mesh4
++++ b/intersim/examples/mesh4
+@@ -15,7 +15,7 @@
+ 
+ wait_for_tail_credit = 1;
+ 
+-// Router architecture
++// Router_gpgpu architecture
+ 
+ vc_allocator = islip;
+ sw_allocator = islip;
+diff --git a/intersim/examples/mesh88_lat b/intersim/examples/mesh88_lat
+--- a/intersim/examples/mesh88_lat
++++ b/intersim/examples/mesh88_lat
+@@ -15,7 +15,7 @@
+ 
+ wait_for_tail_credit = 1;
+ 
+-// Router architecture
++// Router_gpgpu architecture
+ 
+ vc_allocator = islip;
+ sw_allocator = islip;
+diff --git a/intersim/fly.cpp b/intersim/fly.cpp
+--- a/intersim/fly.cpp
++++ b/intersim/fly.cpp
+@@ -8,7 +8,7 @@
+ //#define DEBUG_FLY
+ 
+ KNFly::KNFly( const Configuration &config ) :
+-Network( config )
++Network_gpgpu( config )
+ {
+    _ComputeSize( config );
+    _Alloc( );
+@@ -45,7 +45,7 @@
+       for ( int addr = 0; addr < per_stage; ++addr ) {
+ 
+          router_name << "router_" << stage << "_" << addr;
+-         _routers[node] = Router::NewRouter( config, this, router_name.str( ), 
++         _routers[node] = Router_gpgpu::NewRouter( config, this, router_name.str( ), 
+                                              node, _k, _k );
+          router_name.seekp( 0, ios::beg );
+ 
+diff --git a/intersim/fly.hpp b/intersim/fly.hpp
+--- a/intersim/fly.hpp
++++ b/intersim/fly.hpp
+@@ -3,7 +3,7 @@
+ 
+ #include "network.hpp"
+ 
+-class KNFly : public Network {
++class KNFly : public Network_gpgpu {
+ 
+    int _k;
+    int _n;
+diff --git a/intersim/interconnect_interface.cpp b/intersim/interconnect_interface.cpp
+--- a/intersim/interconnect_interface.cpp
++++ b/intersim/interconnect_interface.cpp
+@@ -420,10 +420,10 @@
+ 
+    RandomSeed( icnt_config.GetInt("seed") );
+ 
+-   Network **net;
++   Network_gpgpu **net;
+ 
+    traffic = new TrafficManager *[net_c];
+-   net = new Network *[net_c];
++   net = new Network_gpgpu *[net_c];
+ 
+    for (unsigned i=0;i<net_c;i++) {
+       string topo;
+diff --git a/intersim/iq_router.cpp b/intersim/iq_router.cpp
+--- a/intersim/iq_router.cpp
++++ b/intersim/iq_router.cpp
+@@ -9,7 +9,7 @@
+ IQRouter::IQRouter( const Configuration& config,
+                     Module *parent, string name, int id,
+                     int inputs, int outputs )
+-: Router( config,
++: Router_gpgpu( config,
+           parent, name,
+           id,
+           inputs, outputs )
+diff --git a/intersim/iq_router.hpp b/intersim/iq_router.hpp
+--- a/intersim/iq_router.hpp
++++ b/intersim/iq_router.hpp
+@@ -13,7 +13,7 @@
+ #include "buffer_state.hpp"
+ #include "pipefifo.hpp"
+ 
+-class IQRouter : public Router {
++class IQRouter : public Router_gpgpu {
+    int _vcs;
+    int _vc_size;
+ 
+diff --git a/intersim/kncube.cpp b/intersim/kncube.cpp
+--- a/intersim/kncube.cpp
++++ b/intersim/kncube.cpp
+@@ -7,7 +7,7 @@
+ #include "misc_utils.hpp"
+ 
+ KNCube::KNCube( const Configuration &config, bool mesh ) :
+-Network( config )
++Network_gpgpu( config )
+ {
+    _mesh = mesh;
+ 
+@@ -51,7 +51,7 @@
+          router_name << "_" << ( node / dim_offset ) % _k;
+       }
+ 
+-      _routers[node] = Router::NewRouter( config, this, router_name.str( ), 
++      _routers[node] = Router_gpgpu::NewRouter( config, this, router_name.str( ), 
+                                           node, 2*_n + 1, 2*_n + 1 );
+ 
+       router_name.seekp( 0, ios::beg );
+diff --git a/intersim/kncube.hpp b/intersim/kncube.hpp
+--- a/intersim/kncube.hpp
++++ b/intersim/kncube.hpp
+@@ -3,7 +3,7 @@
+ 
+ #include "network.hpp"
+ 
+-class KNCube : public Network {
++class KNCube : public Network_gpgpu {
+ 
+    bool _mesh;
+ 
+diff --git a/intersim/network.cpp b/intersim/network.cpp
+--- a/intersim/network.cpp
++++ b/intersim/network.cpp
+@@ -8,7 +8,7 @@
+ int gN = 0;
+ int gNodes = 0;
+ 
+-Network::Network( const Configuration &config ) :
++Network_gpgpu::Network_gpgpu( const Configuration &config ) :
+ Module( 0, "network" )
+ {
+    _size     = -1; 
+@@ -17,7 +17,7 @@
+    _channels = -1;
+ }
+ 
+-Network::~Network( )
++Network_gpgpu::~Network_gpgpu( )
+ {
+    for ( int r = 0; r < _size; ++r ) {
+       delete _routers[r];
+@@ -36,14 +36,14 @@
+    delete [] _chan_cred;
+ }
+ 
+-void Network::_Alloc( )
++void Network_gpgpu::_Alloc( )
+ {
+    assert( ( _size != -1 ) && 
+            ( _sources != -1 ) && 
+            ( _dests != -1 ) && 
+            ( _channels != -1 ) );
+ 
+-   _routers = new Router * [_size];
++   _routers = new Router_gpgpu * [_size];
+    gNodes = _sources;
+ 
+    _inject = new Flit * [_sources];
+@@ -63,31 +63,31 @@
+    _chan_cred   = new Credit * [_channels];
+ }
+ 
+-int Network::NumSources( ) const
++int Network_gpgpu::NumSources( ) const
+ {
+    return _sources;
+ }
+ 
+-int Network::NumDests( ) const
++int Network_gpgpu::NumDests( ) const
+ {
+    return _dests;
+ }
+ 
+-void Network::ReadInputs( )
++void Network_gpgpu::ReadInputs( )
+ {
+    for ( int r = 0; r < _size; ++r ) {
+       _routers[r]->ReadInputs( );
+    }
+ }
+ 
+-void Network::InternalStep( )
++void Network_gpgpu::InternalStep( )
+ {
+    for ( int r = 0; r < _size; ++r ) {
+       _routers[r]->InternalStep( );
+    }
+ }
+ 
+-void Network::WriteOutputs( )
++void Network_gpgpu::WriteOutputs( )
+ {
+    for ( int r = 0; r < _size; ++r ) {
+       _routers[r]->WriteOutputs( );
+@@ -101,47 +101,47 @@
+    _chan_use_cycles++;
+ }
+ 
+-void Network::WriteFlit( Flit *f, int source )
++void Network_gpgpu::WriteFlit( Flit *f, int source )
+ {
+    assert( ( source >= 0 ) && ( source < _sources ) );
+    _inject[source] = f;
+ }
+ 
+-Flit *Network::ReadFlit( int dest )
++Flit *Network_gpgpu::ReadFlit( int dest )
+ {
+    assert( ( dest >= 0 ) && ( dest < _dests ) );
+    return _eject[dest];
+ }
+ 
+-void Network::WriteCredit( Credit *c, int dest )
++void Network_gpgpu::WriteCredit( Credit *c, int dest )
+ {
+    assert( ( dest >= 0 ) && ( dest < _dests ) );
+    _eject_cred[dest] = c;
+ }
+ 
+-Credit *Network::ReadCredit( int source )
++Credit *Network_gpgpu::ReadCredit( int source )
+ {
+    assert( ( source >= 0 ) && ( source < _sources ) );
+    return _inject_cred[source];
+ }
+ 
+-void Network::InsertRandomFaults( const Configuration &config )
++void Network_gpgpu::InsertRandomFaults( const Configuration &config )
+ {
+    Error( "InsertRandomFaults not implemented for this topology!" );
+ }
+ 
+-void Network::OutChannelFault( int r, int c, bool fault )
++void Network_gpgpu::OutChannelFault( int r, int c, bool fault )
+ {
+    assert( ( r >= 0 ) && ( r < _size ) );
+    _routers[r]->OutChannelFault( c, fault );
+ }
+ 
+-double Network::Capacity( ) const
++double Network_gpgpu::Capacity( ) const
+ {
+    return 1.0;
+ }
+ 
+-void Network::Display( ) const
++void Network_gpgpu::Display( ) const
+ {
+    for ( int r = 0; r < _size; ++r ) {
+       _routers[r]->Display( );
+diff --git a/intersim/network.hpp b/intersim/network.hpp
+--- a/intersim/network.hpp
++++ b/intersim/network.hpp
+@@ -16,7 +16,7 @@
+ 
+ extern int gNodes;
+ 
+-class Network : public Module {
++class Network_gpgpu : public Module {
+ protected:
+ 
+    int _size;
+@@ -24,7 +24,7 @@
+    int _dests;
+    int _channels;
+ 
+-   Router **_routers;
++   Router_gpgpu **_routers;
+ 
+    Flit   **_inject;
+    Credit **_inject_cred;
+@@ -44,8 +44,8 @@
+    void _Alloc( );
+ 
+ public:
+-   Network( const Configuration &config );
+-   virtual ~Network( );
++   Network_gpgpu( const Configuration &config );
++   virtual ~Network_gpgpu( );
+ 
+    void WriteFlit( Flit *f, int source );
+    Flit *ReadFlit( int dest );
+diff --git a/intersim/routefunc.cpp b/intersim/routefunc.cpp
+--- a/intersim/routefunc.cpp
++++ b/intersim/routefunc.cpp
+@@ -18,7 +18,7 @@
+ 
+ //=============================================================
+ 
+-void singlerf( const Router *, const Flit *f, int, OutputSet *outputs, bool inject )
++void singlerf( const Router_gpgpu *, const Flit *f, int, OutputSet *outputs, bool inject )
+ {
+    outputs->Clear( );
+    outputs->Add( f->dest, f->dest % gNumVCS ); // VOQing
+@@ -125,7 +125,7 @@
+ 
+ //=============================================================
+ 
+-void dim_order_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void dim_order_mesh( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int out_port;
+ 
+@@ -148,7 +148,7 @@
+ 
+ //=============================================================
+ 
+-void dim_order_ni_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void dim_order_ni_mesh( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int out_port;
+    int vcs_per_dest = gNumVCS / gNodes;
+@@ -195,7 +195,7 @@
+ 
+ //=============================================================
+ 
+-void romm_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void romm_mesh( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int out_port;
+    int vc_min, vc_max;
+@@ -226,7 +226,7 @@
+ 
+ //=============================================================
+ 
+-void romm_ni_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void romm_ni_mesh( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int out_port;
+    int vcs_per_dest = gNumVCS / gNodes;
+@@ -253,7 +253,7 @@
+ 
+ //=============================================================
+ 
+-void min_adapt_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void min_adapt_mesh( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int out_port;
+    int cur, dest;
+@@ -298,7 +298,7 @@
+ 
+ //=============================================================
+ 
+-void planar_adapt_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void planar_adapt_mesh( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int cur, dest;
+    int vc_mult;
+@@ -448,7 +448,7 @@
+ 
+ //=============================================================
+ 
+-void limited_adapt_mesh_old( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void limited_adapt_mesh_old( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int in_vc;
+    int in_dim;
+@@ -544,7 +544,7 @@
+    } 
+ }
+ 
+-void limited_adapt_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void limited_adapt_mesh( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int min_port;
+ 
+@@ -598,7 +598,7 @@
+ 
+ //=============================================================
+ 
+-void valiant_mesh( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void valiant_mesh( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int out_port;
+    int vc_min, vc_max;
+@@ -630,7 +630,7 @@
+ 
+ //=============================================================
+ 
+-void valiant_torus( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void valiant_torus( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int out_port;
+    int vc_min, vc_max;
+@@ -676,7 +676,7 @@
+ 
+ //=============================================================
+ 
+-void valiant_ni_torus( const Router *r, const Flit *f, int in_channel, 
++void valiant_ni_torus( const Router_gpgpu *r, const Flit *f, int in_channel, 
+                        OutputSet *outputs, bool inject )
+ {
+    int out_port;
+@@ -731,7 +731,7 @@
+ 
+ //=============================================================
+ 
+-void dim_order_torus( const Router *r, const Flit *f, int in_channel, 
++void dim_order_torus( const Router_gpgpu *r, const Flit *f, int in_channel, 
+                       OutputSet *outputs, bool inject )
+ {
+    int cur;
+@@ -767,7 +767,7 @@
+ 
+ //=============================================================
+ 
+-void dim_order_ni_torus( const Router *r, const Flit *f, int in_channel, 
++void dim_order_ni_torus( const Router_gpgpu *r, const Flit *f, int in_channel, 
+                          OutputSet *outputs, bool inject )
+ {
+    int cur;
+@@ -797,7 +797,7 @@
+ 
+ //=============================================================
+ 
+-void dim_order_bal_torus( const Router *r, const Flit *f, int in_channel, 
++void dim_order_bal_torus( const Router_gpgpu *r, const Flit *f, int in_channel, 
+                           OutputSet *outputs, bool inject )
+ {
+    int cur;
+@@ -833,7 +833,7 @@
+ 
+ //=============================================================
+ 
+-void min_adapt_torus( const Router *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
++void min_adapt_torus( const Router_gpgpu *r, const Flit *f, int in_channel, OutputSet *outputs, bool inject )
+ {
+    int cur, dest, dist2;
+    int in_vc;
+@@ -895,7 +895,7 @@
+ 
+ //=============================================================
+ 
+-void dest_tag( const Router *r, const Flit *f, int in_channel, 
++void dest_tag( const Router_gpgpu *r, const Flit *f, int in_channel, 
+                OutputSet *outputs, bool inject )
+ {
+    outputs->Clear( );
+@@ -915,7 +915,7 @@
+ 
+ //=============================================================
+ 
+-void chaos_torus( const Router *r, const Flit *f, 
++void chaos_torus( const Router_gpgpu *r, const Flit *f, 
+                   int in_channel, OutputSet *outputs, bool inject )
+ {
+    int cur, dest;
+@@ -951,7 +951,7 @@
+ 
+ //=============================================================
+ 
+-void chaos_mesh( const Router *r, const Flit *f, 
++void chaos_mesh( const Router_gpgpu *r, const Flit *f, 
+                  int in_channel, OutputSet *outputs, bool inject )
+ {
+    int cur, dest;
+diff --git a/intersim/routefunc.hpp b/intersim/routefunc.hpp
+--- a/intersim/routefunc.hpp
++++ b/intersim/routefunc.hpp
+@@ -6,7 +6,7 @@
+ #include "outputset.hpp"
+ #include "config_utils.hpp"
+ 
+-typedef void (*tRoutingFunction)( const Router *, const Flit *, int in_channel, OutputSet *, bool );
++typedef void (*tRoutingFunction)( const Router_gpgpu *, const Flit *, int in_channel, OutputSet *, bool );
+ 
+ void InitializeRoutingMap( );
+ tRoutingFunction GetRoutingFunction( const Configuration& config );
+diff --git a/intersim/router.cpp b/intersim/router.cpp
+--- a/intersim/router.cpp
++++ b/intersim/router.cpp
+@@ -7,7 +7,7 @@
+ #include "iq_router.hpp"
+ #include "event_router.hpp"
+ 
+-Router::Router( const Configuration& config,
++Router_gpgpu::Router_gpgpu( const Configuration& config,
+                 Module *parent, string name, int id,
+                 int inputs, int outputs ) :
+ Module( parent, name ),
+@@ -33,7 +33,7 @@
+    _channel_faults  = new vector<bool>;
+ }
+ 
+-Router::~Router( )
++Router_gpgpu::~Router_gpgpu( )
+ {
+    delete _input_channels;
+    delete _input_credits;
+@@ -42,7 +42,7 @@
+    delete _channel_faults;
+ }
+ 
+-Credit *Router::_NewCredit( int vcs )
++Credit *Router_gpgpu::_NewCredit( int vcs )
+ {
+    Credit *c;
+ 
+@@ -50,48 +50,48 @@
+    return c;
+ }
+ 
+-void Router::_RetireCredit( Credit *c )
++void Router_gpgpu::_RetireCredit( Credit *c )
+ {
+    delete c;
+ }
+ 
+-void Router::AddInputChannel( Flit **channel, Credit **backchannel )
++void Router_gpgpu::AddInputChannel( Flit **channel, Credit **backchannel )
+ {
+    _input_channels->push_back( channel );
+    _input_credits->push_back( backchannel );
+ }
+ 
+-void Router::AddOutputChannel( Flit **channel, Credit **backchannel )
++void Router_gpgpu::AddOutputChannel( Flit **channel, Credit **backchannel )
+ {
+    _output_channels->push_back( channel );
+    _output_credits->push_back( backchannel );
+    _channel_faults->push_back( false );
+ }
+ 
+-int Router::GetID( ) const
++int Router_gpgpu::GetID( ) const
+ {
+    return _id;
+ }
+ 
+-void Router::OutChannelFault( int c, bool fault )
++void Router_gpgpu::OutChannelFault( int c, bool fault )
+ {
+    assert( ( c >= 0 ) && ( c < (int)_channel_faults->size( ) ) );
+ 
+    (*_channel_faults)[c] = fault;
+ }
+ 
+-bool Router::IsFaultyOutput( int c ) const
++bool Router_gpgpu::IsFaultyOutput( int c ) const
+ {
+    assert( ( c >= 0 ) && ( c < (int)_channel_faults->size( ) ) );
+ 
+    return(*_channel_faults)[c];
+ }
+ 
+-Router *Router::NewRouter( const Configuration& config,
++Router_gpgpu *Router_gpgpu::NewRouter( const Configuration& config,
+                            Module *parent, string name, int id,
+                            int inputs, int outputs )
+ {
+-   Router *r;
++   Router_gpgpu *r;
+    string type;
+ 
+    config.GetStr( "router", type );
+diff --git a/intersim/router.hpp b/intersim/router.hpp
+--- a/intersim/router.hpp
++++ b/intersim/router.hpp
+@@ -9,7 +9,7 @@
+ #include "credit.hpp"
+ #include "config_utils.hpp"
+ 
+-class Router : public Module {
++class Router_gpgpu : public Module {
+ protected:
+    int _id;
+ 
+@@ -37,13 +37,13 @@
+    void    _RetireCredit( Credit *c );
+ 
+ public:
+-   Router( const Configuration& config,
++   Router_gpgpu( const Configuration& config,
+            Module *parent, string name, int id,
+            int inputs, int outputs );
+ 
+-   virtual ~Router( );
++   virtual ~Router_gpgpu( );
+ 
+-   static Router *NewRouter( const Configuration& config,
++   static Router_gpgpu *NewRouter( const Configuration& config,
+                              Module *parent, string name, int id,
+                              int inputs, int outputs );
+ 
+diff --git a/intersim/singlenet.cpp b/intersim/singlenet.cpp
+--- a/intersim/singlenet.cpp
++++ b/intersim/singlenet.cpp
+@@ -4,7 +4,7 @@
+ #include "singlenet.hpp"
+ 
+ SingleNet::SingleNet( const Configuration &config ) :
+-Network( config )
++Network_gpgpu( config )
+ {
+    _ComputeSize( config );
+    _Alloc( );
+@@ -24,7 +24,7 @@
+ {
+    int i;
+ 
+-   _routers[0] = Router::NewRouter( config, this, "router", 0, 
++   _routers[0] = Router_gpgpu::NewRouter( config, this, "router", 0,
+                                     _sources, _dests );
+ 
+    for ( i = 0; i < _sources; ++i ) {
+diff --git a/intersim/singlenet.hpp b/intersim/singlenet.hpp
+--- a/intersim/singlenet.hpp
++++ b/intersim/singlenet.hpp
+@@ -3,7 +3,7 @@
+ 
+ #include "network.hpp"
+ 
+-class SingleNet : public Network {
++class SingleNet : public Network_gpgpu {
+ 
+    void _ComputeSize( const Configuration &config );
+    void _BuildNet( const Configuration &config );
+diff --git a/intersim/stats.cpp b/intersim/stats.cpp
+--- a/intersim/stats.cpp
++++ b/intersim/stats.cpp
+@@ -5,7 +5,7 @@
+ 
+ #include "stats.hpp"
+ 
+-Stats::Stats( Module *parent, const string &name,
++Stats_gpgpu::Stats_gpgpu( Module *parent, const string &name,
+               double bin_size, int num_bins ) :
+ Module( parent, name ),
+ _num_bins( num_bins ), _bin_size( bin_size )
+@@ -15,12 +15,12 @@
+    Clear( );
+ }
+ 
+-Stats::~Stats( )
++Stats_gpgpu::~Stats_gpgpu( )
+ {
+    delete [] _hist;
+ }
+ 
+-void Stats::Clear( )
++void Stats_gpgpu::Clear( )
+ {
+    _num_samples = 0;
+    _sample_sum  = 0.0;
+@@ -32,27 +32,27 @@
+    _reset = true;
+ }
+ 
+-double Stats::Average( ) const
++double Stats_gpgpu::Average( ) const
+ {
+    return _sample_sum / (double)_num_samples;
+ }
+ 
+-double Stats::Min( ) const
++double Stats_gpgpu::Min( ) const
+ {
+    return _min;
+ }
+ 
+-double Stats::Max( ) const
++double Stats_gpgpu::Max( ) const
+ {
+    return _max;
+ }
+ 
+-int Stats::NumSamples( ) const
++int Stats_gpgpu::NumSamples( ) const
+ {
+    return _num_samples;
+ }
+ 
+-void Stats::AddSample( double val )
++void Stats_gpgpu::AddSample( double val )
+ {
+    int b;
+ 
+@@ -83,12 +83,12 @@
+    _hist[b]++;
+ }
+ 
+-void Stats::AddSample( int val )
++void Stats_gpgpu::AddSample( int val )
+ {
+    AddSample( (double)val );
+ }
+ 
+-void Stats::Display( ) const
++void Stats_gpgpu::Display( ) const
+ {
+    int b;
+ 
+@@ -109,7 +109,7 @@
+    printf("];\n");
+ }
+ 
+-bool Stats::NeverUsed() const
++bool Stats_gpgpu::NeverUsed() const
+ {
+    if ( _reset ) {
+       return true;
+diff --git a/intersim/stats.hpp b/intersim/stats.hpp
+--- a/intersim/stats.hpp
++++ b/intersim/stats.hpp
+@@ -1,9 +1,9 @@
+-#ifndef _STATS_HPP_
+-#define _STATS_HPP_
++#ifndef _STATS_GPGPU_HPP_
++#define _STATS_GPGPU_HPP_
+ 
+ #include "module.hpp"
+ 
+-class Stats : public Module {
++class Stats_gpgpu : public Module {
+    int    _num_samples;
+    double _sample_sum;
+ 
+@@ -17,9 +17,9 @@
+    int *_hist;
+ 
+ public:
+-   Stats( Module *parent, const string &name,
++   Stats_gpgpu( Module *parent, const string &name,
+           double bin_size = 1.0, int num_bins = 10 );
+-   ~Stats( );
++   ~Stats_gpgpu( );
+ 
+    void Clear( );
+ 
+diff --git a/intersim/statwraper.cpp b/intersim/statwraper.cpp
+--- a/intersim/statwraper.cpp
++++ b/intersim/statwraper.cpp
+@@ -2,46 +2,46 @@
+ #include "stats.hpp"
+ #include <stdio.h>
+ 
+-Stats* StatCreate (const char * name, double bin_size, int num_bins) {
+-   Stats* newstat = new Stats(NULL,name,bin_size,num_bins);
++Stats_gpgpu* StatCreate (const char * name, double bin_size, int num_bins) {
++   Stats_gpgpu* newstat = new Stats_gpgpu(NULL,name,bin_size,num_bins);
+    newstat->Clear ();
+    return newstat;  
+ }
+ 
+ void StatClear(void * st)
+ {
+-   ((Stats *)st)->Clear();
++   ((Stats_gpgpu *)st)->Clear();
+ }
+ 
+ void StatAddSample (void * st, int val)
+ {
+-   ((Stats *)st)->AddSample(val);
++   ((Stats_gpgpu *)st)->AddSample(val);
+ }
+ 
+ double StatAverage(void * st) 
+ {
+-   return((Stats *)st)->Average();
++   return((Stats_gpgpu *)st)->Average();
+ }
+ 
+ double StatMax(void * st) 
+ {
+-   return((Stats *)st)->Max();
++   return((Stats_gpgpu *)st)->Max();
+ }
+ 
+ double StatMin(void * st) 
+ {
+-   return((Stats *)st)->Min();
++   return((Stats_gpgpu *)st)->Min();
+ }
+ 
+ void StatDisp (void * st)
+ {
+    printf ("Stats for ");
+-   ((Stats *)st)->DisplayHierarchy();
+-   if (((Stats *)st)->NeverUsed()) {
++   ((Stats_gpgpu *)st)->DisplayHierarchy();
++   if (((Stats_gpgpu *)st)->NeverUsed()) {
+       printf (" was never updated!\n");
+    } else {
+-      printf("Min %f Max %f Average %f \n",((Stats *)st)->Min(),((Stats *)st)->Max(),StatAverage(st));
+-      ((Stats *)st)->Display();
++      printf("Min %f Max %f Average %f \n",((Stats_gpgpu *)st)->Min(),((Stats_gpgpu *)st)->Max(),StatAverage(st));
++      ((Stats_gpgpu *)st)->Display();
+    }
+ }
+ 
+diff --git a/intersim/statwraper.h b/intersim/statwraper.h
+--- a/intersim/statwraper.h
++++ b/intersim/statwraper.h
+@@ -1,7 +1,7 @@
+ #ifndef STAT_WRAPER_H
+ #define STAT_WRAPER_H
+ 
+-class Stats* StatCreate (const char * name, double bin_size, int num_bins) ;
++class Stats_gpgpu* StatCreate (const char * name, double bin_size, int num_bins) ;
+ void StatClear(void * st);
+ void StatAddSample (void * st, int val);
+ double StatAverage(void * st) ;
+diff --git a/intersim/trafficmanager.cpp b/intersim/trafficmanager.cpp
+--- a/intersim/trafficmanager.cpp
++++ b/intersim/trafficmanager.cpp
+@@ -17,7 +17,7 @@
+ int DISPLAY_HOP_DIST     = 1;    // distribution of hop counts
+ int DISPLAY_PAIR_LATENCY = 0;    // avg. latency for each s-d pair
+ 
+-TrafficManager::TrafficManager( const Configuration &config, Network *net , int u_id)
++TrafficManager::TrafficManager( const Configuration &config, Network_gpgpu *net , int u_id)
+ : Module( 0, "traffic_manager" )
+ {
+    int s;
+@@ -139,39 +139,39 @@
+ 
+    // ============ Statistics ============ 
+ 
+-   _latency_stats   = new Stats * [_classes];
+-   _overall_latency = new Stats * [_classes];
++   _latency_stats   = new Stats_gpgpu * [_classes];
++   _overall_latency = new Stats_gpgpu * [_classes];
+ 
+    for ( int c = 0; c < _classes; ++c ) {
+       tmp_name << "latency_stat_" << c;
+-      _latency_stats[c] = new Stats( this, tmp_name.str( ), 1.0, 1000 );
++      _latency_stats[c] = new Stats_gpgpu( this, tmp_name.str( ), 1.0, 1000 );
+       tmp_name.seekp( 0, ios::beg );
+ 
+       tmp_name << "overall_latency_stat_" << c;
+-      _overall_latency[c] = new Stats( this, tmp_name.str( ), 1.0, 1000 );
++      _overall_latency[c] = new Stats_gpgpu( this, tmp_name.str( ), 1.0, 1000 );
+       tmp_name.seekp( 0, ios::beg );  
+    }
+ 
+-   _pair_latency     = new Stats * [_dests];
+-   _accepted_packets = new Stats * [_dests];
++   _pair_latency     = new Stats_gpgpu * [_dests];
++   _accepted_packets = new Stats_gpgpu * [_dests];
+ 
+    for ( int i = 0; i < _dests; ++i ) {
+       tmp_name << "pair_stat_" << i;
+-      _pair_latency[i] = new Stats( this, tmp_name.str( ), 1.0, 250 );
++      _pair_latency[i] = new Stats_gpgpu( this, tmp_name.str( ), 1.0, 250 );
+       tmp_name.seekp( 0, ios::beg );
+ 
+       tmp_name << "accepted_stat_" << i;
+-      _accepted_packets[i] = new Stats( this, tmp_name.str( ) );
++      _accepted_packets[i] = new Stats_gpgpu( this, tmp_name.str( ) );
+       tmp_name.seekp( 0, ios::beg );    
+    }
+ 
+-   _hop_stats            = new Stats( this, "hop_stats", 1.0, 20 );;
+-   _overall_accepted     = new Stats( this, "overall_acceptance" );
+-   _overall_accepted_min = new Stats( this, "overall_min_acceptance" );
++   _hop_stats            = new Stats_gpgpu( this, "hop_stats", 1.0, 20 );;
++   _overall_accepted     = new Stats_gpgpu( this, "overall_acceptance" );
++   _overall_accepted_min = new Stats_gpgpu( this, "overall_min_acceptance" );
+ 
+    if ( _reorder ) {
+-      _rob_latency = new Stats( this, "rob_latency", 1.0, 1000 );
+-      _rob_size    = new Stats( this, "rob_size", 1.0, 250 );
++      _rob_latency = new Stats_gpgpu( this, "rob_latency", 1.0, 1000 );
++      _rob_size    = new Stats_gpgpu( this, "rob_size", 1.0, 250 );
+    }
+ 
+    _flit_timing = config.GetInt( "flit_timing" );
+diff --git a/intersim/trafficmanager.hpp b/intersim/trafficmanager.hpp
+--- a/intersim/trafficmanager.hpp
++++ b/intersim/trafficmanager.hpp
+@@ -28,7 +28,7 @@
+    int _sources;
+    int _dests;
+ 
+-   Network *_net;
++   Network_gpgpu *_net;
+ 
+    // ============ Message priorities ============ 
+ 
+@@ -77,17 +77,17 @@
+ 
+    // ============ Statistics ============
+ 
+-   Stats **_latency_stats;     
+-   Stats **_overall_latency;
+-   Stats *_rob_latency;
+-   Stats *_rob_size;
++   Stats_gpgpu **_latency_stats;
++   Stats_gpgpu **_overall_latency;
++   Stats_gpgpu *_rob_latency;
++   Stats_gpgpu *_rob_size;
+ 
+-   Stats **_pair_latency;
+-   Stats *_hop_stats;
++   Stats_gpgpu **_pair_latency;
++   Stats_gpgpu *_hop_stats;
+ 
+-   Stats **_accepted_packets;
+-   Stats *_overall_accepted;
+-   Stats *_overall_accepted_min;
++   Stats_gpgpu **_accepted_packets;
++   Stats_gpgpu *_overall_accepted;
++   Stats_gpgpu *_overall_accepted_min;
+ 
+    int   **_latest_packet;
+ 
+@@ -161,7 +161,7 @@
+ 
+ public:
+    int uid; // this traffic manger's ID useful when we have more than 1 traffic objects
+-   TrafficManager( const Configuration &config, Network *net,int uid );
++   TrafficManager( const Configuration &config, Network_gpgpu *net,int uid );
+    ~TrafficManager( );
+    void IcntInitPerGrid  (int time);
+    void SetDrainState( );
+diff --git a/intersim/vc.cpp b/intersim/vc.cpp
+--- a/intersim/vc.cpp
++++ b/intersim/vc.cpp
+@@ -135,7 +135,7 @@
+    return _pri;
+ }
+ 
+-void VC::Route( tRoutingFunction rf, const Router* router, const Flit* f, int in_channel )
++void VC::Route( tRoutingFunction rf, const Router_gpgpu* router, const Flit* f, int in_channel )
+ {  
+    rf( router, f, in_channel, _route_set, false );
+ }
+diff --git a/intersim/vc.hpp b/intersim/vc.hpp
+--- a/intersim/vc.hpp
++++ b/intersim/vc.hpp
+@@ -64,7 +64,7 @@
+ 
+    int  GetPriority( ) const;
+ 
+-   void Route( tRoutingFunction rf, const Router* router, const Flit* f, int in_channel );
++   void Route( tRoutingFunction rf, const Router_gpgpu* router, const Flit* f, int in_channel );
+ 
+    void AdvanceTime( );
+ 
+diff --git a/intersim2/buffer.cpp b/intersim2/buffer.cpp
+--- a/intersim2/buffer.cpp
++++ b/intersim2/buffer.cpp
+@@ -31,7 +31,7 @@
+ #include "booksim.hpp"
+ #include "buffer.hpp"
+ 
+-Buffer::Buffer( const Configuration& config, int outputs, 
++Buffer_gpgpu::Buffer_gpgpu( const Configuration& config, int outputs,
+ 		Module *parent, const string& name ) :
+ Module( parent, name ), _occupancy(0)
+ {
+@@ -56,14 +56,14 @@
+ #endif
+ }
+ 
+-Buffer::~Buffer()
++Buffer_gpgpu::~Buffer_gpgpu()
+ {
+   for(vector<VC*>::iterator i = _vc.begin(); i != _vc.end(); ++i) {
+     delete *i;
+   }
+ }
+ 
+-void Buffer::AddFlit( int vc, Flit *f )
++void Buffer_gpgpu::AddFlit( int vc, Flit *f )
+ {
+   if(_occupancy >= _size) {
+     Error("Flit buffer overflow.");
+@@ -75,7 +75,7 @@
+ #endif
+ }
+ 
+-void Buffer::Display( ostream & os ) const
++void Buffer_gpgpu::Display( ostream & os ) const
+ {
+   for(vector<VC*>::const_iterator i = _vc.begin(); i != _vc.end(); ++i) {
+     (*i)->Display(os);
+diff --git a/intersim2/buffer.hpp b/intersim2/buffer.hpp
+--- a/intersim2/buffer.hpp
++++ b/intersim2/buffer.hpp
+@@ -36,7 +36,7 @@
+ #include "routefunc.hpp"
+ #include "config_utils.hpp"
+ 
+-class Buffer : public Module {
++class Buffer_gpgpu : public Module {
+   
+   int _occupancy;
+   int _size;
+@@ -49,9 +49,9 @@
+ 
+ public:
+   
+-  Buffer( const Configuration& config, int outputs,
++  Buffer_gpgpu( const Configuration& config, int outputs,
+ 	  Module *parent, const string& name );
+-  ~Buffer();
++  ~Buffer_gpgpu();
+ 
+   void AddFlit( int vc, Flit *f );
+ 
+diff --git a/intersim2/main.cpp b/intersim2/main.cpp
+--- a/intersim2/main.cpp
++++ b/intersim2/main.cpp
+@@ -168,6 +168,7 @@
+     return result;
+ }
+ 
++#define CREATE_LIBRARY
+ #ifdef CREATE_LIBRARY
+ 
+ #else
+diff --git a/intersim2/routers/event_router.cpp b/intersim2/routers/event_router.cpp
+--- a/intersim2/routers/event_router.cpp
++++ b/intersim2/routers/event_router.cpp
+@@ -69,7 +69,7 @@
+ 
+   for ( int i = 0; i < _inputs; ++i ) {
+     module_name << "buf_" << i;
+-    _buf[i] = new Buffer( config, _outputs, this, module_name.str( ) );
++    _buf[i] = new Buffer_gpgpu( config, _outputs, this, module_name.str( ) );
+     module_name.seekp( 0, ios::beg );
+     _active[i].resize(_vcs, false);
+   }
+@@ -309,7 +309,7 @@
+ void EventRouter::_IncomingFlits( )
+ {
+   Flit   *f;
+-  Buffer *cur_buf;
++  Buffer_gpgpu *cur_buf;
+ 
+   tArrivalEvent *aevt;
+ 
+@@ -604,7 +604,7 @@
+   tTransportEvent *tevt;
+ 
+   int    output;
+-  Buffer *cur_buf;
++  Buffer_gpgpu *cur_buf;
+   Flit   *f;
+   Credit *c;
+ 
+diff --git a/intersim2/routers/event_router.hpp b/intersim2/routers/event_router.hpp
+--- a/intersim2/routers/event_router.hpp
++++ b/intersim2/routers/event_router.hpp
+@@ -96,7 +96,7 @@
+ 
+   int _vct;
+ 
+-  vector<Buffer *> _buf;
++  vector<Buffer_gpgpu *> _buf;
+   vector<vector<bool> > _active;
+ 
+   tRoutingFunction   _rf;
+diff --git a/intersim2/routers/iq_router.cpp b/intersim2/routers/iq_router.cpp
+--- a/intersim2/routers/iq_router.cpp
++++ b/intersim2/routers/iq_router.cpp
+@@ -85,7 +85,7 @@
+   for ( int i = 0; i < _inputs; ++i ) {
+     ostringstream module_name;
+     module_name << "buf_" << i;
+-    _buf[i] = new Buffer(config, _outputs, this, module_name.str( ) );
++    _buf[i] = new Buffer_gpgpu(config, _outputs, this, module_name.str( ) );
+     module_name.str("");
+   }
+ 
+@@ -351,7 +351,7 @@
+     int const vc = f->vc;
+     assert((vc >= 0) && (vc < _vcs));
+ 
+-    Buffer * const cur_buf = _buf[input];
++    Buffer_gpgpu * const cur_buf = _buf[input];
+ 
+     if(f->watch) {
+       *gWatchOut << GetSimTime() << " | " << FullName() << " | "
+@@ -477,7 +477,7 @@
+     int const vc = iter->second.second;
+     assert((vc >= 0) && (vc < _vcs));
+ 
+-    Buffer const * const cur_buf = _buf[input];
++    Buffer_gpgpu const * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert(cur_buf->GetState(vc) == VC::routing);
+ 
+@@ -515,7 +515,7 @@
+     int const vc = item.second.second;
+     assert((vc >= 0) && (vc < _vcs));
+     
+-    Buffer * const cur_buf = _buf[input];
++    Buffer_gpgpu * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert(cur_buf->GetState(vc) == VC::routing);
+ 
+@@ -572,7 +572,7 @@
+ 
+     assert(iter->second.second == -1);
+ 
+-    Buffer const * const cur_buf = _buf[input];
++    Buffer_gpgpu const * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert(cur_buf->GetState(vc) == VC::vc_alloc);
+ 
+@@ -726,7 +726,7 @@
+ 
+     assert(iter->second.second == -1);
+ 
+-    Buffer const * const cur_buf = _buf[input];
++    Buffer_gpgpu const * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert(cur_buf->GetState(vc) == VC::vc_alloc);
+ 
+@@ -803,7 +803,7 @@
+       int const vc = iter->second.first.second;
+       assert((vc >= 0) && (vc < _vcs));
+       
+-      Buffer const * const cur_buf = _buf[input];
++      Buffer_gpgpu const * const cur_buf = _buf[input];
+       assert(!cur_buf->Empty(vc));
+       assert(cur_buf->GetState(vc) == VC::vc_alloc);
+       
+@@ -858,7 +858,7 @@
+     
+     assert(item.second.second != -1);
+ 
+-    Buffer * const cur_buf = _buf[input];
++    Buffer_gpgpu * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert(cur_buf->GetState(vc) == VC::vc_alloc);
+     
+@@ -949,7 +949,7 @@
+     
+     assert(iter->second.second == -1);
+ 
+-    Buffer const * const cur_buf = _buf[input];
++    Buffer_gpgpu const * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert(cur_buf->GetState(vc) == VC::active);
+     
+@@ -1023,7 +1023,7 @@
+     
+     assert(item.second.second != -1);
+ 
+-    Buffer * const cur_buf = _buf[input];
++    Buffer_gpgpu * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert(cur_buf->GetState(vc) == VC::active);
+     
+@@ -1234,7 +1234,7 @@
+   int const expanded_input = input * _input_speedup + vc % _input_speedup;
+   int const expanded_output = output * _output_speedup + input % _output_speedup;
+   
+-  Buffer const * const cur_buf = _buf[input];
++  Buffer_gpgpu const * const cur_buf = _buf[input];
+   assert(!cur_buf->Empty(vc));
+   assert((cur_buf->GetState(vc) == VC::active) || 
+ 	 (_speculative && (cur_buf->GetState(vc) == VC::vc_alloc)));
+@@ -1346,7 +1346,7 @@
+ 
+     assert(_switch_hold_vc[input * _input_speedup + vc % _input_speedup] != vc);
+ 
+-    Buffer const * const cur_buf = _buf[input];
++    Buffer_gpgpu const * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert((cur_buf->GetState(vc) == VC::active) || 
+ 	   (_speculative && (cur_buf->GetState(vc) == VC::vc_alloc)));
+@@ -1513,7 +1513,7 @@
+ 
+     assert(iter->second.second == -1);
+ 
+-    Buffer const * const cur_buf = _buf[input];
++    Buffer_gpgpu const * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert((cur_buf->GetState(vc) == VC::active) || 
+ 	   (_speculative && (cur_buf->GetState(vc) == VC::vc_alloc)));
+@@ -1663,7 +1663,7 @@
+       int const expanded_input = input * _input_speedup + vc % _input_speedup;
+       assert(_switch_hold_vc[expanded_input] != vc);
+       
+-      Buffer const * const cur_buf = _buf[input];
++      Buffer_gpgpu const * const cur_buf = _buf[input];
+       assert(!cur_buf->Empty(vc));
+       assert((cur_buf->GetState(vc) == VC::active) ||
+ 	     (_speculative && (cur_buf->GetState(vc) == VC::vc_alloc)));
+@@ -1850,7 +1850,7 @@
+     int const vc = item.second.first.second;
+     assert((vc >= 0) && (vc < _vcs));
+     
+-    Buffer * const cur_buf = _buf[input];
++    Buffer_gpgpu * const cur_buf = _buf[input];
+     assert(!cur_buf->Empty(vc));
+     assert((cur_buf->GetState(vc) == VC::active) ||
+ 	   (_speculative && (cur_buf->GetState(vc) == VC::vc_alloc)));
+diff --git a/intersim2/routers/iq_router.hpp b/intersim2/routers/iq_router.hpp
+--- a/intersim2/routers/iq_router.hpp
++++ b/intersim2/routers/iq_router.hpp
+@@ -42,7 +42,7 @@
+ class VC;
+ class Flit;
+ class Credit;
+-class Buffer;
++class Buffer_gpgpu;
+ class BufferState;
+ class Allocator;
+ class SwitchMonitor;
+@@ -80,7 +80,7 @@
+ 
+   map<int, Credit *> _out_queue_credits;
+ 
+-  vector<Buffer *> _buf;
++  vector<Buffer_gpgpu *> _buf;
+   vector<BufferState *> _next_buf;
+ 
+   Allocator *_vc_allocator;
+diff --git a/statwrapper.h b/statwrapper.h
+--- a/statwrapper.h
++++ b/statwrapper.h
+@@ -1,7 +1,7 @@
+ #ifndef STAT_WRAPER_H
+ #define STAT_WRAPER_H
+ 
+-class Stats* StatCreate (const char * name, double bin_size, int num_bins) ;
++class Stats_gpgpu* StatCreate (const char * name, double bin_size, int num_bins) ;
+ void StatClear(void * st);
+ void StatAddSample (void * st, int val);
+ double StatAverage(void * st) ;
+diff --git a/trace.cc b/trace.cc
+--- a/trace.cc
++++ b/trace.cc
+@@ -28,7 +28,7 @@
+ #include "trace.h"
+ #include "string.h"
+ 
+-namespace Trace {
++namespace Trace_gpgpu {
+ 
+ 
+ #define TS_TUP_BEGIN(X) const char* trace_streams_str[] = {
+diff --git a/trace.h b/trace.h
+--- a/trace.h
++++ b/trace.h
+@@ -34,7 +34,7 @@
+ extern unsigned long long  gpu_sim_cycle;
+ extern unsigned long long  gpu_tot_sim_cycle;
+ 
+-namespace Trace {
++namespace Trace_gpgpu {
+ 
+ #define TS_TUP_BEGIN(X) enum X {
+ #define TS_TUP(X) X
+@@ -53,27 +53,27 @@
+ 
+     void init();
+ 
+-} // namespace Trace
++} // namespace Trace_gpgpu
+ 
+ 
+ #if TRACING_ON
+ 
+ #define SIM_PRINT_STR "GPGPU-Sim Cycle %llu: %s - "
+-#define DTRACE(x) ((Trace::trace_streams_enabled[Trace::x]) && Trace::enabled)
+-#define DPRINTF(x, ...) do {\
+-    if (DTRACE(x)) {\
++#define GPGPUSIM_DTRACE(x) ((Trace_gpgpu::trace_streams_enabled[Trace_gpgpu::x]) && Trace_gpgpu::enabled)
++#define GPGPUSIM_DPRINTF(x, ...) do {\
++    if (GPGPUSIM_DTRACE(x)) {\
+         printf( SIM_PRINT_STR,\
+                 gpu_sim_cycle + gpu_tot_sim_cycle,\
+-                Trace::trace_streams_str[Trace::x] );\
++                Trace_gpgpu::trace_streams_str[Trace_gpgpu::x] );\
+         printf(__VA_ARGS__);\
+     }\
+ } while (0)
+ 
+ 
+-#else 
++#else
+ 
+-#define DTRACE(x) (false)
+-#define DPRINTF(x, ...) do {} while (0)
++#define GPGPUSIM_DTRACE(x) (false)
++#define GPGPUSIM_DPRINTF(x, ...) do {} while (0)
+ 
+ #endif  
+ 

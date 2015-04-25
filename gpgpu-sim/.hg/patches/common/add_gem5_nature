@@ -1,0 +1,4659 @@
+# HG changeset patch
+# Parent 5bc152cef1392d8c32b0d05b493c29afb73e97e7
+Add read/write register functions
+* * *
+Add all of the required code to integrate GPGPU-Sim with gem5
+* * *
+A patch to test out cleaning up GPGPU-Sim loose ends:
+ - referencing memory when getting operands is invalid behavior
+* * *
+Move all memory spaces over to gem5/Ruby memory transactions.
+Here, we need to ensure that the LD/ST unit in GPGPU-Sim is still
+generating requests to be sent to the gem5 side of things.
+* * *
+Merge the instruction memory access in GPGPU-Sim into the gem5 memory
+hierarchy
+* * *
+Put in the hooks to collect statistics from the GPU side of things. Call into
+the gem5 shader core when:
+ - Issuing a load instruction
+ - Issuing a store instruction
+ - To count each instruction type executed
+* * *
+Instrument to collect stats at block boundaries
+* * *
+Constant memory: integrate into global memory path
+* * *
+Pass the memcpy type into gem5 for segmented address space transfers
+* * *
+Strip out all references to useGem5Mem. Fold into common/add_gem5_nature
+* * *
+Fold into fold patch to remove useGem5Mem
+* * *
+Stream Manager: Add a cudaMemset operation
+
+In gem5-fusion, segmented memory spaces will require that the
+memset operations be handled by the simulated system rather than
+through functional memory accesses because of potentially split
+address translation mechanisms (e.g. CPU v. GPU addresses)
+
+Add a stream operation to communicate this memset command to
+the gem5-fusion stream processor array, which will schedule
+the operation on the copy engine.
+* * *
+Add thread context handling to stream_operations and CUstream_t
+* * *
+Refactoring gem5-gpu directory structure
+* * *
+Remove the calls to the old gem5 memory since we are using the ShaderLSQ now
+* * *
+Modify gpgpu-sim to use ShaderLSQ instead of inlcuded ldst_unit
+
+- Updates read/write register to work with gem5 shader_cores
+- Calls ShaderCore::executeMemOp instead of read/write functions
+- implements writebackInst for gem5 to insert the finished instruction
+  into the wrtieback stage of the pipeline
+* * *
+Renaming Classes and Variables
+
+Renaming to be consistent with gem5-gpu name changes
+* * *
+When kernels end, call into gem5 instead of polling finished_kernel()
+* * *
+Add callback to the shader_core_ctx for gem5 to signal when the kernel completes
+This is added so that the gem5 cuda_core can cleanup at the end of a kernel (drain LSQ, flush L1 cache, etc)
+* * *
+Remove memory_gem5
+
+Since the new gem5-gpu LSQ bolts into GPGPU-Sim in place of the ldst_unit for
+global and const accesses, we no longer need to call into the memory_gem5
+wrapper to communicate with gem5-gpu. Further, without memory_gem5, we can
+eliminate unnecessary functional calls to ptx_thread_info::?et_*operand_values.
+This reduces the number of these calls by a factor of 2, which in turn reduces
+simulation time by up to 18%.
+* * *
+Global and Const Mem: Don't generate memory accesses
+
+Since gem5-gpu handles global and const memory access, GPGPU-Sim no longer
+needs to generate memory accesses for load and store warp instructions to these
+spaces. Return if this is the case.
+
+This was tested with Valgrind to witness more than a 30% decrease in the number
+of allocations and frees in the runtime of short tests.
+* * *
+Store Instructions: Save register data in dynamic warp instruction
+
+Because GPGPU-Sim only guarantees registers are valid at the end of the issue
+stage, data that must be passed through memory hierarchy for stores must be
+saved in the dynamic warp instruction to be passed to the memory hierarchy in
+the execute stage. This patch adds getter and setter methods for this data to
+warp_int_t, and in the issue stage of the GPGPU-Sim pipeline as necessary, sets
+the data to be passed through the pipeline to the LSQ.
+* * *
+core_t: Remove readRegister function
+
+This function encourages reading of registers outside of the issue stage of
+the GPU core pipeline, at which point the values may no longer be valid.
+After removing the call to this function from gem5-gpu, it should be removed
+per this patch.
+* * *
+gem5_ptx_sim_init_perf: Clean up options parser
+
+A major source of possible memory leaks in gem5-gpu are due to the GPGPU-Sim
+performance simulator initialization of the options parser. Destroy it after
+parsing the input parameters for configuring GPGPU-Sim.
+* * *
+instructions: Fix const data access address offset
+
+The offset calculation for constant memory instructions had been previously
+commented out, but this addition needed to be included. These offsets are
+generally only used in the case that a constant data member is a structure and
+the offset refers to specific data members within the structure. This fixes
+constant memory handling bugs witnessed in heartwall and cfd regressions, and
+probably enables other benchmarks to work with their constant memory versions.
+* * *
+shader: Only call finish kernel if no more CTAs
+
+The condition for completing a kernel (and thus flushing the shader LSQs)
+needs to ensure that there are no more thread blocks to be executed before the
+shader completes it's participation in a kernel. This ensures that finishKernel
+is not called between CTAs of a single kernel, which can cause the shader LSQs
+to panic when adding a memory request for the new CTA while trying to flush
+after the previous one. This behavior may have been okay, but it is not
+necessary given that there are no memory ordering guarantees across thread
+block boundaries. This patch moves the core kernel finishing code out of CTA
+thread completion to after more potential thread blocks have been issued, thus
+ensuring that the check that the core is empty can be guaranteed to be correct.
+* * *
+Shader: Remove old gem5-g3 global barrier code
+
+In order to implement memory fences (PTX membars), it will be necessary to
+modify the way GPGPU-Sim handles PTX bar instructions. This patch removes the
+old global barrier code from gem5-gpu and returns bar handling back to the
+original GPGPU-Sim code to facilitate these upcoming modifications.
+* * *
+cudaSetupArgument: Allow 32-bit pointers as params
+
+This support is required to allow for running ARM32 binaries in gem5-gpu:
+When cudaRegisterFunction is called, GPGPU-Sim sets up pointer parameters as
+64-bit addresses, but when a 32-bit binary is executed, cudaSetupArgument
+will accept a 4B (32-bit) size as the parameter. These pointers can be copied
+and handled inappropriately due to the size of the data that is copied from
+the parameter structures. To alleviate this issue, create a new parameter data
+of size 8B, and copy the lower 4B as appropriate.
+* * *
+Eliminate Pointers from Memory Instruction Operand Handling
+
+Copying memory instructions to be buffered in the ShaderLSQ (needed for
+upcoming fences functionality) causes data pointers to be freed when copying
+the vector of per_thread_info. This causes heap corruption and segmentation
+faults. Instead of handling pointers, use data space allocated in the
+per_thread_info instances.
+* * *
+Register Handling: Add a parameter to read sources other than just 1
+
+In order to enable reading GPGPU-Sim instruction operands besides the first
+source, add a parameter to the readRegister() function. This is necessary for
+passing multiple operands to gem5-gpu code for instructions such as bar.sync
+and atomics in upcoming patches.
+* * *
+Stream Manager: Use cleaned scheduleStreamEvent() function
+
+The streamRequestTick function in CudaGPU was used uniformly through both
+gem5-gpu and GPGPU-Sim code, and the function header was unclear. It was
+changed in the CudaGPU to scheduleStreamEvent(), which uses the CudaGPU's
+clock to more reasonably schedule instead of using an arbitrary delay of
+1 tick, as was the case previously.
+* * *
+Cycle: Eliminate GPGPU-Sim-wide cycle function
+
+In order to enable more flexible clocking in gem5-gpu, split the gpgpu_sim
+cycle function into parts that can be cycled separately from gem5-gpu. This
+includes setting up separate core, interconnect, L2 and DRAM cycle handlers.
+
+diff --git a/SConscript b/SConscript
+new file mode 100644
+--- /dev/null
++++ b/SConscript
+@@ -0,0 +1,54 @@
++# -*- mode:python -*-
++
++# Copyright (c) 2011 Mark D. Hill and David A. Wood
++# All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions are
++# met: redistributions of source code must retain the above copyright
++# notice, this list of conditions and the following disclaimer;
++# redistributions in binary form must reproduce the above copyright
++# notice, this list of conditions and the following disclaimer in the
++# documentation and/or other materials provided with the distribution;
++# neither the name of the copyright holders nor the names of its
++# contributors may be used to endorse or promote products derived from
++# this software without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++
++
++Import('*')
++
++gpgpu_sources = []
++
++Export('gpgpu_sources')
++
++#SimObject('Bridge.py')
++
++Source('abstract_hardware_model.cc', Werror=False)
++Source('debug.cc', Werror=False)
++Source('gpgpusim_entrypoint.cc', Werror=False)
++Source('option_parser.cc', Werror=False)
++Source('statwrapper.cc', Werror=False)
++Source('stream_manager.cc', Werror=False)
++Source('trace.cc', Werror=False)
++
++import os
++cuda_sdk = os.environ['CUDAHOME']
++env.Append(CCFLAGS=['-I'+cuda_sdk+'/include', '-I'+cuda_sdk+'/common/inc/'])
++env.Append(CPPDEFINES=['-DCUDART_VERSION=3020', '-DYYDEBUG'])
++
++#CCFLAGS.append('-g3')
++#CCFLAGS.append('-fPIC')
++#CCFLAGS.append('-std=c++0x')
+diff --git a/SConsopts b/SConsopts
+new file mode 100644
+--- /dev/null
++++ b/SConsopts
+@@ -0,0 +1,40 @@
++# -*- mode:python -*-
++
++# Copyright (c) 2011 Mark D. Hill and David A. Wood
++# All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions are
++# met: redistributions of source code must retain the above copyright
++# notice, this list of conditions and the following disclaimer;
++# redistributions in binary form must reproduce the above copyright
++# notice, this list of conditions and the following disclaimer in the
++# documentation and/or other materials provided with the distribution;
++# neither the name of the copyright holders nor the names of its
++# contributors may be used to endorse or promote products derived from
++# this software without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++
++
++
++Import('*')
++
++sticky_vars.AddVariables(
++    BoolVariable('GPGPU_SIM', "Simulate a GPGPU using GPGPU-sim",
++                 False),
++    )
++
++export_vars += [ 'GPGPU_SIM' ]
++
+diff --git a/abstract_hardware_model.cc b/abstract_hardware_model.cc
+--- a/abstract_hardware_model.cc
++++ b/abstract_hardware_model.cc
+@@ -36,6 +36,8 @@
+ #include "option_parser.h"
+ #include <algorithm>
+ 
++extern gpgpu_sim *g_the_gpu;
++
+ unsigned mem_access_t::sm_next_access_uid = 0;   
+ unsigned warp_inst_t::sm_next_uid = 0;
+ 
+@@ -89,10 +91,10 @@
+    m_texcache_linesize = linesize;
+ }
+ 
+-gpgpu_t::gpgpu_t( const gpgpu_functional_sim_config &config )
+-    : m_function_model_config(config)
++gpgpu_t::gpgpu_t( const gpgpu_functional_sim_config &config, int _sharedMemDelay )
++    : sharedMemDelay(_sharedMemDelay), m_function_model_config(config)
+ {
+-   m_global_mem = new memory_space_impl<8192>("global",64*1024);
++   m_global_mem = NULL; // Accesses to global memory should go through gem5-gpu
+    m_tex_mem = new memory_space_impl<8192>("tex",64*1024);
+    m_surf_mem = new memory_space_impl<8192>("surf",64*1024);
+ 
+@@ -173,6 +175,9 @@
+         return; 
+     if( m_warp_active_mask.count() == 0 ) 
+         return; // predicated off
++    // In gem5-gpu, global and const references go through the gem5-gpu LSQ
++    if( space.get_type() == global_space || space.get_type() == const_space )
++        return;
+ 
+     const size_t starting_queue_size = m_accessq.size();
+ 
+@@ -183,13 +188,13 @@
+ 
+     mem_access_type access_type;
+     switch (space.get_type()) {
+-    case const_space:
+     case param_space_kernel: 
+         access_type = CONST_ACC_R; 
+         break;
+     case tex_space: 
+         access_type = TEXTURE_ACC_R;   
+         break;
++    case const_space:
+     case global_space:       
+         access_type = is_write? GLOBAL_ACC_W: GLOBAL_ACC_R;   
+         break;
+@@ -286,7 +291,7 @@
+             }
+         }
+         assert( total_accesses > 0 && total_accesses <= m_config->warp_size );
+-        cycles = total_accesses; // shared memory conflicts modeled as larger initiation interval 
++        cycles = total_accesses * g_the_gpu->sharedMemDelay; // shared memory conflicts modeled as larger initiation interval
+         ptx_file_line_stats_add_smem_bank_conflict( pc, total_accesses );
+         break;
+     }
+@@ -294,11 +299,11 @@
+     case tex_space: 
+         cache_block_size = m_config->gpgpu_cache_texl1_linesize;
+         break;
+-    case const_space:  case param_space_kernel:
++    case param_space_kernel:
+         cache_block_size = m_config->gpgpu_cache_constl1_linesize; 
+         break;
+ 
+-    case global_space: case local_space: case param_space_local:
++    case const_space: case global_space: case local_space: case param_space_local:
+         if( m_config->gpgpu_coalesce_arch == 13 ) {
+            if(isatomic())
+                memory_coalescing_arch_13_atomic(is_write, access_type);
+@@ -760,6 +765,12 @@
+         }
+     } 
+ }
++
++void core_t::writeRegister(const warp_inst_t &inst, unsigned warpSize, unsigned lane_id, char *data) {
++    assert(inst.active(lane_id));
++    int warpId = inst.warp_id();
++    m_thread[warpSize*warpId+lane_id]->writeRegister(inst, lane_id, data);
++}
+   
+ bool  core_t::ptx_thread_done( unsigned hw_thread_id ) const  
+ {
+diff --git a/abstract_hardware_model.h b/abstract_hardware_model.h
+--- a/abstract_hardware_model.h
++++ b/abstract_hardware_model.h
+@@ -28,6 +28,8 @@
+ #ifndef ABSTRACT_HARDWARE_MODEL_INCLUDED
+ #define ABSTRACT_HARDWARE_MODEL_INCLUDED
+ 
++struct CudaGPU;
++
+ enum _memory_space_t {
+    undefined_space=0,
+    reg_space,
+@@ -228,6 +230,12 @@
+ 
+    std::list<class ptx_thread_info *> m_active_threads;
+    class memory_space *m_param_mem;
++
++   address_type m_inst_text_base_vaddr;
++
++public:
++   address_type get_inst_base_vaddr() { return m_inst_text_base_vaddr; };
++   void set_inst_base_vaddr(address_type addr) { m_inst_text_base_vaddr = addr; };
+ };
+ 
+ struct core_config {
+@@ -423,7 +431,7 @@
+ 
+ class gpgpu_t {
+ public:
+-    gpgpu_t( const gpgpu_functional_sim_config &config );
++    gpgpu_t( const gpgpu_functional_sim_config &config, int _sharedMemDelay = 1 );
+     void* gpu_malloc( size_t size );
+     void* gpu_mallocarray( size_t count );
+     void  gpu_memset( size_t dst_start_addr, int c, size_t count );
+@@ -468,6 +476,11 @@
+     const gpgpu_functional_sim_config &get_config() const { return m_function_model_config; }
+     FILE* get_ptx_inst_debug_file() { return ptx_inst_debug_file; }
+ 
++    // gem5 stuff
++    CudaGPU *gem5CudaGPU;
++    int sharedMemDelay;
++    void setCudaGPU(CudaGPU *cudaGPU) {gem5CudaGPU = cudaGPU;}
++
+ protected:
+     const gpgpu_functional_sim_config &m_function_model_config;
+     FILE* ptx_inst_debug_file;
+@@ -766,6 +779,7 @@
+ };
+ 
+ const unsigned MAX_ACCESSES_PER_INSN_PER_THREAD = 8;
++const unsigned MAX_DATA_BYTES_PER_INSN_PER_THREAD = 16;
+ 
+ class warp_inst_t: public inst_t {
+ public:
+@@ -833,6 +847,16 @@
+         for(unsigned i=0; i<num_addrs; i++)
+             m_per_scalar_thread[n].memreqaddr[i] = addr[i];
+     }
++    void set_data( unsigned n, const uint8_t *_data )
++    {
++        assert( op == STORE_OP );
++        assert( space == global_space || space == const_space );
++        assert( m_per_scalar_thread_valid );
++        assert( !m_per_scalar_thread[n].data_valid );
++        m_per_scalar_thread[n].data_valid = true;
++        assert( _data );
++        memcpy(&m_per_scalar_thread[n].data, _data, MAX_DATA_BYTES_PER_INSN_PER_THREAD);
++    }
+ 
+     struct transaction_info {
+         std::bitset<4> chunks; // bitmask: 32-byte chunks accessed
+@@ -902,6 +926,12 @@
+         assert( m_per_scalar_thread_valid );
+         return m_per_scalar_thread[n].memreqaddr[0];
+     }
++    const uint8_t *get_data( unsigned n ) const
++    {
++        assert( m_per_scalar_thread_valid );
++        assert( m_per_scalar_thread[n].data_valid );
++        return &(m_per_scalar_thread[n].data[0]);
++    }
+ 
+     bool isatomic() const { return m_isatomic; }
+ 
+@@ -925,6 +955,7 @@
+ 
+     void print( FILE *fout ) const;
+     unsigned get_uid() const { return m_uid; }
++    int vectorLength;
+ 
+ protected:
+ 
+@@ -945,9 +976,12 @@
+         per_thread_info() {
+             for(unsigned i=0; i<MAX_ACCESSES_PER_INSN_PER_THREAD; i++)
+                 memreqaddr[i] = 0;
++            data_valid = false;
+         }
+         dram_callback_t callback;
+         new_addr_type memreqaddr[MAX_ACCESSES_PER_INSN_PER_THREAD]; // effective address, upto 8 different requests (to support 32B access in 8 chunks of 4B each)
++        bool data_valid;
++        uint8_t data[MAX_DATA_BYTES_PER_INSN_PER_THREAD];
+     };
+     bool m_per_scalar_thread_valid;
+     std::vector<per_thread_info> m_per_scalar_thread;
+@@ -1003,6 +1037,7 @@
+         void get_pdom_stack_top_info( unsigned warpId, unsigned *pc, unsigned *rpc ) const;
+         kernel_info_t * get_kernel_info(){ return m_kernel;}
+         unsigned get_warp_size() const { return m_warp_size; }
++        void writeRegister(const warp_inst_t &inst, unsigned warpSize, unsigned lane_id, char* data);
+     protected:
+         class gpgpu_sim *m_gpu;
+         kernel_info_t *m_kernel;
+diff --git a/cuda-sim/SConscript b/cuda-sim/SConscript
+new file mode 100644
+--- /dev/null
++++ b/cuda-sim/SConscript
+@@ -0,0 +1,45 @@
++# -*- mode:python -*-
++
++# Copyright (c) 2011 Mark D. Hill and David A. Wood
++# All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions are
++# met: redistributions of source code must retain the above copyright
++# notice, this list of conditions and the following disclaimer;
++# redistributions in binary form must reproduce the above copyright
++# notice, this list of conditions and the following disclaimer in the
++# documentation and/or other materials provided with the distribution;
++# neither the name of the copyright holders nor the names of its
++# contributors may be used to endorse or promote products derived from
++# this software without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++
++Import('*')
++
++Source('cuda_device_printf.cc', Werror=False)
++Source('cuda-sim.cc', Werror=False)
++Source('instructions.cc', Werror=False)
++Source('lex.ptx_.c', Werror=False)
++Source('lex.ptxinfo_.c', Werror=False)
++Source('memory.cc', Werror=False)
++Source('ptxinfo.tab.c', Werror=False)
++Source('ptx_ir.cc', Werror=False)
++Source('ptx_loader.cc', Werror=False)
++Source('ptx_parser.cc', Werror=False)
++Source('ptx_sim.cc', Werror=False)
++Source('ptx-stats.cc', Werror=False)
++Source('ptx.tab.c', Werror=False)
++Source('decuda_pred_table/decuda_pred_table.cc', Werror=False)
+diff --git a/cuda-sim/cuda-sim.cc b/cuda-sim/cuda-sim.cc
+--- a/cuda-sim/cuda-sim.cc
++++ b/cuda-sim/cuda-sim.cc
+@@ -26,6 +26,8 @@
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
++#include "gpu/gpgpu-sim/cuda_gpu.hh"
++
+ #include "cuda-sim.h"
+ 
+ #include "instructions.h"
+@@ -93,6 +95,8 @@
+ 
+ static address_type get_converge_point(address_type pc);
+ 
++void sign_extend( ptx_reg_t &data, unsigned src_size, const operand_info &dst );
++
+ void gpgpu_t::gpgpu_ptx_sim_bindNameToTexture(const char* name, const struct textureReference* texref, int dim, int readmode, int ext)
+ {
+    std::string texname(name);
+@@ -396,9 +400,11 @@
+       printf("GPGPU-Sim PTX: copying %zu bytes from GPU[0x%Lx] to CPU[0x%Lx] ...", count, (unsigned long long) src_start_addr, (unsigned long long) dst );
+       fflush(stdout);
+    }
++
+    unsigned char *dst_data = (unsigned char*)dst;
+    for (unsigned n=0; n < count; n ++ ) 
+-      m_global_mem->read(src_start_addr+n,1,dst_data+n);
++       m_global_mem->read(src_start_addr+n,1,dst_data+n);
++
+    if(g_debug_execution >= 3) {
+       printf( " done.\n");
+       fflush(stdout);
+@@ -1048,9 +1054,26 @@
+       size = param_value.size; // size of param in bytes
+       // assert(param_value.offset == param_address);
+       if( size != p.get_size() / 8) {
+-         printf("GPGPU-Sim PTX: WARNING actual kernel paramter size = %zu bytes vs. formal size = %zu (using smaller of two)\n",
+-                size, p.get_size()/8);
+-         size = (size<(p.get_size()/8))?size:(p.get_size()/8);
++         if(size == 4 && p.get_size()/8 == 8) {
++             warn("Parameter size is 8B, but 4B passed, possibly a pointer:\n" \
++                  "      Assuming a 32-bit CPU arch, promoting arg to 64-bit pointer for GPU\n" \
++                  "      This may fail if using structs/unions containing pointer types\n");
++             size_t orig_size = size;
++             size = p.get_size()/8;
++             param_value.size = size;
++             // TODO: GPGPU-Sim doesn't currently clean these up anywhere, but
++             // this should be freed at kernel completion or end of simulation
++             char *for_pdata = new char[size];
++             memset(for_pdata, 0, size * sizeof(char));
++             const char *pdata = reinterpret_cast<const char*>(param_value.pdata);
++             memcpy(for_pdata, pdata, orig_size);
++             param_value.pdata = for_pdata;
++             delete [] pdata;
++         } else {
++             printf("GPGPU-Sim PTX: WARNING actual kernel parameter size = %zu bytes vs. formal size = %zu (trying smaller of two)\n",
++                    size, p.get_size()/8);
++             size = (size<(p.get_size()/8))?size:(p.get_size()/8);
++         }
+       } 
+       // copy the parameter over word-by-word so that parameter that crosses a memory page can be copied over
+       const size_t word_size = 4; 
+@@ -1153,6 +1176,120 @@
+    return data_size; 
+ }
+ 
++int ptx_thread_info::readRegister(const warp_inst_t &inst, unsigned lane_id, char *data, unsigned reg_id)
++{
++   const ptx_instruction *pI = m_func_info->get_instruction(inst.pc);
++
++   const operand_info &dst = pI->dst();
++   const operand_info &src = pI->operand_lookup(reg_id);
++   unsigned type = pI->get_type();
++   unsigned vector_spec = pI->get_vector();
++
++   // SIZE IS IN BITS
++   size_t size;
++   int basic_type;
++   type_info_key::type_decode(pI->get_type(), size, basic_type);
++
++   // NOTE: converting the register values like below (casting to ull) may not 
++   // work. It might keep some upper bits that are stale. see ptx_sim.h line 56
++
++   int offset = 0;
++   int bytes = size/8;
++
++   if (vector_spec) {
++      if (vector_spec == V2_TYPE) {
++         ptx_reg_t ptx_regs[2];
++         get_vector_operand_values(src, ptx_regs, 2);
++         memcpy(data+offset, &ptx_regs[0], bytes);
++         offset += bytes;
++         memcpy(data+offset, &ptx_regs[1], bytes);
++         return 2;
++      }
++      else if (vector_spec == V3_TYPE) {
++         ptx_reg_t ptx_regs[3];
++         get_vector_operand_values(src, ptx_regs, 3);
++         memcpy(data+offset, &ptx_regs[0], bytes);
++         offset += bytes;
++         memcpy(data+offset, &ptx_regs[1], bytes);
++         offset += bytes;
++         memcpy(data+offset, &ptx_regs[2], bytes);
++         offset += bytes;
++         return 3;
++      }
++      else {
++         assert(vector_spec == V4_TYPE);
++         ptx_reg_t ptx_regs[4];
++         get_vector_operand_values(src, ptx_regs, 4);
++         memcpy(data+offset, &ptx_regs[0], bytes);
++         offset += bytes;
++         memcpy(data+offset, &ptx_regs[1], bytes);
++         offset += bytes;
++         memcpy(data+offset, &ptx_regs[2], bytes);
++         offset += bytes;
++         memcpy(data+offset, &ptx_regs[3], bytes);
++         offset += bytes;
++         return 4;
++      }
++   } else {
++      ptx_reg_t ptx_reg = this->get_operand_value(src, dst, type, this, 1);
++      memcpy(data+offset, &ptx_reg, bytes);
++      offset += bytes;
++      return 1;
++   }
++}
++
++void ptx_thread_info::writeRegister(const warp_inst_t &inst, unsigned lane_id, char *data)
++{
++   const ptx_instruction *pI = m_func_info->get_instruction(inst.pc);
++
++   const operand_info &dst = pI->dst();
++
++   unsigned type = pI->get_type();
++
++   ptx_reg_t reg;
++   memory_space_t space = pI->get_space();
++   unsigned vector_spec = pI->get_vector();
++
++   size_t size;
++   int t;
++   type_info_key::type_decode(type,size,t);
++
++   // NOTE: converting the register values like below (casting to ull) may not
++   // work. It might keep some upper bits that are stale. see ptx_sim.h line 56
++
++   int offset = 0;
++   int bytes = size/8;
++
++   //reg.u64 = data[0];
++   memcpy(&reg, data, bytes);
++
++   if (!vector_spec) {
++      if( type == S16_TYPE || type == S32_TYPE ) {
++         sign_extend(reg,size,dst);
++      }
++      set_operand_value(dst,reg, type, this, pI);
++   } else {
++      ptx_reg_t data1, data2, data3, data4;
++      memcpy(&data1, data+offset, bytes);
++      offset += bytes;
++      memcpy(&data2, data+offset, bytes);
++      offset += bytes;
++      if (vector_spec != V2_TYPE) { //either V3 or V4
++         memcpy(&data3, data+offset, bytes);
++         offset += bytes;
++         if (vector_spec != V3_TYPE) { //v4
++            memcpy(&data4, data+offset, bytes);
++            offset += bytes;
++            set_vector_operand_values(dst,data1,data2,data3,data4);
++         } else { //v3
++            set_vector_operand_values(dst,data1,data2,data3,data3);
++         }
++      } else { //v2
++         set_vector_operand_values(dst,data1,data2,data2,data2);
++      }
++   }
++}
++
+ void ptx_thread_info::ptx_exec_inst( warp_inst_t &inst, unsigned lane_id)
+ {
+     
+@@ -1163,6 +1300,22 @@
+    const ptx_instruction *pI = m_func_info->get_instruction(pc);
+    set_npc( pc + pI->inst_size() );
+    
++   unsigned vector_spec = pI->get_vector();
++   if (vector_spec) {
++      if (vector_spec == V2_TYPE) {
++         inst.vectorLength = 2;
++      }
++      else if (vector_spec == V3_TYPE) {
++         inst.vectorLength = 3;
++      }
++      else {
++         assert(vector_spec == V4_TYPE);
++         inst.vectorLength = 4;
++      }
++   } else {
++      inst.vectorLength = 1;
++   }
++
+ 
+    try {
+ 
+@@ -1212,7 +1365,9 @@
+       }
+       delete pJ;
+       pI = pI_saved;
+-      
++
++      m_gpu->gem5CudaGPU->getCudaCore(m_hw_sid)->record_inst(op_classification);
++
+       // Run exit instruction if exit option included
+       if(pI->is_exit())
+          exit_impl(pI,this);
+@@ -1329,6 +1484,12 @@
+       inst.set_addr(lane_id, insn_memaddr);
+       inst.data_size = insn_data_size; // simpleAtomicIntrinsics
+       assert( inst.memory_op == insn_memory_op );
++      if (insn_memory_op == memory_store && (insn_space == global_space || insn_space == const_space)) {
++         // Need to save data to be written for stores
++         uint8_t data[MAX_DATA_BYTES_PER_INSN_PER_THREAD];
++         readRegister(inst, lane_id, (char*)&data[0]);
++         inst.set_data(lane_id, data);
++      }
+    } 
+ 
+    } catch ( int x  ) {
+@@ -1551,6 +1712,44 @@
+    g_global_name_lookup[hostVar] = deviceName;
+ }
+ 
++std::string gpgpu_ptx_sim_hostvar_to_sym_name(const char *hostVar) {
++    // *Note: This code is largely copied from gpgpu_ptx_sim_memcpy_symbol
++    // to be used with gem5 memory system
++    printf("GPGPU-Sim PTX: starting gpgpu_ptx_sim_memcpy_symbol with hostVar 0x%p\n", hostVar);
++    bool found_sym = false;
++    std::string sym_name;
++
++    std::map<const void*,std::string>::iterator c=g_const_name_lookup.find(hostVar);
++    if ( c!=g_const_name_lookup.end() ) {
++       found_sym = true;
++       sym_name = c->second;
++    }
++    std::map<const void*,std::string>::iterator g=g_global_name_lookup.find(hostVar);
++    if ( g!=g_global_name_lookup.end() ) {
++       if ( found_sym ) {
++          printf("Execution error: PTX symbol \"%s\" w/ hostVar=0x%Lx is declared both const and global?\n",
++                 sym_name.c_str(), (unsigned long long)hostVar );
++          abort();
++       }
++       found_sym = true;
++       sym_name = g->second;
++    }
++    if( g_globals.find(hostVar) != g_globals.end() ) {
++       found_sym = true;
++       sym_name = hostVar;
++    }
++    if( g_constants.find(hostVar) != g_constants.end() ) {
++       found_sym = true;
++       sym_name = hostVar;
++    }
++
++    if ( !found_sym ) {
++       printf("Execution error: No information for PTX symbol w/ hostVar=0x%Lx\n", (unsigned long long)hostVar );
++       abort();
++    } else printf("GPGPU-Sim PTX: gpgpu_ptx_sim_memcpy_symbol: Found PTX symbol w/ hostVar=0x%Lx\n", (unsigned long long)hostVar );
++    return sym_name;
++}
++
+ void gpgpu_ptx_sim_memcpy_symbol(const char *hostVar, const void *src, size_t count, size_t offset, int to, gpgpu_t *gpu )
+ {
+    printf("GPGPU-Sim PTX: starting gpgpu_ptx_sim_memcpy_symbol with hostVar 0x%p\n", hostVar);
+@@ -1852,28 +2051,28 @@
+     return g_ptxinfo_kinfo;
+ }
+ 
+-void ptxinfo_function(const char *fname )
++extern "C" void ptxinfo_function(const char *fname )
+ {
+     clear_ptxinfo();
+     g_ptxinfo_kname = strdup(fname);
+ }
+ 
+-void ptxinfo_regs( unsigned nregs )
++extern "C" void ptxinfo_regs( unsigned nregs )
+ {
+     g_ptxinfo_kinfo.regs=nregs;
+ }
+ 
+-void ptxinfo_lmem( unsigned declared, unsigned system )
++extern "C" void ptxinfo_lmem( unsigned declared, unsigned system )
+ {
+     g_ptxinfo_kinfo.lmem=declared+system;
+ }
+ 
+-void ptxinfo_smem( unsigned declared, unsigned system )
++extern "C" void ptxinfo_smem( unsigned declared, unsigned system )
+ {
+     g_ptxinfo_kinfo.smem=declared+system;
+ }
+ 
+-void ptxinfo_cmem( unsigned nbytes, unsigned bank )
++extern "C" void ptxinfo_cmem( unsigned nbytes, unsigned bank )
+ {
+     g_ptxinfo_kinfo.cmem+=nbytes;
+ }
+diff --git a/cuda-sim/cuda-sim.h b/cuda-sim/cuda-sim.h
+--- a/cuda-sim/cuda-sim.h
++++ b/cuda-sim/cuda-sim.h
+@@ -57,6 +57,7 @@
+ extern void   print_splash();
+ extern void   gpgpu_ptx_sim_register_const_variable(void*, const char *deviceName, size_t size );
+ extern void   gpgpu_ptx_sim_register_global_variable(void *hostVar, const char *deviceName, size_t size );
++extern std::string gpgpu_ptx_sim_hostvar_to_sym_name(const char *hostVar);
+ extern void   gpgpu_ptx_sim_memcpy_symbol(const char *hostVar, const void *src, size_t count, size_t offset, int to, gpgpu_t *gpu );
+ 
+ extern void read_sim_environment_variables();
+diff --git a/cuda-sim/instructions.cc b/cuda-sim/instructions.cc
+--- a/cuda-sim/instructions.cc
++++ b/cuda-sim/instructions.cc
+@@ -27,6 +27,7 @@
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ #include "instructions.h"
++#include "instructions_extra.h"
+ #include "ptx_ir.h"
+ #include "opcodes.h"
+ #include "ptx_sim.h"
+@@ -40,6 +41,7 @@
+ #include "cuda_device_printf.h"
+ #include "../gpgpu-sim/gpu-sim.h"
+ #include "../gpgpu-sim/shader.h"
++#include "gpu/gpgpu-sim/cuda_gpu.hh"
+ 
+ #include <stdarg.h>
+ 
+@@ -52,7 +54,7 @@
+ };
+ 
+ void inst_not_implemented( const ptx_instruction * pI ) ;
+-ptx_reg_t srcOperandModifiers(ptx_reg_t opData, operand_info opInfo, operand_info dstInfo, unsigned type, ptx_thread_info *thread);
++//ptx_reg_t srcOperandModifiers(ptx_reg_t opData, operand_info opInfo, operand_info dstInfo, unsigned type, ptx_thread_info *thread);
+ 
+ void sign_extend( ptx_reg_t &data, unsigned src_size, const operand_info &dst );
+ 
+@@ -202,50 +204,22 @@
+    }
+ 
+    ptx_reg_t finalResult;
+-   memory_space *mem = NULL;
+-   size_t size=0;
+-   int t=0;
+    finalResult.u64=0;
+ 
+-   //complete other cases for reading from memory, such as reading from other const memory
++   // @TODO: Joel: This code should only be executed when simulating PTXPlus,
++   //        and it should be explored later
+    if((op.get_addr_space() == global_space)&&(derefFlag)) {
+-       // global memory - g[4], g[$r0]
+-       mem = thread->get_global_memory();
+-       type_info_key::type_decode(opType,size,t);
+-       mem->read(result.u32,size/8,&finalResult.u128);
+-       thread->m_last_effective_address = result.u32;
+-       thread->m_last_memory_space = global_space;
+-
+-       if( opType == S16_TYPE || opType == S32_TYPE )
+-         sign_extend(finalResult,size,dstInfo);
++       printf("GPGPU-Sim PTX: DON'T ACCESS MEMORY (GLOBAL) FOR OPERANDS!\n");
++       assert(0);
+    } else if((op.get_addr_space() == shared_space)&&(derefFlag)) {
+-      // shared memory - s[4], s[$r0]
+-       mem = thread->m_shared_mem;
+-       type_info_key::type_decode(opType,size,t);
+-       mem->read(result.u32,size/8,&finalResult.u128);
+-       thread->m_last_effective_address = result.u32;
+-       thread->m_last_memory_space = shared_space;
+-
+-       if( opType == S16_TYPE || opType == S32_TYPE ) 
+-         sign_extend(finalResult,size,dstInfo);
++       printf("GPGPU-Sim PTX: DON'T ACCESS MEMORY (SHARED) FOR OPERANDS!\n");
++       assert(0);
+    } else if((op.get_addr_space() == const_space)&&(derefFlag)) {
+-      // const memory - ce0c1[4], ce0c1[$r0]
+-       mem = thread->get_global_memory();
+-       type_info_key::type_decode(opType,size,t);
+-       mem->read((result.u32 + op.get_const_mem_offset()),size/8,&finalResult.u128);
+-       thread->m_last_effective_address = result.u32;
+-       thread->m_last_memory_space = const_space;
+-       if( opType == S16_TYPE || opType == S32_TYPE )
+-         sign_extend(finalResult,size,dstInfo);
++       printf("GPGPU-Sim PTX: DON'T ACCESS MEMORY (CONST) FOR OPERANDS!\n");
++       assert(0);
+    } else if((op.get_addr_space() == local_space)&&(derefFlag)) {
+-      // local memory - l0[4], l0[$r0]
+-       mem = thread->m_local_mem;
+-       type_info_key::type_decode(opType,size,t);
+-       mem->read(result.u32,size/8,&finalResult.u128);
+-       thread->m_last_effective_address = result.u32;
+-       thread->m_last_memory_space = local_space;
+-       if( opType == S16_TYPE || opType == S32_TYPE ) 
+-         sign_extend(finalResult,size,dstInfo);
++       printf("GPGPU-Sim PTX: DON'T ACCESS MEMORY (LOCAL) FOR OPERANDS!\n");
++       assert(0);
+    } else {
+        finalResult = result;
+    }
+@@ -392,7 +366,6 @@
+ void ptx_thread_info::set_operand_value( const operand_info &dst, const ptx_reg_t &data, unsigned type, ptx_thread_info *thread, const ptx_instruction *pI )
+ {
+    ptx_reg_t dstData;
+-   memory_space *mem = NULL;
+    size_t size;
+    int t;
+ 
+@@ -565,40 +538,27 @@
+       }
+    }
+ 
++   // @TODO: Joel: These should only be executed with PTXPlus simulation, and
++   //        this support should be explored later
+    // global memory - g[4], g[$r0]
+    else if(dst.get_addr_space() == global_space)
+    {
+-       dstData = thread->get_operand_value(dst, dst, type, thread, 0);
+-       mem = thread->get_global_memory();
+-       type_info_key::type_decode(type,size,t);
+-
+-       mem->write(dstData.u32,size/8,&data.u128,thread,pI);
+-       thread->m_last_effective_address = dstData.u32;
+-       thread->m_last_memory_space = global_space;
++       printf("GPGPU-Sim PTX: DON'T ACCESS MEMORY (GLOBAL) FOR SETTING OPERANDS!\n");
++       assert(0);
+    }
+ 
+    // shared memory - s[4], s[$r0]
+    else if(dst.get_addr_space() == shared_space)
+    {
+-       dstData = thread->get_operand_value(dst, dst, type, thread, 0);
+-       mem = thread->m_shared_mem;
+-       type_info_key::type_decode(type,size,t);
+-
+-       mem->write(dstData.u32,size/8,&data.u128,thread,pI);
+-       thread->m_last_effective_address = dstData.u32;
+-       thread->m_last_memory_space = shared_space;
++       printf("GPGPU-Sim PTX: DON'T ACCESS MEMORY (SHARED) FOR SETTING OPERANDS!\n");
++       assert(0);
+    }
+ 
+    // local memory - l0[4], l0[$r0]
+    else if(dst.get_addr_space() == local_space)
+    {
+-       dstData = thread->get_operand_value(dst, dst, type, thread, 0);
+-       mem = thread->m_local_mem;
+-       type_info_key::type_decode(type,size,t);
+-
+-       mem->write(dstData.u32,size/8,&data.u128,thread,pI);
+-       thread->m_last_effective_address = dstData.u32;
+-       thread->m_last_memory_space = local_space;
++       printf("GPGPU-Sim PTX: DON'T ACCESS MEMORY (LOCAL) FOR SETTING OPERANDS!\n");
++       assert(0);
+    }
+ 
+    else
+@@ -867,6 +827,8 @@
+ 
+ void atom_callback( const inst_t* inst, ptx_thread_info* thread )
+ {
++    printf("GPGPU-Sim PTX: UNTESTED INSTRUCTION: ATOM\n");
++    assert(0);
+    const ptx_instruction *pI = dynamic_cast<const ptx_instruction*>(inst);
+ 
+    // "Decode" the output type
+@@ -1179,6 +1141,8 @@
+ // atom_impl will now result in a callback being called in mem_ctrl_pop (gpu-sim.c)
+ void atom_impl( const ptx_instruction *pI, ptx_thread_info *thread )
+ {   
++    printf("GPGPU-Sim PTX: UNTESTED INSTRUCTION: ATOM\n");
++    assert(0);
+    // SYNTAX
+    // atom.space.operation.type d, a, b[, c]; (now read in callback)
+ 
+@@ -2108,30 +2072,32 @@
+ }
+ 
+ void isspacep_impl( const ptx_instruction *pI, ptx_thread_info *thread ) 
+-{ 
+-   ptx_reg_t a;
+-   bool t=false;
+-
+-   const operand_info &dst  = pI->dst();
+-   const operand_info &src1 = pI->src1();
+-   memory_space_t space = pI->get_space();
+-
+-   a = thread->get_reg(src1.get_symbol());
+-   addr_t addr = (addr_t)a.u64;
+-   unsigned smid = thread->get_hw_sid();
+-   unsigned hwtid = thread->get_hw_tid();
+-
+-   switch( space.get_type() ) {
+-   case shared_space: t = isspace_shared( smid, addr );
+-   case local_space:  t = isspace_local( smid, hwtid, addr );
+-   case global_space: t = isspace_global( addr );
+-   default: abort();
+-   }
+-
+-   ptx_reg_t p;
+-   p.pred = t?1:0;
+-
+-   thread->set_reg(dst.get_symbol(),p);
++{
++    printf("GPGPU-Sim PTX: UNTESTED INSTRUCTION: ISSPACEP\n");
++    assert(0);
++//   ptx_reg_t a;
++//   bool t=false;
++//
++//   const operand_info &dst  = pI->dst();
++//   const operand_info &src1 = pI->src1();
++//   memory_space_t space = pI->get_space();
++//
++//   a = thread->get_reg(src1.get_symbol());
++//   addr_t addr = (addr_t)a.u64;
++//   unsigned smid = thread->get_hw_sid();
++//   unsigned hwtid = thread->get_hw_tid();
++//
++//   switch( space.get_type() ) {
++//   case shared_space: t = isspace_shared( smid, addr );
++//   case local_space:  t = isspace_local( smid, hwtid, addr );
++//   case global_space: t = isspace_global( addr );
++//   default: abort();
++//   }
++//
++//   ptx_reg_t p;
++//   p.pred = t?1:0;
++//
++//   thread->set_reg(dst.get_symbol(),p);
+ }
+ 
+ void decode_space( memory_space_t &space, ptx_thread_info *thread, const operand_info &op, memory_space *&mem, addr_t &addr)
+@@ -2203,28 +2169,36 @@
+ 
+    decode_space(space,thread,src1,mem,addr);
+ 
+-   size_t size;
+-   int t;
+-   data.u64=0;
+-   type_info_key::type_decode(type,size,t);
+-   if (!vector_spec) {
+-      mem->read(addr,size/8,&data.s64);
+-      if( type == S16_TYPE || type == S32_TYPE ) 
+-         sign_extend(data,size,dst);
+-      thread->set_operand_value(dst,data, type, thread, pI);
+-   } else {
+-      ptx_reg_t data1, data2, data3, data4;
+-      mem->read(addr,size/8,&data1.s64);
+-      mem->read(addr+size/8,size/8,&data2.s64);
+-      if (vector_spec != V2_TYPE) { //either V3 or V4
+-         mem->read(addr+2*size/8,size/8,&data3.s64);
+-         if (vector_spec != V3_TYPE) { //v4
+-            mem->read(addr+3*size/8,size/8,&data4.s64);
+-            thread->set_vector_operand_values(dst,data1,data2,data3,data4);
+-         } else //v3
+-            thread->set_vector_operand_values(dst,data1,data2,data3,data3);
+-      } else //v2
+-         thread->set_vector_operand_values(dst,data1,data2,data2,data2);
++   thread->get_gpu()->gem5CudaGPU->getCudaCore(thread->get_hw_sid())->record_ld(space);
++
++   if (space.get_type() != global_space && space.get_type() != const_space) {
++       size_t size;
++       int t;
++       data.u64=0;
++       type_info_key::type_decode(type,size,t);
++       // Note here that when using gem5 memories, this read function will not
++       // return the data that will be set in the operand. Instead, when the read
++       // completes, it will write the operands a second time with the correct data
++       if (!vector_spec) {
++          mem->read(addr,size/8,&data.s64,thread,pI);
++          // Before, we did a functional read here.
++          if( type == S16_TYPE || type == S32_TYPE )
++             sign_extend(data,size,dst);
++          thread->set_operand_value(dst,data, type, thread, pI);
++       } else {
++          ptx_reg_t data1, data2, data3, data4;
++          mem->read(addr,size/8,&data1.s64,thread,pI);
++          mem->read(addr+size/8,size/8,&data2.s64,thread,pI);
++          if (vector_spec != V2_TYPE) { //either V3 or V4
++             mem->read(addr+2*size/8,size/8,&data3.s64,thread,pI);
++             if (vector_spec != V3_TYPE) { //v4
++                mem->read(addr+3*size/8,size/8,&data4.s64,thread,pI);
++                thread->set_vector_operand_values(dst,data1,data2,data3,data4);
++             } else //v3
++                thread->set_vector_operand_values(dst,data1,data2,data3,data3);
++          } else //v2
++             thread->set_vector_operand_values(dst,data1,data2,data2,data2);
++       }
+    }
+    thread->m_last_effective_address = addr;
+    thread->m_last_memory_space = space; 
+@@ -3564,39 +3538,42 @@
+    addr_t addr = addr_reg.u64;
+ 
+    decode_space(space,thread,dst,mem,addr);
+-
+-   size_t size;
+-   int t;
+-   type_info_key::type_decode(type,size,t);
+-
+-   if (!vector_spec) {
+-      data = thread->get_operand_value(src1, dst, type, thread, 1);
+-      mem->write(addr,size/8,&data.s64,thread,pI);
+-   } else {
+-      if (vector_spec == V2_TYPE) {
+-         ptx_reg_t* ptx_regs = new ptx_reg_t[2]; 
+-         thread->get_vector_operand_values(src1, ptx_regs, 2); 
+-         mem->write(addr,size/8,&ptx_regs[0].s64,thread,pI);
+-         mem->write(addr+size/8,size/8,&ptx_regs[1].s64,thread,pI);
+-         delete [] ptx_regs;
+-      }
+-      if (vector_spec == V3_TYPE) {
+-         ptx_reg_t* ptx_regs = new ptx_reg_t[3]; 
+-         thread->get_vector_operand_values(src1, ptx_regs, 3); 
+-         mem->write(addr,size/8,&ptx_regs[0].s64,thread,pI);
+-         mem->write(addr+size/8,size/8,&ptx_regs[1].s64,thread,pI);
+-         mem->write(addr+2*size/8,size/8,&ptx_regs[2].s64,thread,pI);
+-         delete [] ptx_regs;
+-      }
+-      if (vector_spec == V4_TYPE) {
+-         ptx_reg_t* ptx_regs = new ptx_reg_t[4]; 
+-         thread->get_vector_operand_values(src1, ptx_regs, 4); 
+-         mem->write(addr,size/8,&ptx_regs[0].s64,thread,pI);
+-         mem->write(addr+size/8,size/8,&ptx_regs[1].s64,thread,pI);
+-         mem->write(addr+2*size/8,size/8,&ptx_regs[2].s64,thread,pI);
+-         mem->write(addr+3*size/8,size/8,&ptx_regs[3].s64,thread,pI);
+-         delete [] ptx_regs;
+-      }
++   thread->get_gpu()->gem5CudaGPU->getCudaCore(thread->get_hw_sid())->record_st(space);
++
++   if (space.get_type() != global_space && space.get_type() != const_space) {
++       size_t size;
++       int t;
++       type_info_key::type_decode(type,size,t);
++
++       if (!vector_spec) {
++          data = thread->get_operand_value(src1, dst, type, thread, 1);
++          mem->write(addr,size/8,&data.s64,thread,pI);
++       } else {
++          if (vector_spec == V2_TYPE) {
++             ptx_reg_t* ptx_regs = new ptx_reg_t[2];
++             thread->get_vector_operand_values(src1, ptx_regs, 2);
++             mem->write(addr,size/8,&ptx_regs[0].s64,thread,pI);
++             mem->write(addr+size/8,size/8,&ptx_regs[1].s64,thread,pI);
++             delete [] ptx_regs;
++          }
++          if (vector_spec == V3_TYPE) {
++             ptx_reg_t* ptx_regs = new ptx_reg_t[3];
++             thread->get_vector_operand_values(src1, ptx_regs, 3);
++             mem->write(addr,size/8,&ptx_regs[0].s64,thread,pI);
++             mem->write(addr+size/8,size/8,&ptx_regs[1].s64,thread,pI);
++             mem->write(addr+2*size/8,size/8,&ptx_regs[2].s64,thread,pI);
++             delete [] ptx_regs;
++          }
++          if (vector_spec == V4_TYPE) {
++             ptx_reg_t* ptx_regs = new ptx_reg_t[4];
++             thread->get_vector_operand_values(src1, ptx_regs, 4);
++             mem->write(addr,size/8,&ptx_regs[0].s64,thread,pI);
++             mem->write(addr+size/8,size/8,&ptx_regs[1].s64,thread,pI);
++             mem->write(addr+2*size/8,size/8,&ptx_regs[2].s64,thread,pI);
++             mem->write(addr+3*size/8,size/8,&ptx_regs[3].s64,thread,pI);
++             delete [] ptx_regs;
++          }
++       }
+    }
+    thread->m_last_effective_address = addr;
+    thread->m_last_memory_space = space; 
+@@ -3778,6 +3755,8 @@
+ 
+ void tex_impl( const ptx_instruction *pI, ptx_thread_info *thread ) 
+ {
++    printf("GPGPU-Sim PTX: UNTESTED INSTRUCTION: TEX\n");
++    assert(0);
+    unsigned dimension = pI->dimension();
+    const operand_info &dst = pI->dst(); //the registers to which fetched texel will be placed
+    const operand_info &src1 = pI->src1(); //the name of the texture
+@@ -4161,61 +4140,61 @@
+    abort();
+ }
+ 
+-ptx_reg_t srcOperandModifiers(ptx_reg_t opData, operand_info opInfo, operand_info dstInfo, unsigned type, ptx_thread_info *thread)
+-{
+-   ptx_reg_t result;
+-   memory_space *mem = NULL;
+-   size_t size;
+-   int t;
+-   result.u64=0;
+-
+-   //complete other cases for reading from memory, such as reading from other const memory
+-   if(opInfo.get_addr_space() == global_space)
+-   {
+-       mem = thread->get_global_memory();
+-       type_info_key::type_decode(type,size,t);
+-       mem->read(opData.u32,size/8,&result.u64);
+-       if( type == S16_TYPE || type == S32_TYPE ) 
+-         sign_extend(result,size,dstInfo);
+-   }
+-   else if(opInfo.get_addr_space() == shared_space)
+-   {
+-       mem = thread->m_shared_mem;
+-       type_info_key::type_decode(type,size,t);
+-       mem->read(opData.u32,size/8,&result.u64);
+-
+-       if( type == S16_TYPE || type == S32_TYPE ) 
+-         sign_extend(result,size,dstInfo);
+-
+-   }
+-   else if(opInfo.get_addr_space() == const_space)
+-   {
+-       mem = thread->get_global_memory();
+-       type_info_key::type_decode(type,size,t);
+-
+-       mem->read((opData.u32 + opInfo.get_const_mem_offset()),size/8,&result.u64);
+-
+-       if( type == S16_TYPE || type == S32_TYPE ) 
+-         sign_extend(result,size,dstInfo);
+-   }
+-   else
+-   {
+-       result = opData;
+-   }
+-
+-   if(opInfo.get_operand_lohi() == 1)
+-   {
+-        result.u64 = result.u64 & 0xFFFF;
+-   }
+-   else if(opInfo.get_operand_lohi() == 2)
+-   {
+-        result.u64 = (result.u64>>16) & 0xFFFF;
+-   }
+-
+-   if(opInfo.get_operand_neg() == true) {
+-      result.f32 = -result.f32;
+-   }
+-
+-   return result;
+-}
+-
++//ptx_reg_t srcOperandModifiers(ptx_reg_t opData, operand_info opInfo, operand_info dstInfo, unsigned type, ptx_thread_info *thread)
++//{
++//   ptx_reg_t result;
++//   memory_space *mem = NULL;
++//   size_t size;
++//   int t;
++//   result.u64=0;
++//
++//   //complete other cases for reading from memory, such as reading from other const memory
++//   if(opInfo.get_addr_space() == global_space)
++//   {
++//       mem = thread->get_global_memory();
++//       type_info_key::type_decode(type,size,t);
++//       mem->read(opData.u32,size/8,&result.u64);
++//       if( type == S16_TYPE || type == S32_TYPE )
++//         sign_extend(result,size,dstInfo);
++//   }
++//   else if(opInfo.get_addr_space() == shared_space)
++//   {
++//       mem = thread->m_shared_mem;
++//       type_info_key::type_decode(type,size,t);
++//       mem->read(opData.u32,size/8,&result.u64);
++//
++//       if( type == S16_TYPE || type == S32_TYPE )
++//         sign_extend(result,size,dstInfo);
++//
++//   }
++//   else if(opInfo.get_addr_space() == const_space)
++//   {
++//       mem = thread->get_global_memory();
++//       type_info_key::type_decode(type,size,t);
++//
++//       mem->read((opData.u32 + opInfo.get_const_mem_offset()),size/8,&result.u64);
++//
++//       if( type == S16_TYPE || type == S32_TYPE )
++//         sign_extend(result,size,dstInfo);
++//   }
++//   else
++//   {
++//       result = opData;
++//   }
++//
++//   if(opInfo.get_operand_lohi() == 1)
++//   {
++//        result.u64 = result.u64 & 0xFFFF;
++//   }
++//   else if(opInfo.get_operand_lohi() == 2)
++//   {
++//        result.u64 = (result.u64>>16) & 0xFFFF;
++//   }
++//
++//   if(opInfo.get_operand_neg() == true) {
++//      result.f32 = -result.f32;
++//   }
++//
++//   return result;
++//}
++
+diff --git a/cuda-sim/instructions_extra.h b/cuda-sim/instructions_extra.h
+new file mode 100644
+--- /dev/null
++++ b/cuda-sim/instructions_extra.h
+@@ -0,0 +1,6 @@
++#ifndef __INSTRUCTIONS_EXTRA_H__
++#define __INSTRUCTIONS_EXTRA_H__
++
++void sign_extend(ptx_reg_t &data, unsigned src_size, const operand_info &dst);
++
++#endif
+diff --git a/cuda-sim/memory.cc b/cuda-sim/memory.cc
+--- a/cuda-sim/memory.cc
++++ b/cuda-sim/memory.cc
+@@ -107,7 +107,7 @@
+    }
+ }
+ 
+-template<unsigned BSIZE> void memory_space_impl<BSIZE>::read( mem_addr_t addr, size_t length, void *data ) const
++template<unsigned BSIZE> void memory_space_impl<BSIZE>::read( mem_addr_t addr, size_t length, void *data, ptx_thread_info *thd, const ptx_instruction *pI ) const
+ {
+    mem_addr_t index = addr >> m_log2_block_size;
+    if ((addr+length) <= (index+1)*BSIZE ) {
+diff --git a/cuda-sim/memory.h b/cuda-sim/memory.h
+--- a/cuda-sim/memory.h
++++ b/cuda-sim/memory.h
+@@ -104,7 +104,7 @@
+ public:
+    virtual ~memory_space() {}
+    virtual void write( mem_addr_t addr, size_t length, const void *data, ptx_thread_info *thd, const ptx_instruction *pI ) = 0;
+-   virtual void read( mem_addr_t addr, size_t length, void *data ) const = 0;
++   virtual void read( mem_addr_t addr, size_t length, void *data, ptx_thread_info *thd = NULL, const ptx_instruction *pI = NULL ) const = 0;
+    virtual void print( const char *format, FILE *fout ) const = 0;
+    virtual void set_watch( addr_t addr, unsigned watchpoint ) = 0;
+ };
+@@ -114,7 +114,7 @@
+    memory_space_impl( std::string name, unsigned hash_size );
+ 
+    virtual void write( mem_addr_t addr, size_t length, const void *data, ptx_thread_info *thd, const ptx_instruction *pI );
+-   virtual void read( mem_addr_t addr, size_t length, void *data ) const;
++   virtual void read( mem_addr_t addr, size_t length, void *data, ptx_thread_info *thd = NULL, const ptx_instruction *pI = NULL ) const;
+    virtual void print( const char *format, FILE *fout ) const;
+    virtual void set_watch( addr_t addr, unsigned watchpoint ); 
+ 
+diff --git a/cuda-sim/ptx_loader.cc b/cuda-sim/ptx_loader.cc
+--- a/cuda-sim/ptx_loader.cc
++++ b/cuda-sim/ptx_loader.cc
+@@ -43,13 +43,13 @@
+ 
+ /// extern prototypes
+ 
+-extern int ptx_parse();
+-extern int ptx__scan_string(const char*);
++extern "C" int ptx_parse();
++extern "C" int ptx__scan_string(const char*);
+ 
+ const char *g_ptxinfo_filename;
+-extern int ptxinfo_parse();
+-extern int ptxinfo_debug;
+-extern FILE *ptxinfo_in;
++extern "C" int ptxinfo_parse();
++extern "C" int ptxinfo_debug;
++extern "C" FILE *ptxinfo_in;
+ 
+ static bool g_save_embedded_ptx;
+ bool g_keep_intermediate_files;
+diff --git a/cuda-sim/ptx_parser.cc b/cuda-sim/ptx_parser.cc
+--- a/cuda-sim/ptx_parser.cc
++++ b/cuda-sim/ptx_parser.cc
+@@ -30,7 +30,12 @@
+ #include "ptx.tab.h"
+ #include <stdarg.h>
+ 
+-extern int ptx_error( const char *s );
++#include "../gpgpu-sim/gpu-sim.h"
++#include "gpu/gpgpu-sim/cuda_gpu.hh"
++
++extern gpgpu_sim *g_the_gpu;
++
++extern "C" int ptx_error( const char *s );
+ extern int ptx_lineno;
+ 
+ static const struct core_config *g_shader_core_config;
+@@ -93,14 +98,14 @@
+    return g_ptx_token_decode[type].c_str();
+ }
+ 
+-void read_parser_environment_variables() 
++void read_parser_environment_variables()
+ {
+-   g_filename = getenv("PTX_SIM_KERNELFILE"); 
++   g_filename = getenv("PTX_SIM_KERNELFILE");
+    char *dbg_level = getenv("PTX_SIM_DEBUG");
+    if ( dbg_level && strlen(dbg_level) ) {
+       int debug_execution=0;
+       sscanf(dbg_level,"%d", &debug_execution);
+-      if ( debug_execution >= 30 ) 
++      if ( debug_execution >= 30 )
+          g_debug_ir_generation=true;
+    }
+ }
+@@ -154,7 +159,7 @@
+ 
+ static int g_entry_point;
+ 
+-void start_function( int entry_point ) 
++void start_function( int entry_point )
+ {
+    PTX_PARSE_DPRINTF("start_function");
+    init_directive_state();
+@@ -168,7 +173,7 @@
+ int g_add_identifier_cached__array_dim;
+ int g_add_identifier_cached__array_ident;
+ 
+-void add_function_name( const char *name ) 
++void add_function_name( const char *name )
+ {
+    PTX_PARSE_DPRINTF("add_function_name %s %s", name,  ((g_entry_point==1)?"(entrypoint)":((g_entry_point==2)?"(extern)":"")));
+    bool prior_decl = g_global_symbol_table->add_function_decl( name, g_entry_point, &g_func_info, &g_current_symbol_table );
+@@ -187,7 +192,7 @@
+    g_global_symbol_table->add_function( g_func_info, g_filename, ptx_lineno );
+ }
+ 
+-void add_directive() 
++void add_directive()
+ {
+    PTX_PARSE_DPRINTF("add_directive");
+    init_directive_state();
+@@ -340,7 +345,7 @@
+     return alignto ? ((alignto - (address % alignto)) % alignto) : 0;
+ }
+ 
+-void add_identifier( const char *identifier, int array_dim, unsigned array_ident ) 
++void add_identifier( const char *identifier, int array_dim, unsigned array_ident )
+ {
+    if( g_func_decl && (g_func_info == NULL) ) {
+       // return variable decl...
+@@ -423,7 +428,7 @@
+                 identifier);
+          fflush(stdout);
+          assert( (num_bits%8) == 0  ); 
+-         addr = g_current_symbol_table->get_global_next();
++         addr = 0xDEADBEEF;
+          addr_pad = pad_address(addr, num_bits/8, 128);
+          printf("from 0x%x to 0x%lx (global memory space) %u\n",
+               addr+addr_pad,
+@@ -431,7 +436,7 @@
+               g_const_alloc++);
+          fflush(stdout);
+          g_last_symbol->set_address( addr + addr_pad );
+-         g_current_symbol_table->alloc_global( num_bits/8 + addr_pad ); 
++         // Do not alloc in gem5-gpu: g_current_symbol_table->alloc_global( num_bits/8 + addr_pad );
+       }
+       if( g_current_symbol_table == g_global_symbol_table ) { 
+          g_constants.insert( identifier ); 
+@@ -444,19 +449,20 @@
+              identifier);
+       fflush(stdout);
+       assert( (num_bits%8) == 0  );
+-      addr = g_current_symbol_table->get_global_next();
++      addr = 0xDEADBEEF;
+       addr_pad = pad_address(addr, num_bits/8, 128);
+       printf("from 0x%x to 0x%lx (global memory space)\n",
+               addr+addr_pad,
+               addr+addr_pad + num_bits/8);
+       fflush(stdout);
+       g_last_symbol->set_address( addr+addr_pad );
+-      g_current_symbol_table->alloc_global( num_bits/8 + addr_pad );
++      // Do not alloc in gem5-gpu: g_current_symbol_table->alloc_global( num_bits/8 + addr_pad );
+       g_globals.insert( identifier );
+       assert( g_current_symbol_table != NULL );
+       g_sym_name_to_symbol_table[ identifier ] = g_current_symbol_table;
+       break;
+    case local_space:
++      panic("local memory allocation is untested!");
+       if( g_func_info == NULL ) {
+           printf("GPGPU-Sim PTX: allocating local region for \"%s\" ", identifier);
+          fflush(stdout);
+@@ -537,7 +543,7 @@
+    }
+ }
+ 
+-void add_extern_spec() 
++void add_extern_spec()
+ {
+    PTX_PARSE_DPRINTF("add_extern_spec");
+    g_extern_spec = 1;
+@@ -607,12 +613,12 @@
+    }
+ }
+ 
+-void add_opcode( int opcode ) 
++void add_opcode( int opcode )
+ {
+    g_opcode = opcode;
+ }
+ 
+-void add_pred( const char *identifier, int neg, int predModifier ) 
++void add_pred( const char *identifier, int neg, int predModifier )
+ {
+    PTX_PARSE_DPRINTF("add_pred");
+    const symbol *s = g_current_symbol_table->lookup(identifier);
+@@ -625,7 +631,7 @@
+    g_pred_mod = predModifier;
+ }
+ 
+-void add_option( int option ) 
++void add_option( int option )
+ {
+    PTX_PARSE_DPRINTF("add_option");
+    g_options.push_back( option );
+@@ -653,7 +659,7 @@
+    g_operands.push_back( operand_info(s1,NULL,NULL,NULL) );
+ }
+ 
+-void add_2vector_operand( const char *d1, const char *d2 ) 
++void add_2vector_operand( const char *d1, const char *d2 )
+ {
+    PTX_PARSE_DPRINTF("add_2vector_operand");
+    const symbol *s1 = g_current_symbol_table->lookup(d1);
+@@ -662,7 +668,7 @@
+    g_operands.push_back( operand_info(s1,s2,NULL,NULL) );
+ }
+ 
+-void add_3vector_operand( const char *d1, const char *d2, const char *d3 ) 
++void add_3vector_operand( const char *d1, const char *d2, const char *d3 )
+ {
+    PTX_PARSE_DPRINTF("add_3vector_operand");
+    const symbol *s1 = g_current_symbol_table->lookup(d1);
+@@ -672,7 +678,7 @@
+    g_operands.push_back( operand_info(s1,s2,s3,NULL) );
+ }
+ 
+-void add_4vector_operand( const char *d1, const char *d2, const char *d3, const char *d4 ) 
++void add_4vector_operand( const char *d1, const char *d2, const char *d3, const char *d4 )
+ {
+    PTX_PARSE_DPRINTF("add_4vector_operand");
+    const symbol *s1 = g_current_symbol_table->lookup(d1);
+@@ -701,7 +707,7 @@
+ }
+ 
+ /*TODO: add other memory locations*/
+-void change_memory_addr_space(const char *identifier) 
++void change_memory_addr_space(const char *identifier)
+ {
+    /*0 = N/A, not reading from memory
+     *1 = global memory
+@@ -844,7 +850,7 @@
+    g_operands.push_back( operand_info(s) );
+ }
+ 
+-void add_neg_pred_operand( const char *identifier ) 
++void add_neg_pred_operand( const char *identifier )
+ {
+    PTX_PARSE_DPRINTF("add_neg_pred_operand");
+    const symbol *s = g_current_symbol_table->lookup(identifier);
+@@ -856,7 +862,7 @@
+    g_operands.push_back( op );
+ }
+ 
+-void add_address_operand( const char *identifier, int offset ) 
++void add_address_operand( const char *identifier, int offset )
+ {
+    PTX_PARSE_DPRINTF("add_address_operand");
+    const symbol *s = g_current_symbol_table->lookup(identifier);
+@@ -890,7 +896,7 @@
+       char *l=b;
+       char *n=b;
+       while( *n != '\0' ) {
+-          if( *n == '/' ) 
++          if( *n == '/' )
+               l = n+1;
+           n++;
+       }
+@@ -929,17 +935,17 @@
+ 
+ void version_header(double a) {}  //intentional dummy function
+ 
+-void target_header(char* a) 
++void target_header(char* a)
+ {
+    g_global_symbol_table->set_sm_target(a,NULL,NULL);
+ }
+ 
+-void target_header2(char* a, char* b) 
++void target_header2(char* a, char* b)
+ {
+    g_global_symbol_table->set_sm_target(a,b,NULL);
+ }
+ 
+-void target_header3(char* a, char* b, char* c) 
++void target_header3(char* a, char* b, char* c)
+ {
+    g_global_symbol_table->set_sm_target(a,b,c);
+ }
+diff --git a/cuda-sim/ptx_parser.h b/cuda-sim/ptx_parser.h
+--- a/cuda-sim/ptx_parser.h
++++ b/cuda-sim/ptx_parser.h
+@@ -35,6 +35,7 @@
+ #ifdef __cplusplus 
+ class symbol_table* init_parser(const char*);
+ const class ptx_instruction *ptx_instruction_lookup( const char *filename, unsigned linenumber );
++extern "C" {
+ #endif
+ 
+ const char *decode_token( int type );
+@@ -93,6 +94,9 @@
+ void change_operand_neg( );
+ void set_immediate_operand_type( );
+ void version_header(double a);
++#ifdef __cplusplus
++}
++#endif
+ 
+ #define NON_ARRAY_IDENTIFIER 1
+ #define ARRAY_IDENTIFIER_NO_DIM 2
+diff --git a/cuda-sim/ptx_sim.cc b/cuda-sim/ptx_sim.cc
+--- a/cuda-sim/ptx_sim.cc
++++ b/cuda-sim/ptx_sim.cc
+@@ -343,10 +343,10 @@
+    fflush(fp);
+ }
+ 
+-static void print_reg( std::string name, ptx_reg_t value, symbol_table *symtab )
+-{
+-   print_reg(stdout,name,value,symtab);
+-}
++//static void print_reg( std::string name, ptx_reg_t value, symbol_table *symtab )
++//{
++//   print_reg(stdout,name,value,symtab);
++//}
+ 
+ void ptx_thread_info::callstack_push( unsigned pc, unsigned rpc, const symbol *return_var_src, const symbol *return_var_dst, unsigned call_uid )
+ {
+diff --git a/cuda-sim/ptx_sim.h b/cuda-sim/ptx_sim.h
+--- a/cuda-sim/ptx_sim.h
++++ b/cuda-sim/ptx_sim.h
+@@ -274,6 +274,10 @@
+    }
+ 
+    void ptx_fetch_inst( inst_t &inst ) const;
++
++   int readRegister(const warp_inst_t &inst, unsigned lane_id, char *data, unsigned id = 1);
++   void writeRegister(const warp_inst_t &inst, unsigned lane_id, char *data);
++
+    void ptx_exec_inst( warp_inst_t &inst, unsigned lane_id );
+ 
+    const ptx_version &get_ptx_version() const;
+diff --git a/gpgpu-sim/SConscript b/gpgpu-sim/SConscript
+new file mode 100644
+--- /dev/null
++++ b/gpgpu-sim/SConscript
+@@ -0,0 +1,54 @@
++# -*- mode:python -*-
++
++# Copyright (c) 2011 Mark D. Hill and David A. Wood
++# All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions are
++# met: redistributions of source code must retain the above copyright
++# notice, this list of conditions and the following disclaimer;
++# redistributions in binary form must reproduce the above copyright
++# notice, this list of conditions and the following disclaimer in the
++# documentation and/or other materials provided with the distribution;
++# neither the name of the copyright holders nor the names of its
++# contributors may be used to endorse or promote products derived from
++# this software without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++
++
++Import('*')
++
++Source('addrdec.cc', Werror=False)
++Source('dram.cc', Werror=False)
++Source('dram_sched.cc', Werror=False)
++Source('gpu-cache.cc', Werror=False)
++Source('gpu-cache_gem5.cc', Werror=False)
++Source('gpu-misc.cc', Werror=False)
++Source('gpu-sim.cc', Werror=False)
++Source('histogram.cc', Werror=False)
++Source('icnt_wrapper.cc', Werror=False)
++Source('l2cache.cc', Werror=False)
++Source('mem_fetch.cc', Werror=False)
++Source('mem_latency_stat.cc', Werror=False)
++Source('power_stat.cc', Werror=False)
++Source('scoreboard.cc', Werror=False)
++Source('shader.cc', Werror=False)
++Source('stack.cc', Werror=False)
++Source('stat-tool.cc', Werror=False)
++Source('traffic_breakdown.cc', Werror=False)
++Source('visualizer.cc', Werror=False)
++
++#Source('fq_push_m5.cc')
++
+diff --git a/gpgpu-sim/gpu-cache.h b/gpgpu-sim/gpu-cache.h
+--- a/gpgpu-sim/gpu-cache.h
++++ b/gpgpu-sim/gpu-cache.h
+@@ -291,6 +291,7 @@
+     friend class tag_array;
+     friend class baseline_cache;
+     friend class read_only_cache;
++    friend class l1icache_gem5;
+     friend class tex_cache;
+     friend class data_cache;
+     friend class l1_cache;
+@@ -557,17 +558,17 @@
+ 
+     virtual enum cache_request_status access( new_addr_type addr, mem_fetch *mf, unsigned time, std::list<cache_event> &events ) =  0;
+     /// Sends next request to lower level of memory
+-    void cycle();
++    virtual void cycle();
+     /// Interface for response from lower memory level (model bandwidth restictions in caller)
+-    void fill( mem_fetch *mf, unsigned time );
++    virtual void fill( mem_fetch *mf, unsigned time );
+     /// Checks if mf is waiting to be filled by lower memory level
+-    bool waiting_for_fill( mem_fetch *mf );
++    virtual bool waiting_for_fill( mem_fetch *mf );
+     /// Are any (accepted) accesses that had to wait for memory now ready? (does not include accesses that "HIT")
+-    bool access_ready() const {return m_mshrs.access_ready();}
++    virtual bool access_ready() const {return m_mshrs.access_ready();}
+     /// Pop next ready access (does not include accesses that "HIT")
+-    mem_fetch *next_access(){return m_mshrs.next_access();}
++    virtual mem_fetch *next_access(){return m_mshrs.next_access();}
+     // flash invalidate all entries in cache
+-    void flush(){m_tag_array->flush();}
++    virtual void flush(){m_tag_array->flush();}
+     void print(FILE *fp, unsigned &accesses, unsigned &misses) const;
+     void display_state( FILE *fp ) const;
+ 
+diff --git a/gpgpu-sim/gpu-cache_gem5.cc b/gpgpu-sim/gpu-cache_gem5.cc
+new file mode 100644
+--- /dev/null
++++ b/gpgpu-sim/gpu-cache_gem5.cc
+@@ -0,0 +1,55 @@
++#include "gpu-cache_gem5.h"
++
++l1icache_gem5::l1icache_gem5(gpgpu_t* _gpu, const char *name, cache_config &config,
++        int core_id, int type_id, mem_fetch_interface *memport,
++        enum mem_fetch_status status)
++    : read_only_cache(name, config, core_id, type_id, memport, status),
++      abstractGPU(_gpu), shaderCore(NULL)
++{
++    m_sid = core_id;
++}
++
++enum cache_request_status
++l1icache_gem5::access(new_addr_type addr, mem_fetch *mf, unsigned time,
++        std::list<cache_event> &events)
++{
++    assert( mf->get_data_size() <= m_config.get_line_sz());
++    assert(m_config.m_write_policy == READ_ONLY);
++    assert(!mf->get_is_write());
++    new_addr_type block_addr = m_config.block_addr(addr);
++    unsigned cache_index = (unsigned)-1;
++    enum cache_request_status status = m_tag_array->probe(block_addr,cache_index);
++    if ( status == HIT ) {
++        m_tag_array->access(block_addr,time,cache_index); // update LRU state
++        return HIT;
++    }
++    if ( status != RESERVATION_FAIL ) {
++        bool mshr_hit = m_mshrs.probe(block_addr);
++        bool mshr_avail = !m_mshrs.full(block_addr);
++        if ( mshr_hit && mshr_avail ) {
++            m_tag_array->access(addr,time,cache_index);
++            m_mshrs.add(block_addr,mf);
++            return MISS;
++        } else if ( !mshr_hit && mshr_avail && (m_miss_queue.size() < m_config.m_miss_queue_size) ) {
++            m_tag_array->access(addr,time,cache_index);
++            m_mshrs.add(block_addr,mf);
++            m_extra_mf_fields[mf] = extra_mf_fields(block_addr,cache_index, mf->get_data_size());
++            // @TODO: Can we move this so that it isn't executed each call?
++            if (!shaderCore) {
++                shaderCore = abstractGPU->gem5CudaGPU->getCudaCore(m_sid);
++            }
++            // Send access into Ruby through shader core
++            shaderCore->icacheFetch((Addr)addr, mf);
++            mf->set_data_size( m_config.get_line_sz() );
++            mf->set_status(m_miss_queue_status,time);
++            events.push_back(READ_REQUEST_SENT);
++            return MISS;
++        }
++    }
++    return RESERVATION_FAIL;
++}
++
++void l1icache_gem5::cycle()
++{
++    // Intentionally left empty
++}
+diff --git a/gpgpu-sim/gpu-cache_gem5.h b/gpgpu-sim/gpu-cache_gem5.h
+new file mode 100644
+--- /dev/null
++++ b/gpgpu-sim/gpu-cache_gem5.h
+@@ -0,0 +1,19 @@
++#ifndef GPU_CACHE_GEM5_H_
++#define GPU_CACHE_GEM5_H_
++
++#include "gpu-cache.h"
++#include "base/misc.hh"
++#include "gpu/gpgpu-sim/cuda_core.hh"
++#include "gpu/gpgpu-sim/cuda_gpu.hh"
++
++class l1icache_gem5 : public read_only_cache {
++    gpgpu_t* abstractGPU;
++    CudaCore* shaderCore;
++    unsigned m_sid;
++public:
++    l1icache_gem5(gpgpu_t* _gpu, const char *name, cache_config &config, int core_id, int type_id, mem_fetch_interface *memport, enum mem_fetch_status status);
++    enum cache_request_status access(new_addr_type addr, mem_fetch *mf, unsigned time, std::list<cache_event> &events);
++    void cycle();
++};
++
++#endif /* GPU_CACHE_GEM5_H_ */
+diff --git a/gpgpu-sim/gpu-sim.cc b/gpgpu-sim/gpu-sim.cc
+--- a/gpgpu-sim/gpu-sim.cc
++++ b/gpgpu-sim/gpu-sim.cc
+@@ -27,6 +27,8 @@
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ 
++#include "gpu/gpgpu-sim/cuda_gpu.hh"
++
+ #include "gpu-sim.h"
+ 
+ #include <stdio.h>
+@@ -517,6 +519,8 @@
+ 
+ unsigned gpgpu_sim::finished_kernel()
+ {
++    // This should never be called now
++    assert(0);
+     if( m_finished_kernel.empty() ) 
+         return 0;
+     unsigned result = m_finished_kernel.front();
+@@ -527,7 +531,8 @@
+ void gpgpu_sim::set_kernel_done( kernel_info_t *kernel ) 
+ { 
+     unsigned uid = kernel->get_uid();
+-    m_finished_kernel.push_back(uid);
++    //m_finished_kernel.push_back(uid);
++    gem5CudaGPU->finishKernel(uid);
+     std::vector<kernel_info_t*>::iterator k;
+     for( k=m_running_kernels.begin(); k!=m_running_kernels.end(); k++ ) {
+         if( *k == kernel ) {
+@@ -540,8 +545,8 @@
+ 
+ void set_ptx_warp_size(const struct core_config * warp_size);
+ 
+-gpgpu_sim::gpgpu_sim( const gpgpu_sim_config &config ) 
+-    : gpgpu_t(config), m_config(config)
++gpgpu_sim::gpgpu_sim( const gpgpu_sim_config &config, int _sharedMemDelay )
++    : gpgpu_t(config, _sharedMemDelay), m_config(config)
+ { 
+     m_shader_config = &m_config.m_shader_config;
+     m_memory_config = &m_config.m_memory_config;
+@@ -660,8 +665,10 @@
+        return false;
+     if (m_config.gpu_max_cta_opt && (gpu_tot_issued_cta >= m_config.gpu_max_cta_opt) )
+        return false;
+-    if (m_config.gpu_deadlock_detect && gpu_deadlock) 
++    if (m_config.gpu_deadlock_detect && gpu_deadlock) {
++       deadlock_check();
+        return false;
++    }
+     for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) 
+        if( m_cluster[i]->get_not_completed()>0 ) 
+            return true;;
+@@ -1097,7 +1104,8 @@
+     m_n_active_cta++;
+ 
+     shader_CTA_count_log(m_sid, 1);
+-    printf("GPGPU-Sim uArch: core:%3d, cta:%2u initialized @(%lld,%lld)\n", m_sid, free_cta_hw_id, gpu_sim_cycle, gpu_tot_sim_cycle );
++//    printf("GPGPU-Sim uArch: core:%3d, cta:%2u initialized @(%lld,%lld)\n", m_sid, free_cta_hw_id, gpu_sim_cycle, gpu_tot_sim_cycle );
++    m_gpu->gem5CudaGPU->getCudaCore(m_sid)->record_block_issue(free_cta_hw_id);
+ }
+ 
+ ///////////////////////////////////////////////////////////////////////////////////////////
+@@ -1111,31 +1119,6 @@
+    }
+ }
+ 
+-//Find next clock domain and increment its time
+-int gpgpu_sim::next_clock_domain(void) 
+-{
+-   double smallest = min3(core_time,icnt_time,dram_time);
+-   int mask = 0x00;
+-   if ( l2_time <= smallest ) {
+-      smallest = l2_time;
+-      mask |= L2 ;
+-      l2_time += m_config.l2_period;
+-   }
+-   if ( icnt_time <= smallest ) {
+-      mask |= ICNT;
+-      icnt_time += m_config.icnt_period;
+-   }
+-   if ( dram_time <= smallest ) {
+-      mask |= DRAM;
+-      dram_time += m_config.dram_period;
+-   }
+-   if ( core_time <= smallest ) {
+-      mask |= CORE;
+-      core_time += m_config.core_period;
+-   }
+-   return mask;
+-}
+-
+ void gpgpu_sim::issue_block2core()
+ {
+     unsigned last_issued = m_last_cluster_issue; 
+@@ -1151,187 +1134,377 @@
+ 
+ unsigned long long g_single_step=0; // set this in gdb to single step the pipeline
+ 
+-void gpgpu_sim::cycle()
++void
++gpgpu_sim::core_cycle_start()
+ {
+-   int clock_mask = next_clock_domain();
++    // L1 cache + shader core pipeline stages
++    m_power_stats->pwr_mem_stat->core_cache_stats[CURRENT_STAT_IDX].clear();
++    for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
++       if (m_cluster[i]->get_not_completed() || get_more_cta_left() ) {
++             m_cluster[i]->core_cycle();
++             *active_sms+=m_cluster[i]->get_n_active_sms();
++       }
++       // Update core icnt/cache stats for GPUWattch
++       m_cluster[i]->get_icnt_stats(m_power_stats->pwr_mem_stat->n_simt_to_mem[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_mem_to_simt[CURRENT_STAT_IDX][i]);
++       m_cluster[i]->get_cache_stats(m_power_stats->pwr_mem_stat->core_cache_stats[CURRENT_STAT_IDX]);
++    }
++    float temp=0;
++    for (unsigned i=0;i<m_shader_config->num_shader();i++){
++      temp+=m_shader_stats->m_pipeline_duty_cycle[i];
++    }
++    temp=temp/m_shader_config->num_shader();
++    *average_pipeline_duty_cycle=((*average_pipeline_duty_cycle)+temp);
++      //cout<<"Average pipeline duty cycle: "<<*average_pipeline_duty_cycle<<endl;
+ 
+-   if (clock_mask & CORE ) {
+-       // shader core loading (pop from ICNT into core) follows CORE clock
+-      for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) 
+-         m_cluster[i]->icnt_cycle(); 
+-   }
+-    if (clock_mask & ICNT) {
+-        // pop from memory controller to interconnect
+-        for (unsigned i=0;i<m_memory_config->m_n_mem_sub_partition;i++) {
+-            mem_fetch* mf = m_memory_sub_partition[i]->top();
+-            if (mf) {
+-                unsigned response_size = mf->get_is_write()?mf->get_ctrl_size():mf->size();
+-                if ( ::icnt_has_buffer( m_shader_config->mem2device(i), response_size ) ) {
+-                    if (!mf->get_is_write()) 
+-                       mf->set_return_timestamp(gpu_sim_cycle+gpu_tot_sim_cycle);
+-                    mf->set_status(IN_ICNT_TO_SHADER,gpu_sim_cycle+gpu_tot_sim_cycle);
+-                    ::icnt_push( m_shader_config->mem2device(i), mf->get_tpc(), mf, response_size );
+-                    m_memory_sub_partition[i]->pop();
+-                } else {
+-                    gpu_stall_icnt2sh++;
++
++    if( g_single_step && ((gpu_sim_cycle+gpu_tot_sim_cycle) >= g_single_step) ) {
++        asm("int $03");
++    }
++    gpu_sim_cycle++;
++    if( g_interactive_debugger_enabled ) 
++       gpgpu_debug();
++
++    // McPAT main cycle (interface with McPAT)
++#ifdef GPGPUSIM_POWER_MODEL
++    if(m_config.g_power_simulation_enabled){
++        mcpat_cycle(m_config, getShaderCoreConfig(), m_gpgpusim_wrapper, m_power_stats, m_config.gpu_stat_sample_freq, gpu_tot_sim_cycle, gpu_sim_cycle, gpu_tot_sim_insn, gpu_sim_insn);
++    }
++#endif
++
++    issue_block2core();
++     
++    // Depending on configuration, flush the caches once all of threads are completed.
++    int all_threads_complete = 1;
++    if (m_config.gpgpu_flush_l1_cache) {
++       for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
++          if (m_cluster[i]->get_not_completed() == 0)
++              m_cluster[i]->cache_flush();
++          else
++             all_threads_complete = 0 ;
++       }
++    }
++
++    if(m_config.gpgpu_flush_l2_cache){
++        if(!m_config.gpgpu_flush_l1_cache){
++            for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
++                if (m_cluster[i]->get_not_completed() != 0){
++                    all_threads_complete = 0 ;
++                    break;
+                 }
+-            } else {
+-               m_memory_sub_partition[i]->pop();
+             }
+         }
++
++       if (all_threads_complete && !m_memory_config->m_L2_config.disabled() ) {
++          printf("Flushed L2 caches...\n");
++          if (m_memory_config->m_L2_config.get_num_lines()) {
++             int dlc = 0;
++             for (unsigned i=0;i<m_memory_config->m_n_mem;i++) {
++                dlc = m_memory_sub_partition[i]->flushL2();
++                assert (dlc == 0); // need to model actual writes to DRAM here
++                printf("Dirty lines flushed from L2 %d is %d\n", i, dlc  );
++             }
++          }
++       }
+     }
+ 
+-   if (clock_mask & DRAM) {
+-      for (unsigned i=0;i<m_memory_config->m_n_mem;i++){
+-         m_memory_partition_unit[i]->dram_cycle(); // Issue the dram command (scheduler + delay model)
+-         // Update performance counters for DRAM
+-         m_memory_partition_unit[i]->set_dram_power_stats(m_power_stats->pwr_mem_stat->n_cmd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_activity[CURRENT_STAT_IDX][i],
+-                        m_power_stats->pwr_mem_stat->n_nop[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_act[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_pre[CURRENT_STAT_IDX][i],
+-                        m_power_stats->pwr_mem_stat->n_rd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_wr[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_req[CURRENT_STAT_IDX][i]);
+-      }
+-   }
++    if (!(gpu_sim_cycle % m_config.gpu_stat_sample_freq)) {
++       time_t days, hrs, minutes, sec;
++       time_t curr_time;
++       time(&curr_time);
++       unsigned long long  elapsed_time = MAX(curr_time - g_simulation_starttime, 1);
++       if ( (elapsed_time - last_liveness_message_time) >= m_config.liveness_message_freq ) {
++          days    = elapsed_time/(3600*24);
++          hrs     = elapsed_time/3600 - 24*days;
++          minutes = elapsed_time/60 - 60*(hrs + 24*days);
++          sec = elapsed_time - 60*(minutes + 60*(hrs + 24*days));
++          printf("GPGPU-Sim uArch: cycles simulated: %lld  inst.: %lld (ipc=%4.1f) sim_rate=%u (inst/sec) elapsed = %u:%u:%02u:%02u / %s", 
++                 gpu_tot_sim_cycle + gpu_sim_cycle, gpu_tot_sim_insn + gpu_sim_insn, 
++                 (double)gpu_sim_insn/(double)gpu_sim_cycle,
++                 (unsigned)((gpu_tot_sim_insn+gpu_sim_insn) / elapsed_time),
++                 (unsigned)days,(unsigned)hrs,(unsigned)minutes,(unsigned)sec,
++                 ctime(&curr_time));
++          fflush(stdout);
++          last_liveness_message_time = elapsed_time; 
++       }
++       visualizer_printstat();
++       m_memory_stats->memlatstat_lat_pw();
++       if (m_config.gpgpu_runtime_stat && (m_config.gpu_runtime_stat_flag != 0) ) {
++          if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_BW_STAT) {
++             for (unsigned i=0;i<m_memory_config->m_n_mem;i++) 
++                m_memory_partition_unit[i]->print_stat(stdout);
++             printf("maxmrqlatency = %d \n", m_memory_stats->max_mrq_latency);
++             printf("maxmflatency = %d \n", m_memory_stats->max_mf_latency);
++          }
++          if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_SHD_INFO) 
++             shader_print_runtime_stat( stdout );
++          if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_L1MISS) 
++             shader_print_l1_miss_stat( stdout );
++          if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_SCHED) 
++             shader_print_scheduler_stat( stdout, false );
++       }
++    }
+ 
+-   // L2 operations follow L2 clock domain
+-   if (clock_mask & L2) {
+-       m_power_stats->pwr_mem_stat->l2_cache_stats[CURRENT_STAT_IDX].clear();
+-      for (unsigned i=0;i<m_memory_config->m_n_mem_sub_partition;i++) {
+-          //move memory request from interconnect into memory partition (if not backed up)
+-          //Note:This needs to be called in DRAM clock domain if there is no L2 cache in the system
+-          if ( m_memory_sub_partition[i]->full() ) {
+-             gpu_stall_dramfull++;
+-          } else {
+-              mem_fetch* mf = (mem_fetch*) icnt_pop( m_shader_config->mem2device(i) );
+-              m_memory_sub_partition[i]->push( mf, gpu_sim_cycle + gpu_tot_sim_cycle );
+-          }
+-          m_memory_sub_partition[i]->cache_cycle(gpu_sim_cycle+gpu_tot_sim_cycle);
+-          m_memory_sub_partition[i]->accumulate_L2cache_stats(m_power_stats->pwr_mem_stat->l2_cache_stats[CURRENT_STAT_IDX]);
++    if (!(gpu_sim_cycle % 20000)) {
++       // deadlock detection 
++       if (m_config.gpu_deadlock_detect && gpu_sim_insn == last_gpu_sim_insn) {
++          gpu_deadlock = true;
++       } else {
++          last_gpu_sim_insn = gpu_sim_insn;
+        }
+-   }
++    }
++    try_snap_shot(gpu_sim_cycle);
++    spill_log_to_file (stdout, 0, gpu_sim_cycle);
++}
+ 
+-   if (clock_mask & ICNT) {
+-      icnt_transfer();
+-   }
++void
++gpgpu_sim::core_cycle_end()
++{
++    // shader core loading (pop from ICNT into core) follows CORE clock
++    for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++)
++        m_cluster[i]->icnt_cycle();
++}
+ 
+-   if (clock_mask & CORE) {
+-      // L1 cache + shader core pipeline stages
+-      m_power_stats->pwr_mem_stat->core_cache_stats[CURRENT_STAT_IDX].clear();
+-      for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
+-         if (m_cluster[i]->get_not_completed() || get_more_cta_left() ) {
+-               m_cluster[i]->core_cycle();
+-               *active_sms+=m_cluster[i]->get_n_active_sms();
+-         }
+-         // Update core icnt/cache stats for GPUWattch
+-         m_cluster[i]->get_icnt_stats(m_power_stats->pwr_mem_stat->n_simt_to_mem[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_mem_to_simt[CURRENT_STAT_IDX][i]);
+-         m_cluster[i]->get_cache_stats(m_power_stats->pwr_mem_stat->core_cache_stats[CURRENT_STAT_IDX]);
+-      }
+-      float temp=0;
+-      for (unsigned i=0;i<m_shader_config->num_shader();i++){
+-        temp+=m_shader_stats->m_pipeline_duty_cycle[i];
+-      }
+-      temp=temp/m_shader_config->num_shader();
+-      *average_pipeline_duty_cycle=((*average_pipeline_duty_cycle)+temp);
+-        //cout<<"Average pipeline duty cycle: "<<*average_pipeline_duty_cycle<<endl;
++void
++gpgpu_sim::icnt_cycle_start()
++{
++    // pop from memory controller to interconnect
++    for (unsigned i=0;i<m_memory_config->m_n_mem_sub_partition;i++) {
++        mem_fetch* mf = m_memory_sub_partition[i]->top();
++        if (mf) {
++            unsigned response_size = mf->get_is_write()?mf->get_ctrl_size():mf->size();
++            if ( ::icnt_has_buffer( m_shader_config->mem2device(i), response_size ) ) {
++                if (!mf->get_is_write())
++                   mf->set_return_timestamp(gpu_sim_cycle+gpu_tot_sim_cycle);
++                mf->set_status(IN_ICNT_TO_SHADER,gpu_sim_cycle+gpu_tot_sim_cycle);
++                ::icnt_push( m_shader_config->mem2device(i), mf->get_tpc(), mf, response_size );
++                m_memory_sub_partition[i]->pop();
++            } else {
++                gpu_stall_icnt2sh++;
++            }
++        } else {
++           m_memory_sub_partition[i]->pop();
++        }
++    }
++}
+ 
++void
++gpgpu_sim::icnt_cycle_end()
++{
++    icnt_transfer();
++}
+ 
+-      if( g_single_step && ((gpu_sim_cycle+gpu_tot_sim_cycle) >= g_single_step) ) {
+-          asm("int $03");
+-      }
+-      gpu_sim_cycle++;
+-      if( g_interactive_debugger_enabled ) 
+-         gpgpu_debug();
++void
++gpgpu_sim::dram_cycle()
++{
++    for (unsigned i=0;i<m_memory_config->m_n_mem;i++){
++       m_memory_partition_unit[i]->dram_cycle(); // Issue the dram command (scheduler + delay model)
++       // Update performance counters for DRAM
++       m_memory_partition_unit[i]->set_dram_power_stats(m_power_stats->pwr_mem_stat->n_cmd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_activity[CURRENT_STAT_IDX][i],
++                      m_power_stats->pwr_mem_stat->n_nop[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_act[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_pre[CURRENT_STAT_IDX][i],
++                      m_power_stats->pwr_mem_stat->n_rd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_wr[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_req[CURRENT_STAT_IDX][i]);
++    }
++}
+ 
+-      // McPAT main cycle (interface with McPAT)
+-#ifdef GPGPUSIM_POWER_MODEL
+-      if(m_config.g_power_simulation_enabled){
+-          mcpat_cycle(m_config, getShaderCoreConfig(), m_gpgpusim_wrapper, m_power_stats, m_config.gpu_stat_sample_freq, gpu_tot_sim_cycle, gpu_sim_cycle, gpu_tot_sim_insn, gpu_sim_insn);
+-      }
+-#endif
++void
++gpgpu_sim::l2_cycle()
++{
++    m_power_stats->pwr_mem_stat->l2_cache_stats[CURRENT_STAT_IDX].clear();
++    for (unsigned i=0;i<m_memory_config->m_n_mem_sub_partition;i++) {
++        //move memory request from interconnect into memory partition (if not backed up)
++        //Note:This needs to be called in DRAM clock domain if there is no L2 cache in the system
++        if ( m_memory_sub_partition[i]->full() ) {
++            gpu_stall_dramfull++;
++        } else {
++            mem_fetch* mf = (mem_fetch*) icnt_pop( m_shader_config->mem2device(i) );
++            // NOTE: gem5-gpu still uses this path for parameter memory access
++            m_memory_sub_partition[i]->push( mf, gpu_sim_cycle + gpu_tot_sim_cycle );
++        }
++        m_memory_sub_partition[i]->cache_cycle(gpu_sim_cycle+gpu_tot_sim_cycle);
++        m_memory_sub_partition[i]->accumulate_L2cache_stats(m_power_stats->pwr_mem_stat->l2_cache_stats[CURRENT_STAT_IDX]);
++    }
++}
+ 
+-      issue_block2core();
+-      
+-      // Depending on configuration, flush the caches once all of threads are completed.
+-      int all_threads_complete = 1;
+-      if (m_config.gpgpu_flush_l1_cache) {
+-         for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
+-            if (m_cluster[i]->get_not_completed() == 0)
+-                m_cluster[i]->cache_flush();
+-            else
+-               all_threads_complete = 0 ;
+-         }
+-      }
+-
+-      if(m_config.gpgpu_flush_l2_cache){
+-          if(!m_config.gpgpu_flush_l1_cache){
+-              for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
+-                  if (m_cluster[i]->get_not_completed() != 0){
+-                      all_threads_complete = 0 ;
+-                      break;
+-                  }
+-              }
+-          }
+-
+-         if (all_threads_complete && !m_memory_config->m_L2_config.disabled() ) {
+-            printf("Flushed L2 caches...\n");
+-            if (m_memory_config->m_L2_config.get_num_lines()) {
+-               int dlc = 0;
+-               for (unsigned i=0;i<m_memory_config->m_n_mem;i++) {
+-                  dlc = m_memory_sub_partition[i]->flushL2();
+-                  assert (dlc == 0); // need to model actual writes to DRAM here
+-                  printf("Dirty lines flushed from L2 %d is %d\n", i, dlc  );
+-               }
+-            }
+-         }
+-      }
+-
+-      if (!(gpu_sim_cycle % m_config.gpu_stat_sample_freq)) {
+-         time_t days, hrs, minutes, sec;
+-         time_t curr_time;
+-         time(&curr_time);
+-         unsigned long long  elapsed_time = MAX(curr_time - g_simulation_starttime, 1);
+-         if ( (elapsed_time - last_liveness_message_time) >= m_config.liveness_message_freq ) {
+-            days    = elapsed_time/(3600*24);
+-            hrs     = elapsed_time/3600 - 24*days;
+-            minutes = elapsed_time/60 - 60*(hrs + 24*days);
+-            sec = elapsed_time - 60*(minutes + 60*(hrs + 24*days));
+-            printf("GPGPU-Sim uArch: cycles simulated: %lld  inst.: %lld (ipc=%4.1f) sim_rate=%u (inst/sec) elapsed = %u:%u:%02u:%02u / %s", 
+-                   gpu_tot_sim_cycle + gpu_sim_cycle, gpu_tot_sim_insn + gpu_sim_insn, 
+-                   (double)gpu_sim_insn/(double)gpu_sim_cycle,
+-                   (unsigned)((gpu_tot_sim_insn+gpu_sim_insn) / elapsed_time),
+-                   (unsigned)days,(unsigned)hrs,(unsigned)minutes,(unsigned)sec,
+-                   ctime(&curr_time));
+-            fflush(stdout);
+-            last_liveness_message_time = elapsed_time; 
+-         }
+-         visualizer_printstat();
+-         m_memory_stats->memlatstat_lat_pw();
+-         if (m_config.gpgpu_runtime_stat && (m_config.gpu_runtime_stat_flag != 0) ) {
+-            if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_BW_STAT) {
+-               for (unsigned i=0;i<m_memory_config->m_n_mem;i++) 
+-                  m_memory_partition_unit[i]->print_stat(stdout);
+-               printf("maxmrqlatency = %d \n", m_memory_stats->max_mrq_latency);
+-               printf("maxmflatency = %d \n", m_memory_stats->max_mf_latency);
+-            }
+-            if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_SHD_INFO) 
+-               shader_print_runtime_stat( stdout );
+-            if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_L1MISS) 
+-               shader_print_l1_miss_stat( stdout );
+-            if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_SCHED) 
+-               shader_print_scheduler_stat( stdout, false );
+-         }
+-      }
+-
+-      if (!(gpu_sim_cycle % 20000)) {
+-         // deadlock detection 
+-         if (m_config.gpu_deadlock_detect && gpu_sim_insn == last_gpu_sim_insn) {
+-            gpu_deadlock = true;
+-         } else {
+-            last_gpu_sim_insn = gpu_sim_insn;
+-         }
+-      }
+-      try_snap_shot(gpu_sim_cycle);
+-      spill_log_to_file (stdout, 0, gpu_sim_cycle);
+-   }
+-}
++//void gpgpu_sim::cycle()
++//{
++//   int clock_mask = next_clock_domain();
++//
++//   if (clock_mask & CORE ) {
++//       // shader core loading (pop from ICNT into core) follows CORE clock
++//      for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++)
++//         m_cluster[i]->icnt_cycle();
++//   }
++//    if (clock_mask & ICNT) {
++//        // pop from memory controller to interconnect
++//        for (unsigned i=0;i<m_memory_config->m_n_mem_sub_partition;i++) {
++//            mem_fetch* mf = m_memory_sub_partition[i]->top();
++//            if (mf) {
++//                unsigned response_size = mf->get_is_write()?mf->get_ctrl_size():mf->size();
++//                if ( ::icnt_has_buffer( m_shader_config->mem2device(i), response_size ) ) {
++//                    if (!mf->get_is_write())
++//                       mf->set_return_timestamp(gpu_sim_cycle+gpu_tot_sim_cycle);
++//                    mf->set_status(IN_ICNT_TO_SHADER,gpu_sim_cycle+gpu_tot_sim_cycle);
++//                    ::icnt_push( m_shader_config->mem2device(i), mf->get_tpc(), mf, response_size );
++//                    m_memory_sub_partition[i]->pop();
++//                } else {
++//                    gpu_stall_icnt2sh++;
++//                }
++//            } else {
++//               m_memory_sub_partition[i]->pop();
++//            }
++//        }
++//    }
++//
++//   if (clock_mask & DRAM) {
++//      for (unsigned i=0;i<m_memory_config->m_n_mem;i++){
++//         m_memory_partition_unit[i]->dram_cycle(); // Issue the dram command (scheduler + delay model)
++//         // Update performance counters for DRAM
++//         m_memory_partition_unit[i]->set_dram_power_stats(m_power_stats->pwr_mem_stat->n_cmd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_activity[CURRENT_STAT_IDX][i],
++//                        m_power_stats->pwr_mem_stat->n_nop[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_act[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_pre[CURRENT_STAT_IDX][i],
++//                        m_power_stats->pwr_mem_stat->n_rd[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_wr[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_req[CURRENT_STAT_IDX][i]);
++//      }
++//   }
++//
++//   // L2 operations follow L2 clock domain
++//   if (clock_mask & L2) {
++//       m_power_stats->pwr_mem_stat->l2_cache_stats[CURRENT_STAT_IDX].clear();
++//      for (unsigned i=0;i<m_memory_config->m_n_mem_sub_partition;i++) {
++//          //move memory request from interconnect into memory partition (if not backed up)
++//          //Note:This needs to be called in DRAM clock domain if there is no L2 cache in the system
++//          if ( m_memory_sub_partition[i]->full() ) {
++//             gpu_stall_dramfull++;
++//          } else {
++//              mem_fetch* mf = (mem_fetch*) icnt_pop( m_shader_config->mem2device(i) );
++//              m_memory_sub_partition[i]->push( mf, gpu_sim_cycle + gpu_tot_sim_cycle );
++//          }
++//          m_memory_sub_partition[i]->cache_cycle(gpu_sim_cycle+gpu_tot_sim_cycle);
++//          m_memory_sub_partition[i]->accumulate_L2cache_stats(m_power_stats->pwr_mem_stat->l2_cache_stats[CURRENT_STAT_IDX]);
++//       }
++//   }
++//
++//   if (clock_mask & ICNT) {
++//      icnt_transfer();
++//   }
++//
++//   if (clock_mask & CORE) {
++//      // L1 cache + shader core pipeline stages
++//      m_power_stats->pwr_mem_stat->core_cache_stats[CURRENT_STAT_IDX].clear();
++//      for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
++//         if (m_cluster[i]->get_not_completed() || get_more_cta_left() ) {
++//               m_cluster[i]->core_cycle();
++//               *active_sms+=m_cluster[i]->get_n_active_sms();
++//         }
++//         // Update core icnt/cache stats for GPUWattch
++//         m_cluster[i]->get_icnt_stats(m_power_stats->pwr_mem_stat->n_simt_to_mem[CURRENT_STAT_IDX][i], m_power_stats->pwr_mem_stat->n_mem_to_simt[CURRENT_STAT_IDX][i]);
++//         m_cluster[i]->get_cache_stats(m_power_stats->pwr_mem_stat->core_cache_stats[CURRENT_STAT_IDX]);
++//      }
++//      float temp=0;
++//      for (unsigned i=0;i<m_shader_config->num_shader();i++){
++//        temp+=m_shader_stats->m_pipeline_duty_cycle[i];
++//      }
++//      temp=temp/m_shader_config->num_shader();
++//      *average_pipeline_duty_cycle=((*average_pipeline_duty_cycle)+temp);
++//        //cout<<"Average pipeline duty cycle: "<<*average_pipeline_duty_cycle<<endl;
++//
++//
++//      if( g_single_step && ((gpu_sim_cycle+gpu_tot_sim_cycle) >= g_single_step) ) {
++//          asm("int $03");
++//      }
++//      gpu_sim_cycle++;
++//      if( g_interactive_debugger_enabled )
++//         gpgpu_debug();
++//
++//      // McPAT main cycle (interface with McPAT)
++//#ifdef GPGPUSIM_POWER_MODEL
++//      if(m_config.g_power_simulation_enabled){
++//          mcpat_cycle(m_config, getShaderCoreConfig(), m_gpgpusim_wrapper, m_power_stats, m_config.gpu_stat_sample_freq, gpu_tot_sim_cycle, gpu_sim_cycle, gpu_tot_sim_insn, gpu_sim_insn);
++//      }
++//#endif
++//
++//      issue_block2core();
++//
++//      // Depending on configuration, flush the caches once all of threads are completed.
++//      int all_threads_complete = 1;
++//      if (m_config.gpgpu_flush_l1_cache) {
++//         for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
++//            if (m_cluster[i]->get_not_completed() == 0)
++//                m_cluster[i]->cache_flush();
++//            else
++//               all_threads_complete = 0 ;
++//         }
++//      }
++//
++//      if(m_config.gpgpu_flush_l2_cache){
++//          if(!m_config.gpgpu_flush_l1_cache){
++//              for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
++//                  if (m_cluster[i]->get_not_completed() != 0){
++//                      all_threads_complete = 0 ;
++//                      break;
++//                  }
++//              }
++//          }
++//
++//         if (all_threads_complete && !m_memory_config->m_L2_config.disabled() ) {
++//            printf("Flushed L2 caches...\n");
++//            if (m_memory_config->m_L2_config.get_num_lines()) {
++//               int dlc = 0;
++//               for (unsigned i=0;i<m_memory_config->m_n_mem;i++) {
++//                  dlc = m_memory_sub_partition[i]->flushL2();
++//                  assert (dlc == 0); // need to model actual writes to DRAM here
++//                  printf("Dirty lines flushed from L2 %d is %d\n", i, dlc  );
++//               }
++//            }
++//         }
++//      }
++//
++//      if (!(gpu_sim_cycle % m_config.gpu_stat_sample_freq)) {
++//         time_t days, hrs, minutes, sec;
++//         time_t curr_time;
++//         time(&curr_time);
++//         unsigned long long  elapsed_time = MAX(curr_time - g_simulation_starttime, 1);
++//         if ( (elapsed_time - last_liveness_message_time) >= m_config.liveness_message_freq ) {
++//            days    = elapsed_time/(3600*24);
++//            hrs     = elapsed_time/3600 - 24*days;
++//            minutes = elapsed_time/60 - 60*(hrs + 24*days);
++//            sec = elapsed_time - 60*(minutes + 60*(hrs + 24*days));
++//            printf("GPGPU-Sim uArch: cycles simulated: %lld  inst.: %lld (ipc=%4.1f) sim_rate=%u (inst/sec) elapsed = %u:%u:%02u:%02u / %s",
++//                   gpu_tot_sim_cycle + gpu_sim_cycle, gpu_tot_sim_insn + gpu_sim_insn,
++//                   (double)gpu_sim_insn/(double)gpu_sim_cycle,
++//                   (unsigned)((gpu_tot_sim_insn+gpu_sim_insn) / elapsed_time),
++//                   (unsigned)days,(unsigned)hrs,(unsigned)minutes,(unsigned)sec,
++//                   ctime(&curr_time));
++//            fflush(stdout);
++//            last_liveness_message_time = elapsed_time;
++//         }
++//         visualizer_printstat();
++//         m_memory_stats->memlatstat_lat_pw();
++//         if (m_config.gpgpu_runtime_stat && (m_config.gpu_runtime_stat_flag != 0) ) {
++//            if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_BW_STAT) {
++//               for (unsigned i=0;i<m_memory_config->m_n_mem;i++)
++//                  m_memory_partition_unit[i]->print_stat(stdout);
++//               printf("maxmrqlatency = %d \n", m_memory_stats->max_mrq_latency);
++//               printf("maxmflatency = %d \n", m_memory_stats->max_mf_latency);
++//            }
++//            if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_SHD_INFO)
++//               shader_print_runtime_stat( stdout );
++//            if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_L1MISS)
++//               shader_print_l1_miss_stat( stdout );
++//            if (m_config.gpu_runtime_stat_flag & GPU_RSTAT_SCHED)
++//               shader_print_scheduler_stat( stdout, false );
++//         }
++//      }
++//
++//      if (!(gpu_sim_cycle % 20000)) {
++//         // deadlock detection
++//         if (m_config.gpu_deadlock_detect && gpu_sim_insn == last_gpu_sim_insn) {
++//            gpu_deadlock = true;
++//         } else {
++//            last_gpu_sim_insn = gpu_sim_insn;
++//         }
++//      }
++//      try_snap_shot(gpu_sim_cycle);
++//      spill_log_to_file (stdout, 0, gpu_sim_cycle);
++//   }
++//}
+ 
+ 
+ void shader_core_ctx::dump_warp_state( FILE *fout ) const
+@@ -1349,7 +1522,7 @@
+    One way to do that is add the following to your .gdbinit file:
+  
+       define dp
+-         call g_the_gpu.dump_pipeline_impl((0x40|0x4|0x1),$arg0,0)
++         call g_the_gpu.dump_pipeline((0x40|0x4|0x1),$arg0,0)
+       end
+  
+    Then, typing "dp 3" will show the contents of the pipeline for shader core 3.
+@@ -1398,3 +1571,14 @@
+    return *m_cluster;
+ }
+ 
++shader_core_ctx* gpgpu_sim::get_shader(int id)
++{
++    int clusters = m_config.m_shader_config.n_simt_clusters;
++    int shaders_per_cluster = m_config.m_shader_config.n_simt_cores_per_cluster;
++    int cluster = id/shaders_per_cluster;
++    int shader_in_cluster = id%shaders_per_cluster;
++    assert(shader_in_cluster < shaders_per_cluster);
++    assert(cluster < clusters);
++
++    return m_cluster[cluster]->get_core(shader_in_cluster);
++}
+diff --git a/gpgpu-sim/gpu-sim.h b/gpgpu-sim/gpu-sim.h
+--- a/gpgpu-sim/gpu-sim.h
++++ b/gpgpu-sim/gpu-sim.h
+@@ -39,7 +39,6 @@
+ #include <stdio.h>
+ 
+ 
+-
+ // constants for statistics printouts
+ #define GPU_RSTAT_SHD_INFO 0x1
+ #define GPU_RSTAT_BW_STAT  0x2
+@@ -364,7 +363,7 @@
+ 
+ class gpgpu_sim : public gpgpu_t {
+ public:
+-   gpgpu_sim( const gpgpu_sim_config &config );
++   gpgpu_sim( const gpgpu_sim_config &config, int _sharedMemDelay = 1 );
+ 
+    void set_prop( struct cudaDeviceProp *prop );
+ 
+@@ -374,7 +373,12 @@
+    void set_kernel_done( kernel_info_t *kernel );
+ 
+    void init();
+-   void cycle();
++   void core_cycle_start();
++   void core_cycle_end();
++   void icnt_cycle_start();
++   void icnt_cycle_end();
++   void l2_cycle();
++   void dram_cycle();
+    bool active(); 
+    void print_stats();
+    void update_stats();
+@@ -397,6 +401,8 @@
+    void gpu_print_stat();
+    void dump_pipeline( int mask, int s, int m ) const;
+ 
++   shader_core_ctx* get_shader(int id);
++
+    //The next three functions added to be used by the functional simulation function
+    
+    //! Get shader core configuration
+@@ -423,7 +429,6 @@
+ private:
+    // clocks
+    void reinit_clock_domains(void);
+-   int  next_clock_domain(void);
+    void issue_block2core();
+    void print_dram_stats(FILE *fout) const;
+    void shader_print_runtime_stat( FILE *fout );
+diff --git a/gpgpu-sim/l2cache.cc b/gpgpu-sim/l2cache.cc
+--- a/gpgpu-sim/l2cache.cc
++++ b/gpgpu-sim/l2cache.cc
+@@ -194,6 +194,7 @@
+ 
+ void memory_partition_unit::dram_cycle() 
+ { 
++    assert(m_dram->que_length() == 0);
+     // pop completed memory request from dram and push it to dram-to-L2 queue 
+     // of the original sub partition 
+     mem_fetch* mf_return = m_dram->return_queue_top();
+diff --git a/gpgpu-sim/mem_fetch.cc b/gpgpu-sim/mem_fetch.cc
+--- a/gpgpu-sim/mem_fetch.cc
++++ b/gpgpu-sim/mem_fetch.cc
+@@ -118,7 +118,7 @@
+ bool mem_fetch::isconst() const
+ { 
+     if( m_inst.empty() ) return false;
+-    return (m_inst.space.get_type() == const_space) || (m_inst.space.get_type() == param_space_kernel);
++    return m_inst.space.get_type() == param_space_kernel;
+ }
+ 
+ /// Returns number of flits traversing interconnect. simt_to_mem specifies the direction
+diff --git a/gpgpu-sim/shader.cc b/gpgpu-sim/shader.cc
+--- a/gpgpu-sim/shader.cc
++++ b/gpgpu-sim/shader.cc
+@@ -26,6 +26,8 @@
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
++#include "gpu/gpgpu-sim/cuda_gpu.hh"
++
+ #include <float.h>
+ #include "shader.h"
+ #include "gpu-sim.h"
+@@ -33,6 +35,7 @@
+ #include "dram.h"
+ #include "stat-tool.h"
+ #include "gpu-misc.h"
++#include "gpu-cache_gem5.h"
+ #include "../cuda-sim/ptx_sim.h"
+ #include "../cuda-sim/ptx-stats.h"
+ #include "../cuda-sim/cuda-sim.h"
+@@ -52,6 +55,8 @@
+ #define MIN(a,b) (((a)<(b))?(a):(b))
+     
+ 
++extern gpgpu_sim *g_the_gpu;
++
+ /////////////////////////////////////////////////////////////////////////////
+ 
+ std::list<unsigned> shader_core_ctx::get_regs_written( const inst_t &fvt ) const
+@@ -76,6 +81,7 @@
+      m_barriers( config->max_warps_per_shader, config->max_cta_per_core ),
+      m_dynamic_warp_id(0)
+ {
++    m_kernel_finishing = false;
+     m_cluster = cluster;
+     m_config = config;
+     m_memory_config = mem_config;
+@@ -117,7 +123,7 @@
+     #define STRSIZE 1024
+     char name[STRSIZE];
+     snprintf(name, STRSIZE, "L1I_%03d", m_sid);
+-    m_L1I = new read_only_cache( name,m_config->m_L1I_config,m_sid,get_shader_instruction_cache_id(),m_icnt,IN_L1I_MISS_QUEUE);
++    m_L1I = new l1icache_gem5(m_gpu, name, m_config->m_L1I_config, m_sid, get_shader_instruction_cache_id(), m_icnt, IN_L1I_MISS_QUEUE);
+     
+     m_warp.resize(m_config->max_warps_per_shader, shd_warp_t(this, warp_size));
+     m_scoreboard = new Scoreboard(m_sid, m_config->max_warps_per_shader);
+@@ -623,7 +629,10 @@
+             // this code fetches instructions from the i-cache or generates memory requests
+             if( !m_warp[warp_id].functional_done() && !m_warp[warp_id].imiss_pending() && m_warp[warp_id].ibuffer_empty() ) {
+                 address_type pc  = m_warp[warp_id].get_pc();
+-                address_type ppc = pc + PROGRAM_MEM_START;
++                // Use the instruction base virtual address specified in
++                // the kernel that is currently scheduled to this shader
++                address_type ppc = pc + m_kernel->get_inst_base_vaddr();
++
+                 unsigned nbytes=16; 
+                 unsigned offset_in_block = pc & (m_config->m_L1I_config.get_line_sz()-1);
+                 if( (offset_in_block+nbytes) > m_config->m_L1I_config.get_line_sz() )
+@@ -1298,7 +1307,8 @@
+     if( write_sent ) 
+         m_core->inc_store_req( inst.warp_id() );
+     if ( status == HIT ) {
+-        assert( !read_sent );
++        // HACK for gem5-gpu: Reads should not be sent with hit status
++        if (read_sent) assert( !read_sent );
+         inst.accessq_pop_back();
+         if ( inst.is_load() ) {
+             for ( unsigned r=0; r < 4; r++)
+@@ -1309,7 +1319,8 @@
+             delete mf;
+     } else if ( status == RESERVATION_FAIL ) {
+         result = COAL_STALL;
+-        assert( !read_sent );
++        // HACK for gem5-gpu: Reads should not be sent with reservation_fail status
++        if (read_sent) assert( !read_sent );
+         assert( !write_sent );
+         delete mf;
+     } else {
+@@ -1340,7 +1351,7 @@
+ 
+ bool ldst_unit::constant_cycle( warp_inst_t &inst, mem_stage_stall_type &rc_fail, mem_stage_access_type &fail_type)
+ {
+-   if( inst.empty() || ((inst.space.get_type() != const_space) && (inst.space.get_type() != param_space_kernel)) )
++   if( inst.empty() || (inst.space.get_type() != param_space_kernel) )
+        return true;
+    if( inst.active_count() == 0 ) 
+        return true;
+@@ -1426,6 +1437,49 @@
+    return inst.accessq_empty(); 
+ }
+ 
++bool ldst_unit::memory_cycle_gem5( warp_inst_t &inst, mem_stage_stall_type &stall_reason, mem_stage_access_type &access_type )
++{
++    if( inst.empty()) {
++        return true;
++    }
++    if (inst.space.get_type() != global_space && inst.space.get_type() != const_space) {
++        return memory_cycle(inst, stall_reason, access_type);
++    }
++    if( inst.active_count() == 0 ) {
++        return true;
++    }
++
++    // GPGPU-Sim should NOT have generated accesses for gem5-gpu requests
++    assert( inst.accessq_empty() );
++    mem_stage_stall_type stall_cond = NO_RC_FAIL;
++
++    bool rc_fail = m_core->get_gpu()->gem5CudaGPU->getCudaCore(m_core->m_sid)->executeMemOp(inst);
++
++    if (rc_fail) {
++        stall_cond = ICNT_RC_FAIL;
++    } else {
++        if( inst.is_load() ) {
++            for( unsigned r=0; r < 4; r++) {
++                if(inst.out[r] > 0) {
++                    m_pending_writes[inst.warp_id()][inst.out[r]]++;
++                }
++            }
++        }
++    }
++
++    if (stall_cond != NO_RC_FAIL) {
++        stall_reason = stall_cond;
++        bool iswrite = inst.is_store();
++        if (inst.space.is_local()) {
++            access_type = (iswrite)?L_MEM_ST:L_MEM_LD;
++        } else {
++            access_type = (iswrite)?G_MEM_ST:G_MEM_LD;
++        }
++        return false;
++    }
++    
++    return true;
++}
+ 
+ bool ldst_unit::response_buffer_full() const
+ {
+@@ -1658,8 +1712,10 @@
+ {
+     // process next instruction that is going to writeback
+     if( !m_next_wb.empty() ) {
++        // If you can write into the RF (bank conflict logic)
+         if( m_operand_collector->writeback(m_next_wb) ) {
+             bool insn_completed = false; 
++            // for each output register (up to 4 for vectors)
+             for( unsigned r=0; r < 4; r++ ) {
+                 if( m_next_wb.out[r] > 0 ) {
+                     if( m_next_wb.space.get_type() != shared_space ) {
+@@ -1680,6 +1736,8 @@
+                 m_core->warp_inst_complete(m_next_wb);
+             }
+             m_next_wb.clear();
++            // signal gem5 that the wb hazard has cleared
++            m_core->get_gpu()->gem5CudaGPU->getCudaCore(m_core->m_sid)->writebackClear();
+             m_last_inst_gpu_sim_cycle = gpu_sim_cycle;
+             m_last_inst_gpu_tot_sim_cycle = gpu_tot_sim_cycle;
+         }
+@@ -1836,7 +1894,7 @@
+    done &= shared_cycle(pipe_reg, rc_fail, type);
+    done &= constant_cycle(pipe_reg, rc_fail, type);
+    done &= texture_cycle(pipe_reg, rc_fail, type);
+-   done &= memory_cycle(pipe_reg, rc_fail, type);
++   done &= memory_cycle_gem5(pipe_reg, rc_fail, type);
+    m_mem_rc = rc_fail;
+ 
+    if (!done) { // log stall types and return
+@@ -1900,23 +1958,34 @@
+       m_n_active_cta--;
+       m_barriers.deallocate_barrier(cta_num);
+       shader_CTA_count_unlog(m_sid, 1);
+-      printf("GPGPU-Sim uArch: Shader %d finished CTA #%d (%lld,%lld), %u CTAs running\n", m_sid, cta_num, gpu_sim_cycle, gpu_tot_sim_cycle,
+-             m_n_active_cta );
+-      if( m_n_active_cta == 0 ) {
+-          assert( m_kernel != NULL );
+-          m_kernel->dec_running();
+-          printf("GPGPU-Sim uArch: Shader %u empty (release kernel %u \'%s\').\n", m_sid, m_kernel->get_uid(),
+-                 m_kernel->name().c_str() );
+-          if( m_kernel->no_more_ctas_to_run() ) {
+-              if( !m_kernel->running() ) {
+-                  printf("GPGPU-Sim uArch: GPU detected kernel \'%s\' finished on shader %u.\n", m_kernel->name().c_str(), m_sid );
+-                  m_gpu->set_kernel_done( m_kernel );
+-              }
+-          }
+-          m_kernel=NULL;
+-          fflush(stdout);
++//      printf("GPGPU-Sim uArch: Shader %d finished CTA #%d (%lld,%lld), %u CTAs running\n", m_sid, cta_num, gpu_sim_cycle, gpu_tot_sim_cycle,
++//             m_n_active_cta );
++      m_gpu->gem5CudaGPU->getCudaCore(m_sid)->record_block_commit(cta_num);
++   }
++}
++
++void shader_core_ctx::start_kernel_finish()
++{
++    assert(!m_kernel_finishing);
++    m_kernel_finishing = true;
++    m_gpu->gem5CudaGPU->getCudaCore(m_sid)->finishKernel();
++}
++
++void shader_core_ctx::finish_kernel()
++{
++  assert( m_kernel != NULL );
++  m_kernel->dec_running();
++  printf("GPGPU-Sim uArch: Shader %u empty (release kernel %u \'%s\').\n", m_sid, m_kernel->get_uid(),
++         m_kernel->name().c_str() );
++  if( m_kernel->no_more_ctas_to_run() ) {
++      if( !m_kernel->running() ) {
++          printf("GPGPU-Sim uArch: GPU detected kernel \'%s\' finished on shader %u.\n", m_kernel->name().c_str(), m_sid );
++          m_gpu->set_kernel_done( m_kernel );
+       }
+-   }
++  }
++  m_kernel=NULL;
++  m_kernel_finishing = false;
++  fflush(stdout);
+ }
+ 
+ void gpgpu_sim::shader_print_runtime_stat( FILE *fout ) 
+@@ -2602,7 +2671,7 @@
+    // test for barrier release 
+    cta_to_warp_t::iterator w=m_cta_to_warps.begin(); 
+    for (; w != m_cta_to_warps.end(); ++w) {
+-      if (w->second.test(warp_id) == true) break; 
++      if (w->second.test(warp_id) == true) break;
+    }
+    warp_set_t warps_in_cta = w->second;
+    warp_set_t at_barrier = warps_in_cta & m_warp_at_barrier;
+@@ -3160,6 +3229,12 @@
+             break;
+         }
+     }
++    for (unsigned i = 0; i < m_config->n_simt_cores_per_cluster; i++) {
++        kernel_info_t *kernel = m_core[i]->get_kernel();
++        if (kernel && kernel->no_more_ctas_to_run() && (m_core[i]->get_n_active_cta() == 0) && !m_core[i]->kernel_finish_issued()) {
++            m_core[i]->start_kernel_finish();
++        }
++    }
+     return num_blocks_issued;
+ }
+ 
+diff --git a/gpgpu-sim/shader.h b/gpgpu-sim/shader.h
+--- a/gpgpu-sim/shader.h
++++ b/gpgpu-sim/shader.h
+@@ -1088,6 +1088,17 @@
+     void flush();
+     void writeback();
+ 
++    /// Inserts this instruction into the writeback stage of the pipeline
++    /// Returns true if successful, false if there is an instruction blocking
++    bool writebackInst(warp_inst_t &inst) {
++      if (m_next_wb.empty()) {
++        m_next_wb = inst;
++      } else if (m_next_wb.m_uid != inst.m_uid) {
++        return false; // WB reg full
++      }
++      return true;
++    }
++
+     // accessors
+     virtual unsigned clock_multiplier() const;
+ 
+@@ -1142,6 +1153,7 @@
+    bool constant_cycle( warp_inst_t &inst, mem_stage_stall_type &rc_fail, mem_stage_access_type &fail_type);
+    bool texture_cycle( warp_inst_t &inst, mem_stage_stall_type &rc_fail, mem_stage_access_type &fail_type);
+    bool memory_cycle( warp_inst_t &inst, mem_stage_stall_type &rc_fail, mem_stage_access_type &fail_type);
++   bool memory_cycle_gem5( warp_inst_t &inst, mem_stage_stall_type &rc_fail, mem_stage_access_type &fail_type);
+ 
+    virtual mem_stage_stall_type process_cache_access( cache_t* cache,
+                                                       new_addr_type address,
+@@ -1572,6 +1584,7 @@
+     void cache_flush();
+     void accept_fetch_response( mem_fetch *mf );
+     void accept_ldst_unit_response( class mem_fetch * mf );
++    bool ldst_unit_wb_inst(warp_inst_t &inst) { return m_ldst_unit->writebackInst(inst); }
+     void set_kernel( kernel_info_t *k ) 
+     {
+         assert(k);
+@@ -1580,7 +1593,13 @@
+         printf("GPGPU-Sim uArch: Shader %d bind to kernel %u \'%s\'\n", m_sid, m_kernel->get_uid(),
+                  m_kernel->name().c_str() );
+     }
+-   
++
++    // Callback from gem5
++    bool m_kernel_finishing;
++    void start_kernel_finish();
++    void finish_kernel();
++    bool kernel_finish_issued() { return m_kernel_finishing; }
++
+     // accessors
+     bool fetch_unit_response_buffer_full() const;
+     bool ldst_unit_response_buffer_full() const;
+@@ -1626,6 +1645,8 @@
+     void display_simt_state(FILE *fout, int mask ) const;
+     void display_pipeline( FILE *fout, int print_mem, int mask3bit ) const;
+ 
++    unsigned get_sid() { return m_sid; }
++
+     void incload_stat() {m_stats->m_num_loadqueued_insn[m_sid]++;}
+     void incstore_stat() {m_stats->m_num_storequeued_insn[m_sid]++;}
+     void incialu_stat(unsigned active_count,double latency) {
+@@ -1730,6 +1751,7 @@
+ 	 void inc_simt_to_mem(unsigned n_flits){ m_stats->n_simt_to_mem[m_sid] += n_flits; }
+ 
+ private:
++     friend class ldst_unit;
+ 	 unsigned inactive_lanes_accesses_sfu(unsigned active_count,double latency){
+       return  ( ((32-active_count)>>1)*latency) + ( ((32-active_count)>>3)*latency) + ( ((32-active_count)>>3)*latency);
+ 	 }
+@@ -1871,6 +1893,8 @@
+ 
+     void get_icnt_stats(long &n_simt_to_mem, long &n_mem_to_simt) const;
+ 
++    shader_core_ctx *get_core(int id_in_cluster) { return m_core[id_in_cluster]; }
++
+ private:
+     unsigned m_cluster_id;
+     gpgpu_sim *m_gpu;
+diff --git a/gpgpusim_entrypoint.cc b/gpgpusim_entrypoint.cc
+--- a/gpgpusim_entrypoint.cc
++++ b/gpgpusim_entrypoint.cc
+@@ -36,20 +36,13 @@
+ #include "gpgpu-sim/icnt_wrapper.h"
+ #include "stream_manager.h"
+ 
+-#include <pthread.h>
+-#include <semaphore.h>
+-
+ #define MAX(a,b) (((a)>(b))?(a):(b))
+ 
+ 
+ 
+ struct gpgpu_ptx_sim_arg *grid_params;
+ 
+-sem_t g_sim_signal_start;
+-sem_t g_sim_signal_finish;
+-sem_t g_sim_signal_exit;
+ time_t g_simulation_starttime;
+-pthread_t g_simulation_thread;
+ 
+ gpgpu_sim_config g_the_gpu_config;
+ gpgpu_sim *g_the_gpu;
+@@ -69,26 +62,22 @@
+    // at most one kernel running at a time
+    bool done;
+    do {
+-      sem_wait(&g_sim_signal_start);
+       done = true;
+       if( g_the_gpu->get_more_cta_left() ) {
+           done = false;
+           g_the_gpu->init();
+           while( g_the_gpu->active() ) {
+-              g_the_gpu->cycle();
++              //g_the_gpu->cycle();
+               g_the_gpu->deadlock_check();
+           }
+           g_the_gpu->print_stats();
+           g_the_gpu->update_stats();
+           print_simulation_time();
+       }
+-      sem_post(&g_sim_signal_finish);
+    } while(!done);
+-   sem_post(&g_sim_signal_exit);
+    return NULL;
+ }
+ 
+-pthread_mutex_t g_sim_lock = PTHREAD_MUTEX_INITIALIZER;
+ bool g_sim_active = false;
+ bool g_sim_done = true;
+ 
+@@ -107,9 +96,7 @@
+            g_stream_manager->print(stdout);
+            fflush(stdout);
+         }
+-        pthread_mutex_lock(&g_sim_lock);
+         g_sim_active = true;
+-        pthread_mutex_unlock(&g_sim_lock);
+         bool active = false;
+         bool sim_cycles = false;
+         g_the_gpu->init();
+@@ -128,7 +115,7 @@
+                 break;
+ 
+             if( g_the_gpu->active() ) {
+-                g_the_gpu->cycle();
++                //g_the_gpu->cycle();
+                 sim_cycles = true;
+                 g_the_gpu->deadlock_check();
+             }
+@@ -142,15 +129,12 @@
+             g_the_gpu->update_stats();
+             print_simulation_time();
+         }
+-        pthread_mutex_lock(&g_sim_lock);
+         g_sim_active = false;
+-        pthread_mutex_unlock(&g_sim_lock);
+     } while( !g_sim_done );
+     if(g_debug_execution >= 3) {
+        printf("GPGPU-Sim: *** simulation thread exiting ***\n");
+        fflush(stdout);
+     }
+-    sem_post(&g_sim_signal_exit);
+     return NULL;
+ }
+ 
+@@ -159,16 +143,12 @@
+     printf("GPGPU-Sim: synchronize waiting for inactive GPU simulation\n");
+     g_stream_manager->print(stdout);
+     fflush(stdout);
+-//    sem_wait(&g_sim_signal_finish);
+     bool done = false;
+     do {
+-        pthread_mutex_lock(&g_sim_lock);
+         done = g_stream_manager->empty() && !g_sim_active;
+-        pthread_mutex_unlock(&g_sim_lock);
+     } while (!done);
+     printf("GPGPU-Sim: detected inactive GPU simulation thread\n");
+     fflush(stdout);
+-//    sem_post(&g_sim_signal_start);
+ }
+ 
+ void exit_simulation()
+@@ -176,7 +156,6 @@
+     g_sim_done=true;
+     printf("GPGPU-Sim: exit_simulation called\n");
+     fflush(stdout);
+-    sem_wait(&g_sim_signal_exit);
+     printf("GPGPU-Sim: simulation thread signaled exit\n");
+     fflush(stdout);
+ }
+@@ -208,23 +187,37 @@
+ 
+    g_simulation_starttime = time((time_t *)NULL);
+ 
+-   sem_init(&g_sim_signal_start,0,0);
+-   sem_init(&g_sim_signal_finish,0,0);
+-   sem_init(&g_sim_signal_exit,0,0);
+-
+    return g_the_gpu;
+ }
+ 
+-void start_sim_thread(int api)
++gpgpu_sim *gem5_ptx_sim_init_perf(stream_manager **p_stream_manager, int sharedMemDelay, const char *config_path)
+ {
+-    if( g_sim_done ) {
+-        g_sim_done = false;
+-        if( api == 1 ) {
+-           pthread_create(&g_simulation_thread,NULL,gpgpu_sim_thread_concurrent,NULL);
+-        } else {
+-           pthread_create(&g_simulation_thread,NULL,gpgpu_sim_thread_sequential,NULL);
+-        }
+-    }
++   print_splash();
++   read_sim_environment_variables();
++   read_parser_environment_variables();
++   option_parser_t opp = option_parser_create();
++
++   icnt_reg_options(opp);
++   g_the_gpu_config.reg_options(opp); // register GPU microrachitecture options
++   ptx_reg_options(opp);
++   ptx_opcocde_latency_options(opp);
++   sg_argv[2] = config_path;
++   option_parser_cmdline(opp, sg_argc, sg_argv); // parse configuration options
++   fprintf(stdout, "GPGPU-Sim: Configuration options:\n\n");
++   option_parser_print(opp, stdout);
++   option_parser_destroy(opp);
++   // Set the Numeric locale to a standard locale where a decimal point is a "dot" not a "comma"
++   // so it does the parsing correctly independent of the system environment variables
++   assert(setlocale(LC_NUMERIC,"C"));
++   g_the_gpu_config.init();
++
++   g_the_gpu = new gpgpu_sim(g_the_gpu_config, sharedMemDelay);
++   g_stream_manager = new stream_manager(g_the_gpu,g_cuda_launch_blocking);
++
++   g_simulation_starttime = time((time_t *)NULL);
++
++   *p_stream_manager = g_stream_manager;
++   return g_the_gpu;
+ }
+ 
+ void print_simulation_time()
+@@ -249,8 +242,6 @@
+ int gpgpu_opencl_ptx_sim_main_perf( kernel_info_t *grid )
+ {
+    g_the_gpu->launch(grid);
+-   sem_post(&g_sim_signal_start);
+-   sem_wait(&g_sim_signal_finish);
+    return 0;
+ }
+ 
+diff --git a/gpgpusim_entrypoint.h b/gpgpusim_entrypoint.h
+--- a/gpgpusim_entrypoint.h
++++ b/gpgpusim_entrypoint.h
+@@ -29,6 +29,7 @@
+ #define GPGPUSIM_ENTRYPOINT_H_INCLUDED
+ 
+ #include "abstract_hardware_model.h"
++#include "stream_manager.h"
+ 
+ #include <time.h>
+ extern time_t g_simulation_starttime;
+@@ -36,7 +37,7 @@
+ 
+ 
+ class gpgpu_sim *gpgpu_ptx_sim_init_perf();
+-void start_sim_thread(int api);
++class gpgpu_sim *gem5_ptx_sim_init_perf(stream_manager **p_stream_manager, int sharedMemDelay, const char *config_path);
+ 
+ int gpgpu_opencl_ptx_sim_main_perf( kernel_info_t *grid );
+ int gpgpu_opencl_ptx_sim_main_func( kernel_info_t *grid );
+diff --git a/intersim/interconnect_interface.cpp b/intersim/interconnect_interface.cpp
+--- a/intersim/interconnect_interface.cpp
++++ b/intersim/interconnect_interface.cpp
+@@ -348,7 +348,7 @@
+          nc=1;
+       }
+       traffic[nc]->_GeneratePacket( input, n_flits, 0 /*class*/, traffic[nc]->_time, data, output); 
+-#if DOUB
++#if 0
+       cout <<"Traffic[" << nc << "] (mapped) sending form "<< input << " to " << output <<endl;
+ #endif
+    }
+@@ -574,7 +574,7 @@
+          if ( flit->head ) {
+             assert (flit->dest == output);
+          }
+-#if DOUB
++#if 0
+          cout <<"Traffic " <<nc<<" push out flit to (mapped)" << output <<endl;
+ #endif
+       }
+diff --git a/intersim/trafficmanager.cpp b/intersim/trafficmanager.cpp
+--- a/intersim/trafficmanager.cpp
++++ b/intersim/trafficmanager.cpp
+@@ -8,9 +8,9 @@
+ #include "interconnect_interface.h"
+ 
+ //Turns on flip tracking!
+-//#ifndef DEBUG
+-#define DEBUG 0
+-//#endif
++#ifndef TM_DEBUG
++#define TM_DEBUG 0
++#endif
+ 
+ int MATLAB_OUTPUT        = 0;    // output data in MATLAB friendly format
+ int DISPLAY_LAT_DIST     = 1; // distribution of packet latencies
+@@ -284,7 +284,7 @@
+    f->watch = false;
+ 
+    // Add specific packet watches for debugging
+-   if (DEBUG || f->id == -1 ) {
++   if (TM_DEBUG || f->id == -1 ) {
+       f->watch = true;
+    }
+ 
+diff --git a/intersim2/SConscript b/intersim2/SConscript
+new file mode 100644
+--- /dev/null
++++ b/intersim2/SConscript
+@@ -0,0 +1,95 @@
++# -*- mode:python -*-
++
++# Copyright (c) 2011 Mark D. Hill and David A. Wood
++# All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions are
++# met: redistributions of source code must retain the above copyright
++# notice, this list of conditions and the following disclaimer;
++# redistributions in binary form must reproduce the above copyright
++# notice, this list of conditions and the following disclaimer in the
++# documentation and/or other materials provided with the distribution;
++# neither the name of the copyright holders nor the names of its
++# contributors may be used to endorse or promote products derived from
++# this software without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++
++
++Import('*')
++
++Source('batchtrafficmanager.cpp', Werror=False)
++Source('booksim_config.cpp', Werror=False)
++Source('buffer.cpp', Werror=False)
++Source('buffer_state.cpp', Werror=False)
++Source('config_utils.cpp', Werror=False)
++Source('credit.cpp', Werror=False)
++Source('flitchannel.cpp', Werror=False)
++Source('flit.cpp', Werror=False)
++Source('gputrafficmanager.cpp', Werror=False)
++Source('injection.cpp', Werror=False)
++Source('interconnect_interface.cpp', Werror=False)
++Source('intersim_config.cpp', Werror=False)
++Source('lex.yy.c', Werror=False)
++Source('main.cpp', Werror=False)
++Source('misc_utils.cpp', Werror=False)
++Source('module.cpp', Werror=False)
++Source('outputset.cpp', Werror=False)
++Source('packet_reply_info.cpp', Werror=False)
++Source('rng_double_wrapper.cpp', Werror=False)
++Source('rng_wrapper.cpp', Werror=False)
++Source('routefunc.cpp', Werror=False)
++Source('stats.cpp', Werror=False)
++Source('traffic.cpp', Werror=False)
++Source('trafficmanager.cpp', Werror=False)
++Source('vc.cpp', Werror=False)
++Source('y.tab.c', Werror=False)
++
++Source('allocators/allocator.cpp', Werror=False)
++Source('allocators/islip.cpp', Werror=False)
++Source('allocators/loa.cpp', Werror=False)
++Source('allocators/maxsize.cpp', Werror=False)
++Source('allocators/pim.cpp', Werror=False)
++Source('allocators/selalloc.cpp', Werror=False)
++Source('allocators/separable.cpp', Werror=False)
++Source('allocators/separable_input_first.cpp', Werror=False)
++Source('allocators/separable_output_first.cpp', Werror=False)
++Source('allocators/wavefront.cpp', Werror=False)
++
++Source('arbiters/arbiter.cpp', Werror=False)
++Source('arbiters/matrix_arb.cpp', Werror=False)
++Source('arbiters/prio_arb.cpp', Werror=False)
++Source('arbiters/roundrobin_arb.cpp', Werror=False)
++Source('arbiters/tree_arb.cpp', Werror=False)
++
++Source('networks/anynet.cpp', Werror=False)
++Source('networks/cmesh.cpp', Werror=False)
++Source('networks/dragonfly.cpp', Werror=False)
++Source('networks/fattree.cpp', Werror=False)
++Source('networks/flatfly_onchip.cpp', Werror=False)
++Source('networks/fly.cpp', Werror=False)
++Source('networks/kncube.cpp', Werror=False)
++Source('networks/network.cpp', Werror=False)
++Source('networks/qtree.cpp', Werror=False)
++Source('networks/tree4.cpp', Werror=False)
++
++Source('power/buffer_monitor.cpp', Werror=False)
++Source('power/power_module.cpp', Werror=False)
++Source('power/switch_monitor.cpp', Werror=False)
++
++Source('routers/chaos_router.cpp', Werror=False)
++Source('routers/event_router.cpp', Werror=False)
++Source('routers/iq_router.cpp', Werror=False)
++Source('routers/router.cpp', Werror=False)
+diff --git a/intersim2/allocators/allocator.cpp b/intersim2/allocators/allocator.cpp
+--- a/intersim2/allocators/allocator.cpp
++++ b/intersim2/allocators/allocator.cpp
+@@ -25,22 +25,23 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
+ #include <iostream>
+ #include <sstream>
+ #include <cassert>
++
++#include "intersim2/booksim.hpp"
+ #include "allocator.hpp"
+ 
+ /////////////////////////////////////////////////////////////////////////
+ //Allocator types
++#include "islip.hpp"
++#include "loa.hpp"
+ #include "maxsize.hpp"
+ #include "pim.hpp"
+-#include "islip.hpp"
+-#include "loa.hpp"
+-#include "wavefront.hpp"
+ #include "selalloc.hpp"
+ #include "separable_input_first.hpp"
+ #include "separable_output_first.hpp"
++#include "wavefront.hpp"
+ //
+ /////////////////////////////////////////////////////////////////////////
+ 
+diff --git a/intersim2/allocators/allocator.hpp b/intersim2/allocators/allocator.hpp
+--- a/intersim2/allocators/allocator.hpp
++++ b/intersim2/allocators/allocator.hpp
+@@ -33,8 +33,8 @@
+ #include <set>
+ #include <vector>
+ 
+-#include "module.hpp"
+-#include "config_utils.hpp"
++#include "intersim2/module.hpp"
++#include "intersim2/config_utils.hpp"
+ 
+ class Allocator : public Module {
+ protected:
+diff --git a/intersim2/allocators/islip.cpp b/intersim2/allocators/islip.cpp
+--- a/intersim2/allocators/islip.cpp
++++ b/intersim2/allocators/islip.cpp
+@@ -25,11 +25,11 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
+ #include <iostream>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/random_utils.hpp"
+ #include "islip.hpp"
+-#include "random_utils.hpp"
+ 
+ //#define DEBUG_ISLIP
+ 
+diff --git a/intersim2/allocators/loa.cpp b/intersim2/allocators/loa.cpp
+--- a/intersim2/allocators/loa.cpp
++++ b/intersim2/allocators/loa.cpp
+@@ -25,11 +25,11 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
+ #include <iostream>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/random_utils.hpp"
+ #include "loa.hpp"
+-#include "random_utils.hpp"
+ 
+ LOA::LOA( Module *parent, const string& name,
+ 	  int inputs, int outputs ) :
+diff --git a/intersim2/allocators/maxsize.cpp b/intersim2/allocators/maxsize.cpp
+--- a/intersim2/allocators/maxsize.cpp
++++ b/intersim2/allocators/maxsize.cpp
+@@ -29,9 +29,9 @@
+   POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
+ #include <iostream>
+ 
++#include "intersim2/booksim.hpp"
+ #include "maxsize.hpp"
+ 
+ // shortest augmenting path:
+diff --git a/intersim2/allocators/pim.cpp b/intersim2/allocators/pim.cpp
+--- a/intersim2/allocators/pim.cpp
++++ b/intersim2/allocators/pim.cpp
+@@ -25,11 +25,11 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
+ #include <iostream>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/random_utils.hpp"
+ #include "pim.hpp"
+-#include "random_utils.hpp"
+ 
+ //#define DEBUG_PIM
+ 
+diff --git a/intersim2/allocators/selalloc.cpp b/intersim2/allocators/selalloc.cpp
+--- a/intersim2/allocators/selalloc.cpp
++++ b/intersim2/allocators/selalloc.cpp
+@@ -25,11 +25,11 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
+ #include <iostream>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/random_utils.hpp"
+ #include "selalloc.hpp"
+-#include "random_utils.hpp"
+ 
+ //#define DEBUG_SELALLOC
+ 
+diff --git a/intersim2/allocators/separable.cpp b/intersim2/allocators/separable.cpp
+--- a/intersim2/allocators/separable.cpp
++++ b/intersim2/allocators/separable.cpp
+@@ -31,11 +31,10 @@
+ //
+ // ----------------------------------------------------------------------
+ 
+-#include "separable.hpp"
+-
+ #include <sstream>
+ 
+-#include "arbiter.hpp"
++#include "intersim2/arbiters/arbiter.hpp"
++#include "separable.hpp"
+ 
+ SeparableAllocator::SeparableAllocator( Module* parent, const string& name,
+ 					int inputs, int outputs,
+diff --git a/intersim2/allocators/separable_input_first.cpp b/intersim2/allocators/separable_input_first.cpp
+--- a/intersim2/allocators/separable_input_first.cpp
++++ b/intersim2/allocators/separable_input_first.cpp
+@@ -31,15 +31,14 @@
+ //
+ // ----------------------------------------------------------------------
+ 
+-#include "separable_input_first.hpp"
+-
+-#include "booksim.hpp"
+-#include "arbiter.hpp"
+-
+ #include <vector>
+ #include <iostream>
+ #include <cstring>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/arbiters/arbiter.hpp"
++#include "separable_input_first.hpp"
++
+ SeparableInputFirstAllocator::
+ SeparableInputFirstAllocator( Module* parent, const string& name, int inputs,
+ 			      int outputs, const string& arb_type )
+diff --git a/intersim2/allocators/separable_output_first.cpp b/intersim2/allocators/separable_output_first.cpp
+--- a/intersim2/allocators/separable_output_first.cpp
++++ b/intersim2/allocators/separable_output_first.cpp
+@@ -31,15 +31,14 @@
+ //
+ // ----------------------------------------------------------------------
+ 
+-#include "separable_output_first.hpp"
+-
+-#include "booksim.hpp"
+-#include "arbiter.hpp"
+-
+ #include <vector>
+ #include <iostream>
+ #include <cstring>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/arbiters/arbiter.hpp"
++#include "separable_output_first.hpp"
++
+ SeparableOutputFirstAllocator::
+ SeparableOutputFirstAllocator( Module* parent, const string& name, int inputs,
+ 			       int outputs, const string& arb_type )
+diff --git a/intersim2/allocators/wavefront.cpp b/intersim2/allocators/wavefront.cpp
+--- a/intersim2/allocators/wavefront.cpp
++++ b/intersim2/allocators/wavefront.cpp
+@@ -30,8 +30,7 @@
+  *The wave front allocator
+  *
+  */
+-#include "booksim.hpp"
+-
++#include "intersim2/booksim.hpp"
+ #include "wavefront.hpp"
+ 
+ Wavefront::Wavefront( Module *parent, const string& name,
+diff --git a/intersim2/arbiters/arbiter.hpp b/intersim2/arbiters/arbiter.hpp
+--- a/intersim2/arbiters/arbiter.hpp
++++ b/intersim2/arbiters/arbiter.hpp
+@@ -36,7 +36,7 @@
+ 
+ #include <vector>
+ 
+-#include "module.hpp"
++#include "intersim2/module.hpp"
+ 
+ class Arbiter : public Module {
+ 
+diff --git a/intersim2/arbiters/prio_arb.cpp b/intersim2/arbiters/prio_arb.cpp
+--- a/intersim2/arbiters/prio_arb.cpp
++++ b/intersim2/arbiters/prio_arb.cpp
+@@ -25,7 +25,7 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
++#include "intersim2/booksim.hpp"
+ #include <cassert>
+ 
+ #include "prio_arb.hpp"
+diff --git a/intersim2/arbiters/prio_arb.hpp b/intersim2/arbiters/prio_arb.hpp
+--- a/intersim2/arbiters/prio_arb.hpp
++++ b/intersim2/arbiters/prio_arb.hpp
+@@ -30,8 +30,8 @@
+ 
+ #include <list>
+ 
+-#include "module.hpp"
+-#include "config_utils.hpp"
++#include "intersim2/config_utils.hpp"
++#include "intersim2/module.hpp"
+ 
+ class PriorityArbiter : public Module {
+   int _rr_ptr;
+diff --git a/intersim2/flitchannel.cpp b/intersim2/flitchannel.cpp
+--- a/intersim2/flitchannel.cpp
++++ b/intersim2/flitchannel.cpp
+@@ -37,8 +37,8 @@
+ #include <iostream>
+ #include <iomanip>
+ 
+-#include "router.hpp"
+ #include "globals.hpp"
++#include "routers/router.hpp"
+ 
+ // ----------------------------------------------------------------------
+ //  $Author: jbalfour $
+diff --git a/intersim2/interconnect_interface.cpp b/intersim2/interconnect_interface.cpp
+--- a/intersim2/interconnect_interface.cpp
++++ b/intersim2/interconnect_interface.cpp
+@@ -31,17 +31,17 @@
+ #include <iomanip>
+ #include <cmath>
+ 
++#include "gpgpu-sim/mem_fetch.h"
++#include "booksim.hpp"
++#include "flit.hpp"
++#include "globals.hpp"
++#include "gputrafficmanager.hpp"
+ #include "interconnect_interface.hpp"
++#include "intersim_config.hpp"
+ #include "routefunc.hpp"
+-#include "globals.hpp"
+ #include "trafficmanager.hpp"
+-#include "power_module.hpp"
+-#include "mem_fetch.h"
+-#include "flit.hpp"
+-#include "gputrafficmanager.hpp"
+-#include "booksim.hpp"
+-#include "intersim_config.hpp"
+-#include "network.hpp"
++#include "networks/network.hpp"
++#include "power/power_module.hpp"
+ 
+ InterconnectInterface* InterconnectInterface::New(const char* const config_file)
+ {
+@@ -191,8 +191,8 @@
+ void* InterconnectInterface::Pop(unsigned deviceID)
+ {
+   int icntID = _node_map[deviceID];
+-#if DEBUG
+-  cout<<"Call interconnect POP  " << output<<endl;
++#if INTERSIM_DEBUG
++  cout<<"Call interconnect POP  " << icntID<<endl;
+ #endif
+   
+   void* data = NULL;
+diff --git a/intersim2/main.cpp b/intersim2/main.cpp
+--- a/intersim2/main.cpp
++++ b/intersim2/main.cpp
+@@ -45,15 +45,15 @@
+ 
+ #include <sstream>
+ #include "booksim.hpp"
++#include "booksim_config.hpp"
++#include "injection.hpp"
++#include "interconnect_interface.hpp"
+ #include "routefunc.hpp"
+ #include "traffic.hpp"
+-#include "booksim_config.hpp"
+ #include "trafficmanager.hpp"
+ #include "random_utils.hpp"
+-#include "network.hpp"
+-#include "injection.hpp"
+-#include "power_module.hpp"
+-#include "interconnect_interface.hpp"
++#include "networks/network.hpp"
++#include "power/power_module.hpp"
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+ //Global declarations
+diff --git a/intersim2/networks/anynet.hpp b/intersim2/networks/anynet.hpp
+--- a/intersim2/networks/anynet.hpp
++++ b/intersim2/networks/anynet.hpp
+@@ -28,13 +28,14 @@
+ #ifndef _ANYNET_HPP_
+ #define _ANYNET_HPP_
+ 
+-#include "network.hpp"
+-#include "routefunc.hpp"
+ #include <cassert>
+ #include <string>
+ #include <map>
+ #include <list>
+ 
++#include "intersim2/routefunc.hpp"
++#include "network.hpp"
++
+ class AnyNet : public Network {
+ 
+   string file_name;
+diff --git a/intersim2/networks/cmesh.cpp b/intersim2/networks/cmesh.cpp
+--- a/intersim2/networks/cmesh.cpp
++++ b/intersim2/networks/cmesh.cpp
+@@ -39,12 +39,13 @@
+ //  Modified 11/6/2007 by Ted Jiang
+ //  Now handeling n = most power of 2: 16, 64, 256, 1024
+ // ----------------------------------------------------------------------
+-#include "booksim.hpp"
+ #include <vector>
+ #include <sstream>
+ #include <cassert>
+-#include "random_utils.hpp"
+-#include "misc_utils.hpp"
++
++#include "intersim2/booksim.hpp"
++#include "intersim2/misc_utils.hpp"
++#include "intersim2/random_utils.hpp"
+ #include "cmesh.hpp"
+ 
+ int CMesh::_cX = 0 ;
+diff --git a/intersim2/networks/cmesh.hpp b/intersim2/networks/cmesh.hpp
+--- a/intersim2/networks/cmesh.hpp
++++ b/intersim2/networks/cmesh.hpp
+@@ -41,8 +41,8 @@
+ #ifndef _CMESH_HPP_
+ #define _CMESH_HPP_
+ 
++#include "intersim2/routefunc.hpp"
+ #include "network.hpp"
+-#include "routefunc.hpp"
+ 
+ class CMesh : public Network {
+ public:
+diff --git a/intersim2/networks/dragonfly.cpp b/intersim2/networks/dragonfly.cpp
+--- a/intersim2/networks/dragonfly.cpp
++++ b/intersim2/networks/dragonfly.cpp
+@@ -26,14 +26,14 @@
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
+ #include <vector>
+ #include <sstream>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/globals.hpp"
++#include "intersim2/misc_utils.hpp"
++#include "intersim2/random_utils.hpp"
+ #include "dragonfly.hpp"
+-#include "random_utils.hpp"
+-#include "misc_utils.hpp"
+-#include "globals.hpp"
+ 
+ #define DRAGON_LATENCY
+ 
+diff --git a/intersim2/networks/dragonfly.hpp b/intersim2/networks/dragonfly.hpp
+--- a/intersim2/networks/dragonfly.hpp
++++ b/intersim2/networks/dragonfly.hpp
+@@ -28,8 +28,8 @@
+ #ifndef _DragonFly_HPP_
+ #define _DragonFly_HPP_
+ 
++#include "intersim2/routefunc.hpp"
+ #include "network.hpp"
+-#include "routefunc.hpp"
+ 
+ class DragonFlyNew : public Network {
+ 
+diff --git a/intersim2/networks/fattree.cpp b/intersim2/networks/fattree.cpp
+--- a/intersim2/networks/fattree.cpp
++++ b/intersim2/networks/fattree.cpp
+@@ -44,13 +44,13 @@
+ ////////////////////////////////////////////////////////////////////////
+ 
+ 
+-#include "booksim.hpp"
+ #include <vector>
+ #include <sstream>
+ #include <cmath>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/misc_utils.hpp"
+ #include "fattree.hpp"
+-#include "misc_utils.hpp"
+ 
+ 
+  //#define FATTREE_DEBUG
+diff --git a/intersim2/networks/flatfly_onchip.cpp b/intersim2/networks/flatfly_onchip.cpp
+--- a/intersim2/networks/flatfly_onchip.cpp
++++ b/intersim2/networks/flatfly_onchip.cpp
+@@ -46,15 +46,16 @@
+ //Also, half of the total vcs are used for non-minimal routing, others for minimal (for UGAL and valiant).
+ 
+ 
+-#include "booksim.hpp"
+ #include <vector>
+ #include <sstream>
+ #include <limits>
+ #include <cmath>
++
++#include "intersim2/booksim.hpp"
++#include "intersim2/globals.hpp"
++#include "intersim2/misc_utils.hpp"
++#include "intersim2/random_utils.hpp"
+ #include "flatfly_onchip.hpp"
+-#include "random_utils.hpp"
+-#include "misc_utils.hpp"
+-#include "globals.hpp"
+ 
+ 
+ 
+diff --git a/intersim2/networks/flatfly_onchip.hpp b/intersim2/networks/flatfly_onchip.hpp
+--- a/intersim2/networks/flatfly_onchip.hpp
++++ b/intersim2/networks/flatfly_onchip.hpp
+@@ -28,11 +28,10 @@
+ #ifndef _FlatFlyOnChip_HPP_
+ #define _FlatFlyOnChip_HPP_
+ 
+-#include "network.hpp"
+-
+-#include "routefunc.hpp"
+ #include <cassert>
+ 
++#include "intersim2/routefunc.hpp"
++#include "network.hpp"
+ 
+ class FlatFlyOnChip : public Network {
+ 
+diff --git a/intersim2/networks/fly.cpp b/intersim2/networks/fly.cpp
+--- a/intersim2/networks/fly.cpp
++++ b/intersim2/networks/fly.cpp
+@@ -25,12 +25,12 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
+ #include <vector>
+ #include <sstream>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/misc_utils.hpp"
+ #include "fly.hpp"
+-#include "misc_utils.hpp"
+ 
+ //#define DEBUG_FLY
+ 
+diff --git a/intersim2/networks/kncube.cpp b/intersim2/networks/kncube.cpp
+--- a/intersim2/networks/kncube.cpp
++++ b/intersim2/networks/kncube.cpp
+@@ -31,13 +31,13 @@
+  *
+  */
+ 
+-#include "booksim.hpp"
+ #include <vector>
+ #include <sstream>
++
++#include "intersim2/booksim.hpp"
++#include "intersim2/misc_utils.hpp"
++#include "intersim2/random_utils.hpp"
+ #include "kncube.hpp"
+-#include "random_utils.hpp"
+-#include "misc_utils.hpp"
+- //#include "iq_router.hpp"
+ 
+ 
+ KNCube::KNCube( const Configuration &config, const string & name, bool mesh ) :
+diff --git a/intersim2/networks/network.cpp b/intersim2/networks/network.cpp
+--- a/intersim2/networks/network.cpp
++++ b/intersim2/networks/network.cpp
+@@ -35,18 +35,18 @@
+ #include <cassert>
+ #include <sstream>
+ 
+-#include "booksim.hpp"
++#include "intersim2/booksim.hpp"
+ #include "network.hpp"
+ 
++#include "anynet.hpp"
++#include "cmesh.hpp"
++#include "dragonfly.hpp"
++#include "fattree.hpp"
++#include "flatfly_onchip.hpp"
++#include "fly.hpp"
+ #include "kncube.hpp"
+-#include "fly.hpp"
+-#include "cmesh.hpp"
+-#include "flatfly_onchip.hpp"
+ #include "qtree.hpp"
+ #include "tree4.hpp"
+-#include "fattree.hpp"
+-#include "anynet.hpp"
+-#include "dragonfly.hpp"
+ 
+ 
+ Network::Network( const Configuration &config, const string & name ) :
+diff --git a/intersim2/networks/network.hpp b/intersim2/networks/network.hpp
+--- a/intersim2/networks/network.hpp
++++ b/intersim2/networks/network.hpp
+@@ -31,16 +31,15 @@
+ #include <vector>
+ #include <deque>
+ 
+-#include "module.hpp"
+-#include "flit.hpp"
+-#include "credit.hpp"
+-#include "router.hpp"
+-#include "module.hpp"
+-#include "timed_module.hpp"
+-#include "flitchannel.hpp"
+-#include "channel.hpp"
+-#include "config_utils.hpp"
+-#include "globals.hpp"
++#include "intersim2/credit.hpp"
++#include "intersim2/channel.hpp"
++#include "intersim2/config_utils.hpp"
++#include "intersim2/flit.hpp"
++#include "intersim2/flitchannel.hpp"
++#include "intersim2/globals.hpp"
++#include "intersim2/module.hpp"
++#include "intersim2/timed_module.hpp"
++#include "intersim2/routers/router.hpp"
+ 
+ typedef Channel<Credit> CreditChannel;
+ 
+diff --git a/intersim2/networks/qtree.cpp b/intersim2/networks/qtree.cpp
+--- a/intersim2/networks/qtree.cpp
++++ b/intersim2/networks/qtree.cpp
+@@ -39,11 +39,12 @@
+ // 
+ ////////////////////////////////////////////////////////////////////////
+ 
+-#include "booksim.hpp"
+ #include <vector>
+ #include <sstream>
++
++#include "intersim2/booksim.hpp"
++#include "intersim2/misc_utils.hpp"
+ #include "qtree.hpp"
+-#include "misc_utils.hpp"
+ 
+ QTree::QTree( const Configuration& config, const string & name )
+ : Network ( config, name )
+diff --git a/intersim2/networks/tree4.cpp b/intersim2/networks/tree4.cpp
+--- a/intersim2/networks/tree4.cpp
++++ b/intersim2/networks/tree4.cpp
+@@ -44,13 +44,13 @@
+ // 
+ ////////////////////////////////////////////////////////////////////////
+ 
+-#include "booksim.hpp"
+ #include <vector>
+ #include <sstream>
+ #include <cmath>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/misc_utils.hpp"
+ #include "tree4.hpp"
+-#include "misc_utils.hpp"
+ 
+ Tree4::Tree4( const Configuration& config, const string & name )
+ : Network ( config, name )
+diff --git a/intersim2/power/buffer_monitor.cpp b/intersim2/power/buffer_monitor.cpp
+--- a/intersim2/power/buffer_monitor.cpp
++++ b/intersim2/power/buffer_monitor.cpp
+@@ -25,10 +25,9 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
++#include "intersim2/flit.hpp"
+ #include "buffer_monitor.hpp"
+ 
+-#include "flit.hpp"
+-
+ BufferMonitor::BufferMonitor( int inputs, int classes ) 
+ : _cycles(0), _inputs(inputs), _classes(classes) {
+   _reads.resize(inputs * classes, 0) ;
+diff --git a/intersim2/power/power_module.cpp b/intersim2/power/power_module.cpp
+--- a/intersim2/power/power_module.cpp
++++ b/intersim2/power/power_module.cpp
+@@ -25,11 +25,11 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
++#include "intersim2/booksim_config.hpp"
++#include "intersim2/routers/iq_router.hpp"
++#include "buffer_monitor.hpp"
+ #include "power_module.hpp"
+-#include "booksim_config.hpp"
+-#include "buffer_monitor.hpp"
+ #include "switch_monitor.hpp"
+-#include "iq_router.hpp"
+ 
+ Power_Module::Power_Module(Network * n , const Configuration &config)
+   : Module( 0, "power_module" ){
+diff --git a/intersim2/power/power_module.hpp b/intersim2/power/power_module.hpp
+--- a/intersim2/power/power_module.hpp
++++ b/intersim2/power/power_module.hpp
+@@ -30,10 +30,10 @@
+ 
+ #include <map>
+ 
+-#include "module.hpp"
+-#include "network.hpp"
+-#include "config_utils.hpp"
+-#include "flitchannel.hpp"
++#include "intersim2/config_utils.hpp"
++#include "intersim2/flitchannel.hpp"
++#include "intersim2/module.hpp"
++#include "intersim2/networks/network.hpp"
+ #include "switch_monitor.hpp"
+ #include "buffer_monitor.hpp"
+ 
+diff --git a/intersim2/power/switch_monitor.cpp b/intersim2/power/switch_monitor.cpp
+--- a/intersim2/power/switch_monitor.cpp
++++ b/intersim2/power/switch_monitor.cpp
+@@ -25,10 +25,9 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
++#include "intersim2/flit.hpp"
+ #include "switch_monitor.hpp"
+ 
+-#include "flit.hpp"
+-
+ SwitchMonitor::SwitchMonitor( int inputs, int outputs, int classes )
+ : _cycles(0), _inputs(inputs), _outputs(outputs), _classes(classes) {
+   _event.resize(inputs * outputs * classes, 0) ;
+diff --git a/intersim2/routefunc.cpp b/intersim2/routefunc.cpp
+--- a/intersim2/routefunc.cpp
++++ b/intersim2/routefunc.cpp
+@@ -42,13 +42,13 @@
+ 
+ #include "booksim.hpp"
+ #include "routefunc.hpp"
+-#include "kncube.hpp"
+ #include "random_utils.hpp"
+ #include "misc_utils.hpp"
+-#include "fattree.hpp"
+-#include "tree4.hpp"
+-#include "qtree.hpp"
+-#include "cmesh.hpp"
++#include "networks/cmesh.hpp"
++#include "networks/fattree.hpp"
++#include "networks/kncube.hpp"
++#include "networks/qtree.hpp"
++#include "networks/tree4.hpp"
+ 
+ 
+ 
+diff --git a/intersim2/routefunc.hpp b/intersim2/routefunc.hpp
+--- a/intersim2/routefunc.hpp
++++ b/intersim2/routefunc.hpp
+@@ -29,9 +29,9 @@
+ #define _ROUTEFUNC_HPP_
+ 
+ #include "flit.hpp"
+-#include "router.hpp"
+ #include "outputset.hpp"
+ #include "config_utils.hpp"
++#include "routers/router.hpp"
+ 
+ typedef void (*tRoutingFunction)( const Router *, const Flit *, int in_channel, OutputSet *, bool );
+ 
+diff --git a/intersim2/routers/chaos_router.cpp b/intersim2/routers/chaos_router.cpp
+--- a/intersim2/routers/chaos_router.cpp
++++ b/intersim2/routers/chaos_router.cpp
+@@ -25,15 +25,15 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#include "booksim.hpp"
+ #include <string>
+ #include <sstream>
+ #include <iostream>
+ #include <cstdlib>
+ 
++#include "intersim2/booksim.hpp"
++#include "intersim2/globals.hpp"
++#include "intersim2/random_utils.hpp"
+ #include "chaos_router.hpp"
+-#include "random_utils.hpp"
+-#include "globals.hpp"
+ 
+ ChaosRouter::ChaosRouter( const Configuration& config,
+ 		    Module *parent, const string & name, int id,
+diff --git a/intersim2/routers/chaos_router.hpp b/intersim2/routers/chaos_router.hpp
+--- a/intersim2/routers/chaos_router.hpp
++++ b/intersim2/routers/chaos_router.hpp
+@@ -32,14 +32,14 @@
+ #include <queue>
+ #include <vector>
+ 
+-#include "module.hpp"
++#include "intersim2/allocators/allocator.hpp"
++#include "intersim2/buffer_state.hpp"
++#include "intersim2/module.hpp"
++#include "intersim2/outputset.hpp"
++#include "intersim2/pipefifo.hpp"
++#include "intersim2/routefunc.hpp"
++#include "intersim2/vc.hpp"
+ #include "router.hpp"
+-#include "allocator.hpp"
+-#include "routefunc.hpp"
+-#include "outputset.hpp"
+-#include "buffer_state.hpp"
+-#include "pipefifo.hpp"
+-#include "vc.hpp"
+ 
+ class ChaosRouter : public Router {
+ 
+diff --git a/intersim2/routers/event_router.cpp b/intersim2/routers/event_router.cpp
+--- a/intersim2/routers/event_router.cpp
++++ b/intersim2/routers/event_router.cpp
+@@ -31,9 +31,9 @@
+ #include <cstdlib>
+ #include <cassert>
+ 
++#include "intersim2/globals.hpp"
++#include "intersim2/stats.hpp"
+ #include "event_router.hpp"
+-#include "stats.hpp"
+-#include "globals.hpp"
+ 
+ EventRouter::EventRouter( const Configuration& config,
+ 		    Module *parent, const string & name, int id,
+diff --git a/intersim2/routers/event_router.hpp b/intersim2/routers/event_router.hpp
+--- a/intersim2/routers/event_router.hpp
++++ b/intersim2/routers/event_router.hpp
+@@ -32,14 +32,14 @@
+ #include <queue>
+ #include <vector>
+ 
+-#include "module.hpp"
++#include "intersim2/arbiters/prio_arb.hpp"
++#include "intersim2/buffer.hpp"
++#include "intersim2/module.hpp"
++#include "intersim2/outputset.hpp"
++#include "intersim2/pipefifo.hpp"
++#include "intersim2/routefunc.hpp"
++#include "intersim2/vc.hpp"
+ #include "router.hpp"
+-#include "buffer.hpp"
+-#include "vc.hpp"
+-#include "prio_arb.hpp"
+-#include "routefunc.hpp"
+-#include "outputset.hpp"
+-#include "pipefifo.hpp"
+ 
+ class EventNextVCState : public Module {
+ public:
+diff --git a/intersim2/routers/iq_router.cpp b/intersim2/routers/iq_router.cpp
+--- a/intersim2/routers/iq_router.cpp
++++ b/intersim2/routers/iq_router.cpp
+@@ -35,17 +35,17 @@
+ #include <cassert>
+ #include <limits>
+ 
+-#include "globals.hpp"
+-#include "random_utils.hpp"
+-#include "vc.hpp"
+-#include "routefunc.hpp"
+-#include "outputset.hpp"
+-#include "buffer.hpp"
+-#include "buffer_state.hpp"
+-#include "roundrobin_arb.hpp"
+-#include "allocator.hpp"
+-#include "switch_monitor.hpp"
+-#include "buffer_monitor.hpp"
++#include "intersim2/allocators/allocator.hpp"
++#include "intersim2/arbiters/roundrobin_arb.hpp"
++#include "intersim2/power/buffer_monitor.hpp"
++#include "intersim2/power/switch_monitor.hpp"
++#include "intersim2/buffer.hpp"
++#include "intersim2/buffer_state.hpp"
++#include "intersim2/globals.hpp"
++#include "intersim2/outputset.hpp"
++#include "intersim2/random_utils.hpp"
++#include "intersim2/routefunc.hpp"
++#include "intersim2/vc.hpp"
+ 
+ IQRouter::IQRouter( Configuration const & config, Module *parent, 
+ 		    string const & name, int id, int inputs, int outputs )
+diff --git a/intersim2/routers/iq_router.hpp b/intersim2/routers/iq_router.hpp
+--- a/intersim2/routers/iq_router.hpp
++++ b/intersim2/routers/iq_router.hpp
+@@ -34,8 +34,8 @@
+ #include <set>
+ #include <map>
+ 
++#include "intersim2/routefunc.hpp"
+ #include "router.hpp"
+-#include "routefunc.hpp"
+ 
+ using namespace std;
+ 
+diff --git a/intersim2/routers/router.cpp b/intersim2/routers/router.cpp
+--- a/intersim2/routers/router.cpp
++++ b/intersim2/routers/router.cpp
+@@ -38,9 +38,10 @@
+  *which are replaced by iq rotuer and event router in the present form
+  */
+ 
+-#include "booksim.hpp"
+ #include <iostream>
+ #include <cassert>
++
++#include "intersim2/booksim.hpp"
+ #include "router.hpp"
+ 
+ //////////////////Sub router types//////////////////////
+diff --git a/intersim2/routers/router.hpp b/intersim2/routers/router.hpp
+--- a/intersim2/routers/router.hpp
++++ b/intersim2/routers/router.hpp
+@@ -31,12 +31,12 @@
+ #include <string>
+ #include <vector>
+ 
+-#include "timed_module.hpp"
+-#include "flit.hpp"
+-#include "credit.hpp"
+-#include "flitchannel.hpp"
+-#include "channel.hpp"
+-#include "config_utils.hpp"
++#include "intersim2/channel.hpp"
++#include "intersim2/config_utils.hpp"
++#include "intersim2/credit.hpp"
++#include "intersim2/flit.hpp"
++#include "intersim2/flitchannel.hpp"
++#include "intersim2/timed_module.hpp"
+ 
+ typedef Channel<Credit> CreditChannel;
+ 
+diff --git a/intersim2/trafficmanager.hpp b/intersim2/trafficmanager.hpp
+--- a/intersim2/trafficmanager.hpp
++++ b/intersim2/trafficmanager.hpp
+@@ -35,7 +35,6 @@
+ 
+ #include "module.hpp"
+ #include "config_utils.hpp"
+-#include "network.hpp"
+ #include "flit.hpp"
+ #include "buffer_state.hpp"
+ #include "stats.hpp"
+@@ -43,6 +42,7 @@
+ #include "routefunc.hpp"
+ #include "outputset.hpp"
+ #include "injection.hpp"
++#include "networks/network.hpp"
+ 
+ //register the requests to a node
+ class PacketReplyInfo;
+diff --git a/stream_manager.cc b/stream_manager.cc
+--- a/stream_manager.cc
++++ b/stream_manager.cc
+@@ -25,6 +25,8 @@
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
++#include "gpu/gpgpu-sim/cuda_gpu.hh"
++
+ #include "stream_manager.h"
+ #include "gpgpusim_entrypoint.h"
+ #include "cuda-sim/cuda-sim.h"
+@@ -36,22 +38,17 @@
+ {
+     m_pending = false;
+     m_uid = sm_next_stream_uid++;
+-    pthread_mutex_init(&m_lock,NULL);
+ }
+ 
+ bool CUstream_st::empty()
+ {
+-    pthread_mutex_lock(&m_lock);
+     bool empty = m_operations.empty();
+-    pthread_mutex_unlock(&m_lock);
+     return empty;
+ }
+ 
+ bool CUstream_st::busy()
+ {
+-    pthread_mutex_lock(&m_lock);
+     bool pending = m_pending;
+-    pthread_mutex_unlock(&m_lock);
+     return pending;
+ }
+ 
+@@ -60,44 +57,35 @@
+     // called by host thread
+     bool done=false;
+     do{
+-        pthread_mutex_lock(&m_lock);
+         done = m_operations.empty();
+-        pthread_mutex_unlock(&m_lock);
+     } while ( !done );
+ }
+ 
+ void CUstream_st::push( const stream_operation &op )
+ {
+     // called by host thread
+-    pthread_mutex_lock(&m_lock);
+     m_operations.push_back( op );
+-    pthread_mutex_unlock(&m_lock);
+ }
+ 
+ void CUstream_st::record_next_done()
+ {
+     // called by gpu thread
+-    pthread_mutex_lock(&m_lock);
+     assert(m_pending);
+     m_operations.pop_front();
+     m_pending=false;
+-    pthread_mutex_unlock(&m_lock);
+ }
+ 
+ 
+ stream_operation CUstream_st::next()
+ {
+     // called by gpu thread
+-    pthread_mutex_lock(&m_lock);
+     m_pending = true;
+     stream_operation result = m_operations.front();
+-    pthread_mutex_unlock(&m_lock);
+     return result;
+ }
+ 
+ void CUstream_st::print(FILE *fp)
+ {
+-    pthread_mutex_lock(&m_lock);
+     fprintf(fp,"GPGPU-Sim API:    stream %u has %zu operations\n", m_uid, m_operations.size() );
+     std::list<stream_operation>::iterator i;
+     unsigned n=0;
+@@ -107,7 +95,6 @@
+         op.print(fp);
+         fprintf(fp,"\n");
+     }
+-    pthread_mutex_unlock(&m_lock);
+ }
+ 
+ 
+@@ -117,38 +104,35 @@
+         return;
+ 
+     assert(!m_done && m_stream);
++    m_stream->setThreadContext(tc);
+     if(g_debug_execution >= 3)
+        printf("GPGPU-Sim API: stream %u performing ", m_stream->get_uid() );
+     switch( m_type ) {
+     case stream_memcpy_host_to_device:
+         if(g_debug_execution >= 3)
+             printf("memcpy host-to-device\n");
+-        gpu->memcpy_to_gpu(m_device_address_dst,m_host_address_src,m_cnt);
+-        m_stream->record_next_done();
++        gpu->gem5CudaGPU->memcpy((void *)m_host_address_src,(void *)m_device_address_dst,m_cnt, m_stream, m_type);
+         break;
+     case stream_memcpy_device_to_host:
+         if(g_debug_execution >= 3)
+             printf("memcpy device-to-host\n");
+-        gpu->memcpy_from_gpu(m_host_address_dst,m_device_address_src,m_cnt);
+-        m_stream->record_next_done();
++        gpu->gem5CudaGPU->memcpy((void *)m_device_address_src,m_host_address_dst,m_cnt, m_stream, m_type);
+         break;
+     case stream_memcpy_device_to_device:
+         if(g_debug_execution >= 3)
+             printf("memcpy device-to-device\n");
+-        gpu->memcpy_gpu_to_gpu(m_device_address_dst,m_device_address_src,m_cnt); 
+-        m_stream->record_next_done();
++        gpu->gem5CudaGPU->memcpy((void *)m_device_address_src,(void *)m_device_address_dst,m_cnt, m_stream, m_type);
+         break;
+     case stream_memcpy_to_symbol:
+         if(g_debug_execution >= 3)
+             printf("memcpy to symbol\n");
+-        gpgpu_ptx_sim_memcpy_symbol(m_symbol,m_host_address_src,m_cnt,m_offset,1,gpu);
+-        m_stream->record_next_done();
++        gpu->gem5CudaGPU->memcpy_symbol(m_symbol, m_host_address_src, m_cnt, m_offset, 1, m_stream);
+         break;
+     case stream_memcpy_from_symbol:
+         if(g_debug_execution >= 3)
+             printf("memcpy from symbol\n");
+-        gpgpu_ptx_sim_memcpy_symbol(m_symbol,m_host_address_dst,m_cnt,m_offset,0,gpu);
+-        m_stream->record_next_done();
++        printf("Received stream_memcpy_from_symbol request, which is not implemented!\n");
++        abort();
+         break;
+     case stream_kernel_launch:
+         if( gpu->can_start_kernel() ) {
+@@ -156,17 +140,29 @@
+         	printf("kernel \'%s\' transfer to GPU hardware scheduler\n", m_kernel->name().c_str() );
+             if( m_sim_mode )
+                 gpgpu_cuda_ptx_sim_main_func( *m_kernel );
+-            else
++            else {
+                 gpu->launch( m_kernel );
++                gpu->gem5CudaGPU->beginRunning(launchTime, m_stream);
++            }
+         }
+         break;
+     case stream_event: {
+         printf("event update\n");
+         time_t wallclock = time((time_t *)NULL);
+-        m_event->update( gpu_tot_sim_cycle, wallclock );
++        m_event->update( gpu_tot_sim_cycle, wallclock, gpu->gem5CudaGPU->getCurTick() );
++        if (m_event->needs_unblock()) {
++            gpu->gem5CudaGPU->unblockThread(NULL);
++            m_event->reset();
++        }
+         m_stream->record_next_done();
++        gpu->gem5CudaGPU->scheduleStreamEvent();
+         } 
+         break;
++    case stream_memset:
++        if(g_debug_execution >= 3)
++            printf("memset\n");
++        gpu->gem5CudaGPU->memset((Addr)m_device_address_dst, m_write_value, m_cnt, m_stream);
++        break;
+     default:
+         abort();
+     }
+@@ -186,6 +182,7 @@
+     case stream_memcpy_to_symbol: fprintf(fp,"memcpy to symbol"); break;
+     case stream_memcpy_from_symbol: fprintf(fp,"memcpy from symbol"); break;
+     case stream_no_op: fprintf(fp,"no-op"); break;
++    case stream_memset: fprintf(fp,"memset"); break;
+     }
+ }
+ 
+@@ -194,18 +191,14 @@
+     m_gpu = gpu;
+     m_service_stream_zero = false;
+     m_cuda_launch_blocking = cuda_launch_blocking;
+-    pthread_mutex_init(&m_lock,NULL);
+ }
+ 
+ bool stream_manager::operation( bool * sim)
+ {
+-    pthread_mutex_lock(&m_lock);
+     bool check=check_finished_kernel();
+     if(check)m_gpu->print_stats();
+     stream_operation op =front();
+     op.do_operation( m_gpu );
+-    pthread_mutex_unlock(&m_lock);
+-    //pthread_mutex_lock(&m_lock);
+     // simulate a clock cycle on the GPU
+     return check;
+ }
+@@ -271,18 +264,40 @@
+     return result;
+ }
+ 
++bool stream_manager::ready()
++{
++    bool ready = false;
++    if( concurrent_streams_empty() )
++        m_service_stream_zero = true;
++    if( m_service_stream_zero ) {
++        if( !m_stream_zero.empty() ) {
++            if( !m_stream_zero.busy() ) {
++                ready = true;
++            }
++        } else {
++            m_service_stream_zero = false;
++        }
++    } else {
++        std::list<struct CUstream_st*>::iterator s;
++        for( s=m_streams.begin(); s != m_streams.end(); s++) {
++            CUstream_st *stream = *s;
++            if( !stream->busy() && !stream->empty() ) {
++                ready = true;
++            }
++        }
++    }
++    return ready;
++}
++
+ void stream_manager::add_stream( struct CUstream_st *stream )
+ {
+     // called by host thread
+-    pthread_mutex_lock(&m_lock);
+     m_streams.push_back(stream);
+-    pthread_mutex_unlock(&m_lock);
+ }
+ 
+ void stream_manager::destroy_stream( CUstream_st *stream )
+ {
+     // called by host thread
+-    pthread_mutex_lock(&m_lock);
+     while( !stream->empty() )
+         ; 
+     std::list<CUstream_st *>::iterator s;
+@@ -293,7 +308,6 @@
+         }
+     }
+     delete stream; 
+-    pthread_mutex_unlock(&m_lock);
+ }
+ 
+ bool stream_manager::concurrent_streams_empty()
+@@ -314,12 +328,10 @@
+ bool stream_manager::empty_protected()
+ {
+     bool result = true;
+-    pthread_mutex_lock(&m_lock);
+     if( !concurrent_streams_empty() )
+         result = false;
+     if( !m_stream_zero.empty() )
+         result = false;
+-    pthread_mutex_unlock(&m_lock);
+     return result;
+ }
+ 
+@@ -336,9 +348,7 @@
+ 
+ void stream_manager::print( FILE *fp)
+ {
+-    pthread_mutex_lock(&m_lock);
+     print_impl(fp);
+-    pthread_mutex_unlock(&m_lock);
+ }
+ void stream_manager::print_impl( FILE *fp)
+ {
+@@ -357,15 +367,6 @@
+ {
+     struct CUstream_st *stream = op.get_stream();
+ 
+-    // block if stream 0 (or concurrency disabled) and pending concurrent operations exist
+-    bool block= !stream || m_cuda_launch_blocking;
+-    while(block) {
+-        pthread_mutex_lock(&m_lock);
+-        block = !concurrent_streams_empty();
+-        pthread_mutex_unlock(&m_lock);
+-    };
+-
+-    pthread_mutex_lock(&m_lock);
+     if( stream && !m_cuda_launch_blocking ) {
+         stream->push(op);
+     } else {
+@@ -374,18 +375,9 @@
+     }
+     if(g_debug_execution >= 3)
+        print_impl(stdout);
+-    pthread_mutex_unlock(&m_lock);
+-    if( m_cuda_launch_blocking || stream == NULL ) {
+-        unsigned int wait_amount = 100; 
+-        unsigned int wait_cap = 100000; // 100ms 
+-        while( !empty() ) {
+-            // sleep to prevent CPU hog by empty spin
+-            // sleep time increased exponentially ensure fast response when needed 
+-            usleep(wait_amount); 
+-            wait_amount *= 2; 
+-            if (wait_amount > wait_cap) 
+-               wait_amount = wait_cap; 
+-        }
++
++    if (ready()) {
++        m_gpu->gem5CudaGPU->scheduleStreamEvent();
+     }
+ }
+ 
+diff --git a/stream_manager.h b/stream_manager.h
+--- a/stream_manager.h
++++ b/stream_manager.h
+@@ -29,10 +29,13 @@
+ #define STREAM_MANAGER_H_INCLUDED
+ 
+ #include "abstract_hardware_model.h"
++#include "cpu/thread_context.hh"
++#include "gpgpu-sim/gpu-sim.h"
+ #include <list>
+-#include <pthread.h>
+ #include <time.h>
+ 
++#include "sim/core.hh"
++
+ //class stream_barrier {
+ //public:
+ //    stream_barrier() { m_pending_streams=0; }
+@@ -51,7 +54,8 @@
+     stream_memcpy_to_symbol,
+     stream_memcpy_from_symbol,
+     stream_kernel_launch,
+-    stream_event
++    stream_event,
++    stream_memset
+ };
+ 
+ class stream_operation {
+@@ -62,6 +66,7 @@
+         m_type = stream_no_op;
+         m_stream = NULL;
+         m_done=true;
++        launchTime = curTick();
+     }
+     stream_operation( const void *src, const char *symbol, size_t count, size_t offset, struct CUstream_st *stream )
+     {
+@@ -73,6 +78,7 @@
+         m_cnt=count;
+         m_offset=offset;
+         m_done=false;
++        launchTime = curTick();
+     }
+     stream_operation( const char *symbol, void *dst, size_t count, size_t offset, struct CUstream_st *stream )
+     {
+@@ -84,6 +90,7 @@
+         m_cnt=count;
+         m_offset=offset;
+         m_done=false;
++        launchTime = curTick();
+     }
+     stream_operation( kernel_info_t *kernel, bool sim_mode, struct CUstream_st *stream )
+     {
+@@ -92,6 +99,7 @@
+         m_sim_mode=sim_mode;
+         m_stream=stream;
+         m_done=false;
++        launchTime = curTick();
+     }
+     stream_operation( class CUevent_st *e, struct CUstream_st *stream )
+     {
+@@ -100,6 +108,7 @@
+         m_event=e;
+         m_stream=stream;
+         m_done=false;
++        launchTime = curTick();
+     }
+     stream_operation( const void *host_address_src, size_t device_address_dst, size_t cnt, struct CUstream_st *stream )
+     {
+@@ -113,6 +122,7 @@
+         m_stream=stream;
+         m_sim_mode=false;
+         m_done=false;
++        launchTime = curTick();
+     }
+     stream_operation( size_t device_address_src, void *host_address_dst, size_t cnt, struct CUstream_st *stream  )
+     {
+@@ -126,6 +136,7 @@
+         m_stream=stream;
+         m_sim_mode=false;
+         m_done=false;
++        launchTime = curTick();
+     }
+     stream_operation( size_t device_address_src, size_t device_address_dst, size_t cnt, struct CUstream_st *stream  )
+     {
+@@ -139,6 +150,22 @@
+         m_stream=stream;
+         m_sim_mode=false;
+         m_done=false;
++        launchTime = curTick();
++    }
++    stream_operation( size_t device_address_dst, int value, size_t cnt, struct CUstream_st *stream )
++    {
++        m_kernel=NULL;
++        m_type=stream_memset;
++        m_device_address_src=0;
++        m_device_address_dst=device_address_dst;
++        m_host_address_src=NULL;
++        m_host_address_dst=NULL;
++        m_cnt=cnt;
++        m_write_value = value;
++        m_stream=stream;
++        m_sim_mode=false;
++        m_done=false;
++        launchTime = curTick();
+     }
+ 
+     bool is_kernel() const { return m_type == stream_kernel_launch; }
+@@ -155,6 +182,9 @@
+     struct CUstream_st *get_stream() { return m_stream; }
+     void set_stream( CUstream_st *stream ) { m_stream = stream; }
+ 
++    // For handling the gem5 thread context
++    void setThreadContext(ThreadContext *_tc) { tc = _tc; }
++
+ private:
+     struct CUstream_st *m_stream;
+ 
+@@ -169,10 +199,16 @@
+ 
+     const char *m_symbol;
+     size_t m_offset;
++    int m_write_value;
+ 
+     bool m_sim_mode;
+     kernel_info_t *m_kernel;
+     class CUevent_st *m_event;
++
++    Tick launchTime;
++
++    // The gem5 thread context executing this stream
++    ThreadContext *tc;
+ };
+ 
+ class CUevent_st {
+@@ -185,19 +221,26 @@
+       m_wallclock = 0;
+       m_gpu_tot_sim_cycle = 0;
+       m_done = false;
++      m_needs_unblock = false;
++      m_ticks = 0;
+    }
+-   void update( double cycle, time_t clk )
++   void update( double cycle, time_t clk, unsigned long long ticks)
+    {
+       m_updates++;
+       m_wallclock=clk;
+       m_gpu_tot_sim_cycle=cycle;
+       m_done = true;
++      m_ticks = ticks;
+    }
+    //void set_done() { assert(!m_done); m_done=true; }
+    int get_uid() const { return m_uid; }
+    unsigned num_updates() const { return m_updates; }
+    bool done() const { return m_done; }
+    time_t clock() const { return m_wallclock; }
++   unsigned long long ticks() const { return m_ticks; }
++   void set_needs_unblock(bool unblock) {m_needs_unblock = unblock;}
++   bool needs_unblock() { return m_needs_unblock;}
++   void reset() {m_needs_unblock = false; m_done = false;}
+ private:
+    int m_uid;
+    bool m_blocking;
+@@ -205,8 +248,10 @@
+    int m_updates;
+    time_t m_wallclock;
+    double m_gpu_tot_sim_cycle;
++   unsigned long long m_ticks;
+ 
+    static int m_next_event_uid;
++   bool m_needs_unblock;
+ };
+ 
+ struct CUstream_st {
+@@ -222,6 +267,10 @@
+     void print( FILE *fp );
+     unsigned get_uid() const { return m_uid; }
+ 
++    // For handling the gem5 thread context
++    void setThreadContext(ThreadContext *_tc) { tc = _tc; }
++    ThreadContext *getThreadContext() { return tc; }
++
+ private:
+     unsigned m_uid;
+     static unsigned sm_next_stream_uid;
+@@ -229,7 +278,8 @@
+     std::list<stream_operation> m_operations;
+     bool m_pending; // front operation has started but not yet completed
+ 
+-    pthread_mutex_t m_lock; // ensure only one host or gpu manipulates stream operation at one time
++    // The gem5 thread context executing this stream
++    ThreadContext *tc;
+ };
+ 
+ class stream_manager {
+@@ -238,6 +288,7 @@
+     bool register_finished_kernel(unsigned grid_uid  );
+     bool check_finished_kernel(  );
+     stream_operation front();
++    bool ready();
+     void add_stream( CUstream_st *stream );
+     void destroy_stream( CUstream_st *stream );
+     bool concurrent_streams_empty();
+@@ -255,7 +306,6 @@
+     std::map<unsigned,CUstream_st *> m_grid_id_to_stream;
+     CUstream_st m_stream_zero;
+     bool m_service_stream_zero;
+-    pthread_mutex_t m_lock;
+ };
+ 
+ #endif

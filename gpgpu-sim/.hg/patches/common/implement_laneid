@@ -1,0 +1,30 @@
+# HG changeset patch
+# Parent dcccd114a3eadabd41e92262b3ff586f04392db2
+# User Joel Hestness <jthestness@gmail.com>
+%laneid: Implement register
+
+The %laneid register returns the lane of the core that a thread is executing
+on. From PTX guide: "A predefined, read-only special register that returns
+the thread's lane within the warp. The lane identifier ranges from zero to
+WARP_SZ-1." Also from the NVIDIA shuffle presentation: "Coordinate of the
+thread in a warp: threadIdx.x % 32" [1].
+
+Implement this register.
+
+
+[1] http://on-demand.gputechconf.com/gtc/2013/presentations/S3174-Kepler-Shuffle-Tips-Tricks.pdf
+
+
+diff -r dcccd114a3ea -r 233381f366e1 cuda-sim/ptx_sim.cc
+--- a/cuda-sim/ptx_sim.cc	Mon Dec 15 11:56:55 2014 -0600
++++ b/cuda-sim/ptx_sim.cc	Fri Dec 19 15:26:09 2014 -0600
+@@ -240,7 +240,8 @@
+    }
+    case GRIDID_REG:
+       return m_gridid;
+-   case LANEID_REG: feature_not_implemented( "%laneid" ); return 0;
++   case LANEID_REG:
++      return m_tid.x % m_core->get_warp_size();
+    case LANEMASK_EQ_REG: feature_not_implemented( "%lanemask_eq" ); return 0;
+    case LANEMASK_LE_REG: feature_not_implemented( "%lanemask_le" ); return 0;
+    case LANEMASK_LT_REG: feature_not_implemented( "%lanemask_lt" ); return 0;

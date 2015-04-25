@@ -1,0 +1,10 @@
+This patch is used to separate general patches for gem5-gpu and personal patches
+
+It is needed so that when new patches are created at the end of the patch queue
+they are inserted well after any general gem5 patches. This greatly eases
+merging with changes to gem5-patches.
+
+To add a non-personal patch at the end of the patch queue, pop this patch and
+use qnew.
+
+(NOTE: This patch makes no changes to gem5)

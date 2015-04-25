@@ -1,0 +1,113 @@
+# HG changeset patch
+# Parent ae03cd164010986f1612156d9b6618165184e355
+Adds an interrupt to x86 that corresponds to a GPU page fault.
+* * *
+Update page fault interrupt to use shared_ptr
+
+diff -r ae03cd164010 src/arch/x86/interrupts.cc
+--- a/src/arch/x86/interrupts.cc	Tue Feb 10 10:19:26 2015 -0600
++++ b/src/arch/x86/interrupts.cc	Tue Feb 10 14:11:47 2015 -0600
+@@ -271,7 +271,9 @@
+     } else if (!DeliveryMode::isReserved(deliveryMode)) {
+         DPRINTF(LocalApic, "Interrupt is an %s.\n",
+                 DeliveryMode::names[deliveryMode]);
+-        if (deliveryMode == DeliveryMode::SMI && !pendingSmi) {
++        if (deliveryMode == DeliveryMode::GPUFault) {
++            pendingUnmaskableInt = pendingGpu = true;
++        } else if (deliveryMode == DeliveryMode::SMI && !pendingSmi) {
+             pendingUnmaskableInt = pendingSmi = true;
+             smiVector = vector;
+         } else if (deliveryMode == DeliveryMode::NMI && !pendingNmi) {
+@@ -611,7 +613,7 @@
+ 
+ X86ISA::Interrupts::Interrupts(Params * p)
+     : BasicPioDevice(p, PageBytes), IntDevice(this, p->int_latency),
+-      apicTimerEvent(this),
++      apicTimerEvent(this), pendingGpu(false),
+       pendingSmi(false), smiVector(0),
+       pendingNmi(false), nmiVector(0),
+       pendingExtInt(false), extIntVector(0),
+@@ -666,7 +668,13 @@
+     // These are all probably fairly uncommon, so we'll make them easier to
+     // check for.
+     if (pendingUnmaskableInt) {
+-        if (pendingSmi) {
++        if (pendingGpu) {
++            DPRINTF(LocalApic, "Generated GPU page fault object.\n");
++            Addr addr = tc->readMiscRegNoEffect(MISCREG_GPU_FAULTADDR);
++            uint32_t code = tc->readMiscRegNoEffect(MISCREG_GPU_FAULTCODE);
++            assert(((GPUFaultReg)tc->readMiscRegNoEffect(MISCREG_GPU_FAULT)).inFault == 1);
++            return std::make_shared<PageFault>(addr, code);
++        } else if (pendingSmi) {
+             DPRINTF(LocalApic, "Generated SMI fault object.\n");
+             return std::make_shared<SystemManagementInterrupt>();
+         } else if (pendingNmi) {
+diff -r ae03cd164010 src/arch/x86/interrupts.hh
+--- a/src/arch/x86/interrupts.hh	Tue Feb 10 10:19:26 2015 -0600
++++ b/src/arch/x86/interrupts.hh	Tue Feb 10 14:11:47 2015 -0600
+@@ -117,6 +117,7 @@
+      * A set of variables to keep track of interrupts that don't go through
+      * the IRR.
+      */
++    bool pendingGpu;
+     bool pendingSmi;
+     uint8_t smiVector;
+     bool pendingNmi;
+@@ -231,6 +232,12 @@
+         return entry.periodic;
+     }
+ 
++    void
++    triggerGPUInterrupt()
++    {
++        requestInterrupt(0, DeliveryMode::GPUFault, false);
++    }
++
+     AddrRangeList getIntAddrRange() const;
+ 
+     BaseMasterPort &getMasterPort(const std::string &if_name,
+diff -r ae03cd164010 src/arch/x86/intmessage.hh
+--- a/src/arch/x86/intmessage.hh	Tue Feb 10 10:19:26 2015 -0600
++++ b/src/arch/x86/intmessage.hh	Tue Feb 10 14:11:47 2015 -0600
+@@ -59,12 +59,13 @@
+             INIT = 5,
+             SIPI = 6,
+             ExtInt = 7,
++            GPUFault = 8,
+             NumModes
+         };
+ 
+         static const char * const names[NumModes] = {
+             "Fixed", "LowestPriority", "SMI", "Reserved",
+-            "NMI", "INIT", "Startup", "ExtInt"
++            "NMI", "INIT", "Startup", "ExtInt", "GPUFault"
+         };
+ 
+         static inline bool
+diff -r ae03cd164010 src/arch/x86/regs/misc.hh
+--- a/src/arch/x86/regs/misc.hh	Tue Feb 10 10:19:26 2015 -0600
++++ b/src/arch/x86/regs/misc.hh	Tue Feb 10 14:11:47 2015 -0600
+@@ -398,6 +398,8 @@
+ 
+         // GPU fault register
+         MISCREG_GPU_FAULT,
++        MISCREG_GPU_FAULTADDR,
++        MISCREG_GPU_FAULTCODE,
+ 
+         NUM_MISCREGS
+     };
+@@ -1006,6 +1008,14 @@
+     BitUnion64(GPUFaultReg)
+         Bitfield<0> inFault;
+     EndBitUnion(GPUFaultReg)
++
++    BitUnion64(GPUFaultCode)
++        Bitfield<0> present;
++        Bitfield<1> write;
++        Bitfield<2> user;
++        Bitfield<3> reserved;
++        Bitfield<4> fetch;
++    EndBitUnion(GPUFaultCode)
+ }
+ 
+ #endif // __ARCH_X86_INTREGS_HH__

@@ -1,0 +1,165 @@
+# HG changeset patch
+# Parent d0af3131e1ab6c3d4f0a6037effecc113f565f7d
+# User Joel Hestness <hestness@cs.wisc.edu>
+Ruby Directory Memory: Update to map/index for GPU
+
+In order to have a split memory hierarchy for the CPU and GPU, the
+device directories (GPU directories) need to be aware of the mapping
+of memory across different device directories
+
+This patch does not affect the standard gem5 functionality of the
+directory controller.
+
+diff -r d0af3131e1ab src/mem/ruby/SConscript
+--- a/src/mem/ruby/SConscript	Tue Feb 10 10:19:24 2015 -0600
++++ b/src/mem/ruby/SConscript	Tue Feb 10 14:16:55 2015 -0600
+@@ -40,6 +40,7 @@
+ DebugFlag('ProtocolTrace')
+ DebugFlag('RubyCache')
+ DebugFlag('RubyCacheTrace')
++DebugFlag('RubyDirectoryMemory')
+ DebugFlag('RubyDma')
+ DebugFlag('RubyGenerated')
+ DebugFlag('RubyMemory')
+diff -r d0af3131e1ab src/mem/ruby/structures/DirectoryMemory.cc
+--- a/src/mem/ruby/structures/DirectoryMemory.cc	Tue Feb 10 10:19:24 2015 -0600
++++ b/src/mem/ruby/structures/DirectoryMemory.cc	Tue Feb 10 14:16:55 2015 -0600
+@@ -28,6 +28,7 @@
+ 
+ #include "base/intmath.hh"
+ #include "debug/RubyCache.hh"
++#include "debug/RubyDirectoryMemory.hh"
+ #include "debug/RubyStats.hh"
+ #include "mem/ruby/slicc_interface/RubySlicc_Util.hh"
+ #include "mem/ruby/structures/DirectoryMemory.hh"
+@@ -40,6 +41,10 @@
+ uint64_t DirectoryMemory::m_total_size_bytes = 0;
+ int DirectoryMemory::m_numa_high_bit = 0;
+ 
++int DirectoryMemory::m_num_dev_directories = 0;
++uint64_t DirectoryMemory::m_device_segment_base = 0;
++int DirectoryMemory::m_num_dev_directories_bits = 0;
++
+ DirectoryMemory::DirectoryMemory(const Params *p)
+     : SimObject(p)
+ {
+@@ -48,6 +53,7 @@
+     m_size_bits = floorLog2(m_size_bytes);
+     m_num_entries = 0;
+     m_numa_high_bit = p->numa_high_bit;
++    m_device_directory = p->device_directory;
+ }
+ 
+ void
+@@ -58,8 +64,14 @@
+     for (int i = 0; i < m_num_entries; i++)
+         m_entries[i] = NULL;
+ 
+-    m_num_directories++;
+-    m_num_directories_bits = ceilLog2(m_num_directories);
++    if (m_device_directory) {
++        m_num_dev_directories++;
++        m_num_dev_directories_bits = ceilLog2(m_num_dev_directories);
++    } else {
++        m_num_directories++;
++        m_num_directories_bits = ceilLog2(m_num_directories);
++        m_device_segment_base += m_size_bytes;
++    }
+     m_total_size_bytes += m_size_bytes;
+ 
+     if (m_numa_high_bit == 0) {
+@@ -79,13 +91,25 @@
+     delete [] m_entries;
+ }
+ 
++#define DEV_DIR_BITS 8
++
+ uint64
+ DirectoryMemory::mapAddressToDirectoryVersion(PhysAddress address)
+ {
+-    if (m_num_directories_bits == 0)
+-        return 0;
+-
+-    uint64 ret = address.shiftLowOrderBits(m_numa_high_bit - m_num_directories_bits + 1) % m_num_directories;
++    uint64 ret;
++    if (m_num_dev_directories > 0) {
++        Addr addr = address.getAddress();
++        if (addr >= m_device_segment_base) {
++            PhysAddress relative_addr;
++            relative_addr.setAddress(addr - m_device_segment_base);
++            ret = relative_addr.shiftLowOrderBits(m_numa_high_bit - m_num_dev_directories_bits + 1) % m_num_dev_directories;
++            ret += m_num_directories;
++        } else {
++            ret = address.shiftLowOrderBits(m_numa_high_bit - m_num_directories_bits + 1) % m_num_directories;
++        }
++    } else {
++        ret = address.shiftLowOrderBits(m_numa_high_bit - m_num_directories_bits + 1) % m_num_directories;
++    }
+ 
+     return ret;
+ }
+@@ -101,14 +125,36 @@
+ DirectoryMemory::mapAddressToLocalIdx(PhysAddress address)
+ {
+     uint64 ret;
+-    if (m_num_directories_bits > 0) {
+-        ret = address.bitRemove(m_numa_high_bit - m_num_directories_bits + 1,
+-                                m_numa_high_bit);
++    if (m_num_dev_directories > 0) {
++        if (address.getAddress() >= m_device_segment_base) {
++            PhysAddress relative_address;
++            relative_address.setAddress(address.getAddress() - m_device_segment_base);
++            if (m_num_dev_directories_bits > 0) {
++                ret = relative_address.bitRemove(m_numa_high_bit - m_num_dev_directories_bits + 1,
++                                        m_numa_high_bit);
++            } else {
++                ret = relative_address.getAddress();
++            }
++        } else {
++            if (m_num_directories_bits > 0) {
++                ret = address.bitRemove(m_numa_high_bit - m_num_directories_bits + 1,
++                                        m_numa_high_bit);
++            } else {
++                ret = address.getAddress();
++            }
++        }
+     } else {
+-        ret = address.getAddress();
++        if (m_num_directories_bits > 0) {
++            ret = address.bitRemove(m_numa_high_bit - m_num_directories_bits + 1,
++                                    m_numa_high_bit);
++        } else {
++            ret = address.getAddress();
++        }
+     }
+ 
+-    return ret >> (RubySystem::getBlockSizeBits());
++    ret >>= (RubySystem::getBlockSizeBits());
++    DPRINTF(RubyDirectoryMemory, "%#x, %u\n", address.getAddress(), ret);
++    return ret;
+ }
+ 
+ AbstractEntry*
+diff -r d0af3131e1ab src/mem/ruby/structures/DirectoryMemory.hh
+--- a/src/mem/ruby/structures/DirectoryMemory.hh	Tue Feb 10 10:19:24 2015 -0600
++++ b/src/mem/ruby/structures/DirectoryMemory.hh	Tue Feb 10 14:16:55 2015 -0600
+@@ -79,6 +79,11 @@
+     static int m_num_directories_bits;
+     static uint64_t m_total_size_bytes;
+     static int m_numa_high_bit;
++
++    bool m_device_directory;
++    static int m_num_dev_directories;
++    static int m_num_dev_directories_bits;
++    static uint64_t m_device_segment_base;
+ };
+ 
+ inline std::ostream&
+diff -r d0af3131e1ab src/mem/ruby/structures/DirectoryMemory.py
+--- a/src/mem/ruby/structures/DirectoryMemory.py	Tue Feb 10 10:19:24 2015 -0600
++++ b/src/mem/ruby/structures/DirectoryMemory.py	Tue Feb 10 14:16:55 2015 -0600
+@@ -40,3 +40,4 @@
+     # the default value of the numa high bit is specified in the command line
+     # option and must be passed into the directory memory sim object
+     numa_high_bit = Param.Int("numa high bit")
++    device_directory = Param.Bool(False, "this directory is for a device")

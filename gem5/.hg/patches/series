@@ -1,0 +1,65 @@
+#######################################################
+# Fixes already pushed to gem5 mainline:
+#   When updating to the gem5 mainline head, these
+#   need to be removed from the patch queue
+#######################################################
+
+#######################################################
+# Fixes specific to gem5:
+#   This includes patches that have been or will be
+#   submitted to the gem5 mainline for review and
+#   possibly fix underlying issues with gem5
+#######################################################
+
+# Submitted to gem5 reviewboard on 2014/2/4
+fix-ruby-access-backing-store
+
+
+# We need to remove this patch and fix it in a good way
+tmp-fix-packet
+
+common/flush_response
+
+
+#######################################################
+# Other patches (to be sorted later):
+#######################################################
+
+common/add_x86_gpu_magic_inst
+common/add_gpgpu-sim_fs_functionality
+common/add_regression_tester
+common/fix_mc_address_mapping
+common/fix_memory_controller_timings
+common/update_directory_for_device
+common/enable_ruby_request_data
+common/flash_invalidate
+common/add_fence_mem_cmd
+common/warn_mc_refresh_threshold
+common/make_cluster_more_generic
+
+jason/TLB-bypass-L1
+jason/ruby-bypass-L1
+
+jason/gpu-page-faults
+jason/page-fault-interrupts
+joel/add_arm_gpu_fault_regs
+
+joel/connect_io_params
+joel/enable_ruby_atomics
+
+#######################################################
+# Utility patches that require qselection
+#######################################################
+joel/hack_ruby_func_access #+func_access
+
+#######################################################
+## A section for personal patches:
+##   By pushing this patch at the end of the patch 
+##   queue, it  encourages that all patches created by 
+##   someone modifying gem5-gpu will be queued after 
+##   this personal patch to simplify  merging with 
+##   updates to the gem5-patches queue
+########################################################
+
+personal_patches_delimiter
+

@@ -1,0 +1,14 @@
+# HG changeset patch
+# Parent 4f654fb554a1ecb44613acab3ac89a6f86334f14
+
+diff --git a/.hgignore b/.hgignore
+new file mode 100644
+--- /dev/null
++++ b/.hgignore
+@@ -0,0 +1,6 @@
++syntax: glob
++cscope.files
++cscope.out
++*.pyc
++*~
++.*.swp

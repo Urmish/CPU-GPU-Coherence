@@ -1,0 +1,95 @@
+# HG changeset patch
+# Parent 71bad814e0eceee8f17816fe3fe2703e88be7c34
+# User Joel Hestness <jthestness@gmail.com>
+ruby: Generalize the Cluster network
+
+This patch adds two generalizations to the Cluster network:
+1) In the case that components from one Cluster should be connected to
+components within another Cluster, we can add those components to both
+Clusters. This creates a problem if these two partially-connected Clusters are
+included as sub-Clusters of another Cluster, because the recursive definition
+causes the shared portions of the sub-Clusters to be traversed for each path
+entering the shared portions. Add a check to see if the sub-Cluster has already
+been instantiated, and if so, simply return to the super-Cluster that is
+calling the makeTopology function.
+
+2) In the case that multiple sub-Clusters should be connected but the router
+within one should not be connected to the top-level Cluster (e.g. a tree
+hierarchy with shared components between subtrees), the Cluster would, by
+default, add a link between the sub-Cluster router and the top-level Cluster.
+Add a variable to specify whether the sub-Cluster's router should be connected
+to the top-level Cluster's router. Default the choice to True.
+
+diff --git a/configs/topologies/Cluster.py b/configs/topologies/Cluster.py
+--- a/configs/topologies/Cluster.py
++++ b/configs/topologies/Cluster.py
+@@ -69,14 +69,29 @@
+         self.extBW = extBW
+         self.intLatency = intLatency
+         self.extLatency = extLatency
++        self.connectToParent = True
+ 
+     def add(self, node):
+         self.nodes.append(node)
+ 
++    # Since Clusters may be recursively defined, it may be desirable to nest
++    # Clusters without connecting them to higher-level parts of the network
++    # Use disableConnectToParent() to keep a Cluster from being connected
++    # to the router of a Cluster that contains it.
++    def getConnectToParent(self):
++        return self.connectToParent
++
++    def disableConnectToParent(self):
++        self.connectToParent = False
++
+     def makeTopology(self, options, network, IntLink, ExtLink, Router):
+         """ Recursively make all of the links and routers
+         """
+ 
++        # If this sub-Cluster has already been constructed
++        if self.router is not None:
++            return
++
+         # make a router to connect all of the nodes
+         self.router = Router(router_id=self.num_routers())
+         network.routers.append(self.router)
+@@ -85,24 +100,25 @@
+             if type(node) == Cluster:
+                 node.makeTopology(options, network, IntLink, ExtLink, Router)
+ 
+-                # connect this cluster to the router
+-                link = IntLink(link_id=self.num_int_links(), node_a=self.router,
+-                        node_b=node.router)
++                if node.getConnectToParent():
++                    # connect this cluster to the router
++                    link = IntLink(link_id=self.num_int_links(),
++                                   node_a=self.router, node_b=node.router)
+ 
+-                if node.extBW:
+-                    link.bandwidth_factor = node.extBW
++                    if node.extBW:
++                        link.bandwidth_factor = node.extBW
+ 
+-                # if there is an interanl b/w for this node
+-                # and no ext b/w to override
+-                elif self.intBW:
+-                    link.bandwidth_factor = self.intBW
++                    # if there is an interanl b/w for this node
++                    # and no ext b/w to override
++                    elif self.intBW:
++                        link.bandwidth_factor = self.intBW
+ 
+-                if node.extLatency:
+-                    link.latency = node.extLatency
+-                elif self.intLatency:
+-                    link.latency = self.intLatency
++                    if node.extLatency:
++                        link.latency = node.extLatency
++                    elif self.intLatency:
++                        link.latency = self.intLatency
+ 
+-                network.int_links.append(link)
++                    network.int_links.append(link)
+             else:
+                 # node is just a controller,
+                 # connect it to the router via a ext_link

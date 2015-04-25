@@ -1,0 +1,29 @@
+# HG changeset patch
+# Parent 5183520b1c34aa45f28a909f7bfb7a9710fedd66
+# User Joel Hestness <jthestness@gmail.com>
+Add generated file "version" for appropriate handling
+
+GPGPU-Sim v3.2 added functionality to gather version information from a
+generated file, called "version", in its source tree. This file needs to be
+available for GPGPU-Sim to run, so add it and point the simulator to it as
+appropriate.
+
+diff --git a/cuda-sim/cuda-sim.cc b/cuda-sim/cuda-sim.cc
+--- a/cuda-sim/cuda-sim.cc
++++ b/cuda-sim/cuda-sim.cc
+@@ -1521,7 +1521,7 @@
+    return result;
+ }
+ 
+-#include "../../version"
++#include "../version"
+ 
+ void print_splash()
+ {
+diff --git a/version b/version
+new file mode 100644
+--- /dev/null
++++ b/version
+@@ -0,0 +1,2 @@
++const char *g_gpgpusim_version_string = "GPGPU-Sim Simulator Version 3.2.2 ";
++const char *g_gpgpusim_build_string   =  "$Change: 17315 $"; 

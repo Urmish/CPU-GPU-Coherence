@@ -1,0 +1,573 @@
+# HG changeset patch
+# Parent 9736c22e067c72ab16ad03293915a05b3e752e2c
+Updates to work with gem5 version 10451:3a87241adfb8
+Required to rename Network class due to namespace conflict
+
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/batchtrafficmanager.cpp
+--- a/intersim2/batchtrafficmanager.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/batchtrafficmanager.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -34,7 +34,7 @@
+ #include "batchtrafficmanager.hpp"
+ 
+ BatchTrafficManager::BatchTrafficManager( const Configuration &config, 
+-					  const vector<Network *> & net )
++					  const vector<ISNetwork *> & net )
+ : TrafficManager(config, net), _last_id(-1), _last_pid(-1), 
+    _overall_min_batch_time(0), _overall_avg_batch_time(0), 
+    _overall_max_batch_time(0)
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/batchtrafficmanager.hpp
+--- a/intersim2/batchtrafficmanager.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/batchtrafficmanager.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -63,7 +63,7 @@
+ 
+ public:
+ 
+-  BatchTrafficManager( const Configuration &config, const vector<Network *> & net );
++  BatchTrafficManager( const Configuration &config, const vector<ISNetwork *> & net );
+   virtual ~BatchTrafficManager( );
+ 
+   virtual void WriteStats( ostream & os = cout ) const;
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/gputrafficmanager.cpp
+--- a/intersim2/gputrafficmanager.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/gputrafficmanager.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -34,7 +34,7 @@
+ #include "globals.hpp"
+ 
+ 
+-GPUTrafficManager::GPUTrafficManager( const Configuration &config, const vector<Network *> &net)
++GPUTrafficManager::GPUTrafficManager( const Configuration &config, const vector<ISNetwork *> &net)
+ :TrafficManager(config, net)
+ {
+   // The total simulations equal to number of kernels
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/gputrafficmanager.hpp
+--- a/intersim2/gputrafficmanager.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/gputrafficmanager.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -52,7 +52,7 @@
+   
+ public:
+   
+-  GPUTrafficManager( const Configuration &config, const vector<Network *> & net );
++  GPUTrafficManager( const Configuration &config, const vector<ISNetwork *> & net );
+   virtual ~GPUTrafficManager( );
+   
+   // correspond to TrafficManger::Run/SingleSim
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/interconnect_interface.cpp
+--- a/intersim2/interconnect_interface.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/interconnect_interface.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -106,7 +106,7 @@
+   for (int i = 0; i < _subnets; ++i) {
+     ostringstream name;
+     name << "network_" << i;
+-    _net[i] = Network::New( *_icnt_config, name.str() );
++    _net[i] = ISNetwork::New( *_icnt_config, name.str() );
+   }
+   
+   assert(_icnt_config->GetStr("sim_type") == "gpgpusim");
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/interconnect_interface.hpp
+--- a/intersim2/interconnect_interface.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/interconnect_interface.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -39,7 +39,7 @@
+ class Flit;
+ class GPUTrafficManager;
+ class IntersimConfig;
+-class Network;
++class ISNetwork;
+ class Stats;
+ 
+ //TODO: fixed_lat_icnt, add class support? support for signle network
+@@ -113,7 +113,7 @@
+   unsigned _flit_size;
+   IntersimConfig* _icnt_config;
+   unsigned _n_shader, _n_mem;
+-  vector<Network *> _net;
++  vector<ISNetwork *> _net;
+   int _vcs;
+   int _subnets;
+   
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/main.cpp
+--- a/intersim2/main.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/main.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -114,7 +114,7 @@
+ 
+ bool Simulate( BookSimConfig const & config )
+ {
+-    vector<Network *> net;
++    vector<ISNetwork *> net;
+     
+     int subnets = config.GetInt("subnets");
+     /*To include a new network, must register the network here
+@@ -124,7 +124,7 @@
+     for (int i = 0; i < subnets; ++i) {
+         ostringstream name;
+         name << "network_" << i;
+-        net[i] = Network::New( config, name.str() );
++        net[i] = ISNetwork::New( config, name.str() );
+     }
+     
+     /*tcc and characterize are legacy
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/anynet.cpp
+--- a/intersim2/networks/anynet.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/anynet.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -59,7 +59,7 @@
+ map<int, int>* global_routing_table;
+ 
+ AnyNet::AnyNet( const Configuration &config, const string & name )
+-  :  Network( config, name ){
++  :  ISNetwork( config, name ){
+ 
+   router_list.resize(2);
+   _ComputeSize( config );
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/anynet.hpp
+--- a/intersim2/networks/anynet.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/anynet.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -36,7 +36,7 @@
+ #include "intersim2/routefunc.hpp"
+ #include "network.hpp"
+ 
+-class AnyNet : public Network {
++class AnyNet : public ISNetwork {
+ 
+   string file_name;
+   //associtation between  nodes and routers
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/cmesh.cpp
+--- a/intersim2/networks/cmesh.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/cmesh.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -55,7 +55,7 @@
+ int CMesh::_memo_PortShiftY = 0 ;
+ 
+ CMesh::CMesh( const Configuration& config, const string & name ) 
+-  : Network(config, name) 
++  : ISNetwork(config, name) 
+ {
+   _ComputeSize( config );
+   _Alloc();
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/cmesh.hpp
+--- a/intersim2/networks/cmesh.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/cmesh.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -44,7 +44,7 @@
+ #include "intersim2/routefunc.hpp"
+ #include "network.hpp"
+ 
+-class CMesh : public Network {
++class CMesh : public ISNetwork {
+ public:
+   CMesh( const Configuration &config, const string & name );
+   int GetN() const;
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/dragonfly.cpp
+--- a/intersim2/networks/dragonfly.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/dragonfly.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -149,7 +149,7 @@
+ 
+ 
+ DragonFlyNew::DragonFlyNew( const Configuration &config, const string & name ) :
+-  Network( config, name )
++  ISNetwork( config, name )
+ {
+ 
+   _ComputeSize( config );
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/dragonfly.hpp
+--- a/intersim2/networks/dragonfly.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/dragonfly.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -31,7 +31,7 @@
+ #include "intersim2/routefunc.hpp"
+ #include "network.hpp"
+ 
+-class DragonFlyNew : public Network {
++class DragonFlyNew : public ISNetwork {
+ 
+   int _m;
+   int _n;
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/fattree.cpp
+--- a/intersim2/networks/fattree.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/fattree.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -56,7 +56,7 @@
+  //#define FATTREE_DEBUG
+ 
+ FatTree::FatTree( const Configuration& config,const string & name )
+-  : Network( config ,name)
++  : ISNetwork( config ,name)
+ {
+   
+ 
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/fattree.hpp
+--- a/intersim2/networks/fattree.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/fattree.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -43,7 +43,7 @@
+ 
+ #include "network.hpp"
+ 
+-class FatTree : public Network {
++class FatTree : public ISNetwork {
+ 
+   int _k;
+   int _n;
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/flatfly_onchip.cpp
+--- a/intersim2/networks/flatfly_onchip.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/flatfly_onchip.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -67,7 +67,7 @@
+ static int _yrouter;
+ 
+ FlatFlyOnChip::FlatFlyOnChip( const Configuration &config, const string & name ) :
+-  Network( config, name )
++  ISNetwork( config, name )
+ {
+ 
+   _ComputeSize( config );
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/flatfly_onchip.hpp
+--- a/intersim2/networks/flatfly_onchip.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/flatfly_onchip.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -33,7 +33,7 @@
+ #include "intersim2/routefunc.hpp"
+ #include "network.hpp"
+ 
+-class FlatFlyOnChip : public Network {
++class FlatFlyOnChip : public ISNetwork {
+ 
+   int _m;
+   int _n;
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/fly.cpp
+--- a/intersim2/networks/fly.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/fly.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -35,7 +35,7 @@
+ //#define DEBUG_FLY
+ 
+ KNFly::KNFly( const Configuration &config, const string & name ) :
+-Network( config, name )
++ISNetwork( config, name )
+ {
+   _ComputeSize( config );
+   _Alloc( );
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/fly.hpp
+--- a/intersim2/networks/fly.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/fly.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -30,7 +30,7 @@
+ 
+ #include "network.hpp"
+ 
+-class KNFly : public Network {
++class KNFly : public ISNetwork {
+ 
+   int _k;
+   int _n;
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/kncube.cpp
+--- a/intersim2/networks/kncube.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/kncube.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -41,7 +41,7 @@
+ 
+ 
+ KNCube::KNCube( const Configuration &config, const string & name, bool mesh ) :
+-Network( config, name )
++ISNetwork( config, name )
+ {
+   _mesh = mesh;
+ 
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/kncube.hpp
+--- a/intersim2/networks/kncube.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/kncube.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -30,7 +30,7 @@
+ 
+ #include "network.hpp"
+ 
+-class KNCube : public Network {
++class KNCube : public ISNetwork {
+ 
+   bool _mesh;
+ 
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/network.cpp
+--- a/intersim2/networks/network.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/network.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -49,7 +49,7 @@
+ #include "tree4.hpp"
+ 
+ 
+-Network::Network( const Configuration &config, const string & name ) :
++ISNetwork::ISNetwork( const Configuration &config, const string & name ) :
+   TimedModule( 0, name )
+ {
+   _size     = -1; 
+@@ -58,7 +58,7 @@
+   _classes  = config.GetInt("classes");
+ }
+ 
+-Network::~Network( )
++ISNetwork::~ISNetwork( )
+ {
+   for ( int r = 0; r < _size; ++r ) {
+     if ( _routers[r] ) delete _routers[r];
+@@ -77,10 +77,10 @@
+   }
+ }
+ 
+-Network * Network::New(const Configuration & config, const string & name)
++ISNetwork * ISNetwork::New(const Configuration & config, const string & name)
+ {
+   const string topo = config.GetStr( "topology" );
+-  Network * n = NULL;
++  ISNetwork * n = NULL;
+   if ( topo == "torus" ) {
+     KNCube::RegisterRoutingFunctions() ;
+     n = new KNCube( config, name, false );
+@@ -124,7 +124,7 @@
+   return n;
+ }
+ 
+-void Network::_Alloc( )
++void ISNetwork::_Alloc( )
+ {
+   assert( ( _size != -1 ) && 
+ 	  ( _nodes != -1 ) && 
+@@ -179,7 +179,7 @@
+   }
+ }
+ 
+-void Network::ReadInputs( )
++void ISNetwork::ReadInputs( )
+ {
+   for(deque<TimedModule *>::const_iterator iter = _timed_modules.begin();
+       iter != _timed_modules.end();
+@@ -188,7 +188,7 @@
+   }
+ }
+ 
+-void Network::Evaluate( )
++void ISNetwork::Evaluate( )
+ {
+   for(deque<TimedModule *>::const_iterator iter = _timed_modules.begin();
+       iter != _timed_modules.end();
+@@ -197,7 +197,7 @@
+   }
+ }
+ 
+-void Network::WriteOutputs( )
++void ISNetwork::WriteOutputs( )
+ {
+   for(deque<TimedModule *>::const_iterator iter = _timed_modules.begin();
+       iter != _timed_modules.end();
+@@ -206,42 +206,42 @@
+   }
+ }
+ 
+-void Network::WriteFlit( Flit *f, int source )
++void ISNetwork::WriteFlit( Flit *f, int source )
+ {
+   assert( ( source >= 0 ) && ( source < _nodes ) );
+   _inject[source]->Send(f);
+ }
+ 
+-Flit *Network::ReadFlit( int dest )
++Flit *ISNetwork::ReadFlit( int dest )
+ {
+   assert( ( dest >= 0 ) && ( dest < _nodes ) );
+   return _eject[dest]->Receive();
+ }
+ 
+-void Network::WriteCredit( Credit *c, int dest )
++void ISNetwork::WriteCredit( Credit *c, int dest )
+ {
+   assert( ( dest >= 0 ) && ( dest < _nodes ) );
+   _eject_cred[dest]->Send(c);
+ }
+ 
+-Credit *Network::ReadCredit( int source )
++Credit *ISNetwork::ReadCredit( int source )
+ {
+   assert( ( source >= 0 ) && ( source < _nodes ) );
+   return _inject_cred[source]->Receive();
+ }
+ 
+-void Network::InsertRandomFaults( const Configuration &config )
++void ISNetwork::InsertRandomFaults( const Configuration &config )
+ {
+   Error( "InsertRandomFaults not implemented for this topology!" );
+ }
+ 
+-void Network::OutChannelFault( int r, int c, bool fault )
++void ISNetwork::OutChannelFault( int r, int c, bool fault )
+ {
+   assert( ( r >= 0 ) && ( r < _size ) );
+   _routers[r]->OutChannelFault( c, fault );
+ }
+ 
+-double Network::Capacity( ) const
++double ISNetwork::Capacity( ) const
+ {
+   return 1.0;
+ }
+@@ -250,14 +250,14 @@
+  * neceesary of the network, by default, call display on each router
+  * and display the channel utilization rate
+  */
+-void Network::Display( ostream & os ) const
++void ISNetwork::Display( ostream & os ) const
+ {
+   for ( int r = 0; r < _size; ++r ) {
+     _routers[r]->Display( os );
+   }
+ }
+ 
+-void Network::DumpChannelMap( ostream & os, string const & prefix ) const
++void ISNetwork::DumpChannelMap( ostream & os, string const & prefix ) const
+ {
+   os << prefix << "source_router,source_port,dest_router,dest_port" << endl;
+   for(int c = 0; c < _nodes; ++c)
+@@ -280,7 +280,7 @@
+        << _eject[c]->GetSinkPort() << endl;
+ }
+ 
+-void Network::DumpNodeMap( ostream & os, string const & prefix ) const
++void ISNetwork::DumpNodeMap( ostream & os, string const & prefix ) const
+ {
+   os << prefix << "source_router,dest_router" << endl;
+   for(int s = 0; s < _nodes; ++s)
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/network.hpp
+--- a/intersim2/networks/network.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/network.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -44,7 +44,7 @@
+ typedef Channel<Credit> CreditChannel;
+ 
+ 
+-class Network : public TimedModule {
++class ISNetwork : public TimedModule {
+ protected:
+ 
+   int _size;
+@@ -71,10 +71,10 @@
+   void _Alloc( );
+ 
+ public:
+-  Network( const Configuration &config, const string & name );
+-  virtual ~Network( );
++  ISNetwork( const Configuration &config, const string & name );
++  virtual ~ISNetwork( );
+ 
+-  static Network *New( const Configuration &config, const string & name );
++  static ISNetwork *New( const Configuration &config, const string & name );
+ 
+   virtual void WriteFlit( Flit *f, int source );
+   virtual Flit *ReadFlit( int dest );
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/qtree.cpp
+--- a/intersim2/networks/qtree.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/qtree.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -47,7 +47,7 @@
+ #include "qtree.hpp"
+ 
+ QTree::QTree( const Configuration& config, const string & name )
+-: Network ( config, name )
++: ISNetwork ( config, name )
+ {
+   _ComputeSize( config );
+   _Alloc( );
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/qtree.hpp
+--- a/intersim2/networks/qtree.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/qtree.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -44,7 +44,7 @@
+ #include <cassert>
+ #include "network.hpp"
+ 
+-class QTree : public Network {
++class QTree : public ISNetwork {
+ 
+   int _k;
+   int _n;
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/tree4.cpp
+--- a/intersim2/networks/tree4.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/tree4.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -53,7 +53,7 @@
+ #include "tree4.hpp"
+ 
+ Tree4::Tree4( const Configuration& config, const string & name )
+-: Network ( config, name )
++: ISNetwork ( config, name )
+ {
+   _ComputeSize( config );
+   _Alloc( );
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/networks/tree4.hpp
+--- a/intersim2/networks/tree4.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/networks/tree4.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -44,7 +44,7 @@
+ #include <cassert>
+ #include "network.hpp"
+ 
+-class Tree4 : public Network {
++class Tree4 : public ISNetwork {
+ 
+   int _k;
+   int _n;
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/power/power_module.cpp
+--- a/intersim2/power/power_module.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/power/power_module.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -31,7 +31,7 @@
+ #include "power_module.hpp"
+ #include "switch_monitor.hpp"
+ 
+-Power_Module::Power_Module(Network * n , const Configuration &config)
++Power_Module::Power_Module(ISNetwork * n , const Configuration &config)
+   : Module( 0, "power_module" ){
+ 
+   
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/power/power_module.hpp
+--- a/intersim2/power/power_module.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/power/power_module.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -48,7 +48,7 @@
+ 
+ protected:
+   //network undersimulation
+-  Network * net;
++  ISNetwork * net;
+   int classes;
+   //all channels are this width
+   double channel_width;
+@@ -176,7 +176,7 @@
+   double areaOutputModule(double Outputs);
+ 
+ public:
+-  Power_Module(Network * net, const Configuration &config);
++  Power_Module(ISNetwork * net, const Configuration &config);
+   ~Power_Module();
+ 
+   void run();
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/trafficmanager.cpp
+--- a/intersim2/trafficmanager.cpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/trafficmanager.cpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -41,7 +41,7 @@
+ #include "packet_reply_info.hpp"
+ 
+ TrafficManager * TrafficManager::New(Configuration const & config,
+-                                     vector<Network *> const & net)
++                                     vector<ISNetwork *> const & net)
+ {
+   TrafficManager * result = NULL;
+   string sim_type = config.GetStr("sim_type");
+@@ -58,7 +58,7 @@
+   return result;
+ }
+ 
+-TrafficManager::TrafficManager( const Configuration &config, const vector<Network *> & net )
++TrafficManager::TrafficManager( const Configuration &config, const vector<ISNetwork *> & net )
+ : Module( 0, "traffic_manager" ), _net(net), _empty_network(false), _deadlock_timer(0), _reset_time(0), _drain_time(-1), _cur_id(0), _cur_pid(0), _time(0)
+ {
+   
+diff -r 9736c22e067c -r 1c93b40f4434 intersim2/trafficmanager.hpp
+--- a/intersim2/trafficmanager.hpp	Fri Oct 03 16:06:40 2014 -0500
++++ b/intersim2/trafficmanager.hpp	Tue Oct 14 13:30:26 2014 -0500
+@@ -60,7 +60,7 @@
+   int _routers;
+   int _vcs;
+ 
+-  vector<Network *> _net;
++  vector<ISNetwork *> _net;
+   vector<vector<Router *> > _router;
+ 
+   // ============ Traffic ============ 
+@@ -292,9 +292,9 @@
+ public:
+ 
+   static TrafficManager * New(Configuration const & config, 
+-			      vector<Network *> const & net);
++			      vector<ISNetwork *> const & net);
+ 
+-  TrafficManager( const Configuration &config, const vector<Network *> & net );
++  TrafficManager( const Configuration &config, const vector<ISNetwork *> & net );
+   virtual ~TrafficManager( );
+ 
+   bool Run( );

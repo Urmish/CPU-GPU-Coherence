@@ -1,0 +1,180 @@
+# HG changeset patch
+# Parent 4b2a7ef08c5f7fccab0f743a57bdda02be1b46fd
+# User Joel Hestness <jthestness@gmail.com>
+Local Memory: Implement handling for gem5-gpu
+
+Implement handling of common local memory bits in gem5-gpu. Specifically, allow
+local memory accesses to be passed to gem5-gpu CudaCore and ShaderLSQ, add
+functionality for libcuda to allocate the local memory region for the GPU, and
+map thread-local addresses to the allocated local memory region in the virtual
+address space.
+
+diff -r 4b2a7ef08c5f abstract_hardware_model.cc
+--- a/abstract_hardware_model.cc	Thu Nov 06 17:31:22 2014 -0600
++++ b/abstract_hardware_model.cc	Fri Nov 07 14:24:41 2014 -0600
+@@ -175,8 +175,8 @@
+         return; 
+     if( m_warp_active_mask.count() == 0 ) 
+         return; // predicated off
+-    // In gem5-gpu, global and const references go through the gem5-gpu LSQ
+-    if( space.get_type() == global_space || space.get_type() == const_space )
++    // In gem5-gpu, global, const and local references go through the gem5-gpu LSQ
++    if( space.get_type() == global_space || space.get_type() == const_space || space.get_type() == local_space )
+         return;
+ 
+     const size_t starting_queue_size = m_accessq.size();
+diff -r 4b2a7ef08c5f abstract_hardware_model.h
+--- a/abstract_hardware_model.h	Thu Nov 06 17:31:22 2014 -0600
++++ b/abstract_hardware_model.h	Fri Nov 07 14:24:41 2014 -0600
+@@ -850,7 +850,7 @@
+     void set_data( unsigned n, const uint8_t *_data )
+     {
+         assert( op == STORE_OP );
+-        assert( space == global_space || space == const_space );
++        assert( space == global_space || space == const_space || space == local_space );
+         assert( m_per_scalar_thread_valid );
+         assert( !m_per_scalar_thread[n].data_valid );
+         m_per_scalar_thread[n].data_valid = true;
+diff -r 4b2a7ef08c5f cuda-sim/cuda-sim.cc
+--- a/cuda-sim/cuda-sim.cc	Thu Nov 06 17:31:22 2014 -0600
++++ b/cuda-sim/cuda-sim.cc	Fri Nov 07 14:24:41 2014 -0600
+@@ -1484,7 +1484,7 @@
+       inst.set_addr(lane_id, insn_memaddr);
+       inst.data_size = insn_data_size; // simpleAtomicIntrinsics
+       assert( inst.memory_op == insn_memory_op );
+-      if (insn_memory_op == memory_store && (insn_space == global_space || insn_space == const_space)) {
++      if (insn_memory_op == memory_store && (insn_space == global_space || insn_space == const_space || insn_space == local_space)) {
+          // Need to save data to be written for stores
+          uint8_t data[MAX_DATA_BYTES_PER_INSN_PER_THREAD];
+          readRegister(inst, lane_id, (char*)&data[0]);
+diff -r 4b2a7ef08c5f cuda-sim/instructions.cc
+--- a/cuda-sim/instructions.cc	Thu Nov 06 17:31:22 2014 -0600
++++ b/cuda-sim/instructions.cc	Fri Nov 07 14:24:41 2014 -0600
+@@ -2123,7 +2123,7 @@
+    case global_space: mem = thread->get_global_memory(); break;
+    case param_space_local:
+    case local_space:
+-      mem = thread->m_local_mem; 
++      mem = thread->get_global_memory();
+       addr += thread->get_local_mem_stack_pointer();
+       break; 
+    case tex_space:    mem = thread->get_tex_memory(); break; 
+@@ -2137,7 +2137,7 @@
+          space = whichspace(addr);
+          switch ( space.get_type() ) {
+          case global_space: mem = thread->get_global_memory(); addr = generic_to_global(addr); break;
+-         case local_space:  mem = thread->m_local_mem; addr = generic_to_local(smid,hwtid,addr); break; 
++         case local_space:  mem = thread->get_global_memory(); addr = generic_to_local(smid,hwtid,addr); break;
+          case shared_space: mem = thread->m_shared_mem; addr = generic_to_shared(smid,addr); break; 
+          default: abort();
+          }
+@@ -2172,7 +2172,9 @@
+ 
+    thread->get_gpu()->gem5CudaGPU->getCudaCore(thread->get_hw_sid())->record_ld(space);
+ 
+-   if (space.get_type() != global_space && space.get_type() != const_space) {
++   if (space.get_type() != global_space &&
++       space.get_type() != const_space &&
++       space.get_type() != local_space) {
+        size_t size;
+        int t;
+        data.u64=0;
+@@ -3541,7 +3543,9 @@
+    decode_space(space,thread,dst,mem,addr);
+    thread->get_gpu()->gem5CudaGPU->getCudaCore(thread->get_hw_sid())->record_st(space);
+ 
+-   if (space.get_type() != global_space && space.get_type() != const_space) {
++   if (space.get_type() != global_space &&
++       space.get_type() != const_space &&
++       space.get_type() != local_space) {
+        size_t size;
+        int t;
+        type_info_key::type_decode(type,size,t);
+diff -r 4b2a7ef08c5f cuda-sim/ptx_parser.cc
+--- a/cuda-sim/ptx_parser.cc	Thu Nov 06 17:31:22 2014 -0600
++++ b/cuda-sim/ptx_parser.cc	Fri Nov 07 14:24:41 2014 -0600
+@@ -462,7 +462,6 @@
+       g_sym_name_to_symbol_table[ identifier ] = g_current_symbol_table;
+       break;
+    case local_space:
+-      panic("local memory allocation is untested!");
+       if( g_func_info == NULL ) {
+           printf("GPGPU-Sim PTX: allocating local region for \"%s\" ", identifier);
+          fflush(stdout);
+@@ -475,6 +474,10 @@
+          fflush(stdout);
+          g_last_symbol->set_address( addr+addr_pad);
+          g_current_symbol_table->alloc_local( num_bits/8 + addr_pad);
++         // To signal gem5-gpu to allocate local memory for the GPU, add the
++         // local allocation to the global symbol table
++         g_global_symbol_table->alloc_local(num_bits/8 + addr_pad);
++         panic("gem5-gpu: This local memory path is untested!");
+       } else {
+         printf("GPGPU-Sim PTX: allocating stack frame region for .local \"%s\" ",
+                identifier);
+@@ -487,7 +490,11 @@
+                 addr+addr_pad + num_bits/8);
+         fflush(stdout);
+         g_last_symbol->set_address( addr+addr_pad );
++        assert(g_current_symbol_table != g_global_symbol_table);
+         g_current_symbol_table->alloc_local( num_bits/8 + addr_pad);
++        // To signal gem5-gpu to allocate local memory for the GPU, add the
++        // local allocation to the global symbol table
++        g_global_symbol_table->alloc_local(num_bits/8 + addr_pad);
+         g_func_info->set_framesize( g_current_symbol_table->get_local_next() );
+       }
+       break;
+@@ -503,6 +510,9 @@
+       assert( (num_bits%8) == 0  );
+       g_last_symbol->set_address( g_current_symbol_table->get_local_next() );
+       g_current_symbol_table->alloc_local( num_bits/8 );
++      // To signal gem5-gpu to allocate local memory for the GPU, add the
++      // local allocation to the global symbol table
++      g_global_symbol_table->alloc_local(num_bits/8 + addr_pad);
+       g_func_info->set_framesize( g_current_symbol_table->get_local_next() );
+       break;
+    case param_space_kernel:
+diff -r 4b2a7ef08c5f gpgpu-sim/shader.cc
+--- a/gpgpu-sim/shader.cc	Thu Nov 06 17:31:22 2014 -0600
++++ b/gpgpu-sim/shader.cc	Fri Nov 07 14:24:41 2014 -0600
+@@ -1116,6 +1116,7 @@
+                        + tid % kernel_padded_threads_per_cta); 
+       max_concurrent_threads = kernel_padded_threads_per_cta * kernel_max_cta_per_shader * num_shader;
+    } else {
++      panic("gem5-gpu does not work with legacy local mapping!\n");
+       // legacy mapping that maps the same address in the local memory space of all threads 
+       // to a single contiguous address region 
+       thread_base = 4*(m_config->n_thread_per_shader * m_sid + tid);
+@@ -1135,7 +1136,8 @@
+       assert(localaddr%4 == 0); // Address must be 4B aligned - required if accessing 4B per request, otherwise access will overflow into next thread's space
+       for(unsigned i=0; i<num_accesses; i++) {
+           address_type local_word = localaddr/4 + i;
+-          address_type linear_address = local_word*max_concurrent_threads*4 + thread_base + LOCAL_GENERIC_START;
++          address_type linear_address = local_word*max_concurrent_threads*4 + thread_base + get_gpu()->gem5CudaGPU->getLocalBaseVaddr();
++          assert(linear_address < get_gpu()->gem5CudaGPU->getLocalBaseVaddr() + (LOCAL_MEM_SIZE_MAX * max_concurrent_threads));
+           translated_addrs[i] = linear_address;
+       }
+    } else {
+@@ -1145,7 +1147,8 @@
+       address_type local_word = localaddr/4;
+       address_type local_word_offset = localaddr%4;
+       assert( (localaddr+datasize-1)/4  == local_word ); // Make sure access doesn't overflow into next 4B chunk
+-      address_type linear_address = local_word*max_concurrent_threads*4 + local_word_offset + thread_base + LOCAL_GENERIC_START;
++      address_type linear_address = local_word*max_concurrent_threads*4 + local_word_offset + thread_base + get_gpu()->gem5CudaGPU->getLocalBaseVaddr();
++      assert(linear_address < get_gpu()->gem5CudaGPU->getLocalBaseVaddr() + (LOCAL_MEM_SIZE_MAX * max_concurrent_threads));
+       translated_addrs[0] = linear_address;
+    }
+    return num_accesses;
+@@ -1451,7 +1454,11 @@
+     if( inst.empty()) {
+         return true;
+     }
+-    if (inst.space.get_type() != global_space && inst.space.get_type() != const_space && inst.op != BARRIER_OP && inst.op != MEMORY_BARRIER_OP) {
++    if (inst.space.get_type() != global_space &&
++        inst.space.get_type() != const_space &&
++        inst.space.get_type() != local_space &&
++        inst.op != BARRIER_OP &&
++        inst.op != MEMORY_BARRIER_OP) {
+         return memory_cycle(inst, stall_reason, access_type);
+     }
+     if( inst.active_count() == 0 ) {

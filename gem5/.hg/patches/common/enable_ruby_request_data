@@ -1,0 +1,43 @@
+# HG changeset patch
+# Parent 5db306bbb3146829638d72f4308f76f95911fedc
+Ruby: Enable slicc to get data from RubyRequest
+This allows protocols to get the data out of the ruby request
+before the read/writeCallback function is called. This is useful
+when implementing write-through protocols where the data is needed
+before the transaction is complete.
+
+diff --git a/src/mem/protocol/RubySlicc_Types.sm b/src/mem/protocol/RubySlicc_Types.sm
+--- a/src/mem/protocol/RubySlicc_Types.sm
++++ b/src/mem/protocol/RubySlicc_Types.sm
+@@ -123,6 +123,7 @@
+   int Size,                  desc="size in bytes of access";
+   PrefetchBit Prefetch,      desc="Is this a prefetch request";
+   int contextId,             desc="this goes away but must be replace with Nilay";
++  void writeData(DataBlock);
+ }
+ 
+ structure(AbstractEntry, primitive="yes", external = "yes") {
+diff --git a/src/mem/ruby/slicc_interface/RubyRequest.hh b/src/mem/ruby/slicc_interface/RubyRequest.hh
+--- a/src/mem/ruby/slicc_interface/RubyRequest.hh
++++ b/src/mem/ruby/slicc_interface/RubyRequest.hh
+@@ -36,6 +36,7 @@
+ #include "mem/protocol/RubyAccessMode.hh"
+ #include "mem/protocol/RubyRequestType.hh"
+ #include "mem/ruby/common/Address.hh"
++#include "mem/ruby/common/DataBlock.hh"
+ 
+ class RubyRequest : public Message
+ {
+@@ -81,6 +82,12 @@
+     const int& getSize() const { return m_Size; }
+     const PrefetchBit& getPrefetch() const { return m_Prefetch; }
+ 
++    void
++    writeData(DataBlock& block) const
++    {
++      block.setData(data, m_PhysicalAddress.getOffset(), m_Size);
++    }
++
+     void print(std::ostream& out) const;
+     bool functionalRead(Packet *pkt);
+     bool functionalWrite(Packet *pkt);

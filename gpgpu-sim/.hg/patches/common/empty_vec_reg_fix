@@ -1,0 +1,49 @@
+# HG changeset patch
+# Parent 350d6aee6ccf11d0afcf1d9b004b26fe30d61e20
+Fixes bugs where GPGPU-Sim tries to use a null pointer for empty registers
+In operands like 'ld.global.v4.u32 {%r33,%r34,%r35,_}, [%rd22+0];' the fourth register is empty. This should be communicated
+all the way through to when the read finishes. GPGPU-Sim has a register to denote '_' but it wasn't used, instead null was.
+This patch corrects that.
+
+diff --git a/cuda-sim/cuda-sim.cc b/cuda-sim/cuda-sim.cc
+--- a/cuda-sim/cuda-sim.cc
++++ b/cuda-sim/cuda-sim.cc
+@@ -1541,7 +1541,7 @@
+ 
+ void gpgpu_ptx_sim_register_const_variable(void *hostVar, const char *deviceName, size_t size )
+ {
+-   printf("GPGPU-Sim PTX registering constant %s (%zu bytes) to name mapping\n", deviceName, size );
++   printf("GPGPU-Sim PTX registering constant %s (%zu bytes) to name mapping (%p)\n", deviceName, size, hostVar);
+    g_const_name_lookup[hostVar] = deviceName;
+ }
+ 
+diff --git a/cuda-sim/ptx_ir.h b/cuda-sim/ptx_ir.h
+--- a/cuda-sim/ptx_ir.h
++++ b/cuda-sim/ptx_ir.h
+@@ -620,7 +620,7 @@
+    {
+       assert(idx < 4);
+       const symbol *result = m_value.m_vector_symbolic[idx];
+-      assert( result != NULL );
++      //assert( result != NULL );
+       return result;
+    }
+ 
+diff --git a/cuda-sim/ptx_parser.cc b/cuda-sim/ptx_parser.cc
+--- a/cuda-sim/ptx_parser.cc
++++ b/cuda-sim/ptx_parser.cc
+@@ -680,10 +680,10 @@
+    const symbol *s3 = g_current_symbol_table->lookup(d3);
+    const symbol *s4 = g_current_symbol_table->lookup(d4);
+    parse_assert( s1 != NULL && s2 != NULL && s3 != NULL && s4 != NULL, "v4 component(s) missing declarations.");
+-   const symbol *null_op = g_current_symbol_table->lookup("_");
+-   if ( s2 == null_op ) s2 = NULL;
+-   if ( s3 == null_op ) s3 = NULL;
+-   if ( s4 == null_op ) s4 = NULL;
++   //const symbol *null_op = g_current_symbol_table->lookup("_");
++   //if ( s2 == null_op ) s2 = NULL;
++   //if ( s3 == null_op ) s3 = NULL;
++   //if ( s4 == null_op ) s4 = NULL;
+    g_operands.push_back( operand_info(s1,s2,s3,s4) );
+ }
+ 

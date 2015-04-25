@@ -1,0 +1,152 @@
+# HG changeset patch
+# Parent 3f63a3e950f8764feeec277ba77618b6fcb121e4
+Mem: Add and implement FlushAll command in Ruby.
+
+A FlushAll message requests the receiving controller to flush everything from
+its cache.
+
+This patch:
+ - Adds a FlushAllReq/Resp MemCmd.
+ - FLUSHALL RubyRequestType
+ - Flash invalidate function to the Ruby cache controllers.
+
+The flash invalidate function invalidates all lines which are resident in the
+cache. There is a check to be sure that there are no lines in the busy or r/w
+state, although this may need to change in the future to support a more
+general flash invalidate.
+
+diff --git a/src/mem/packet.cc b/src/mem/packet.cc
+--- a/src/mem/packet.cc
++++ b/src/mem/packet.cc
+@@ -173,6 +173,11 @@
+     /* Invalidation Request */
+     { SET3(NeedsExclusive, IsInvalidate, IsRequest),
+       InvalidCmd, "InvalidationReq" },
++    /* FlushAll Request */
++    { SET4(IsRequest, NeedsResponse, IsFlush, IsInvalidate), FlushAllResp,
++      "FlushAllReq"},
++    /* FlushAll Response */
++    { SET3(IsResponse, IsFlush, IsInvalidate), InvalidCmd, "FlushAllResp"},
+ };
+ 
+ bool
+diff --git a/src/mem/packet.hh b/src/mem/packet.hh
+--- a/src/mem/packet.hh
++++ b/src/mem/packet.hh
+@@ -129,6 +129,8 @@
+         FlushReq,      //request for a cache flush
+         FlushResp,
+         InvalidationReq,   // request for address to be invalidated from lsq
++        FlushAllReq,      // Flush entire cache request
++        FlushAllResp,
+         NUM_MEM_CMDS
+     };
+ 
+diff --git a/src/mem/protocol/RubySlicc_Exports.sm b/src/mem/protocol/RubySlicc_Exports.sm
+--- a/src/mem/protocol/RubySlicc_Exports.sm
++++ b/src/mem/protocol/RubySlicc_Exports.sm
+@@ -135,6 +135,7 @@
+   COMMIT,            desc="Commit version";
+   NULL,              desc="Invalid request type";
+   FLUSH,             desc="Flush request type";
++  FLUSHALL,          desc="Flush everything from the cache";
+ }
+ 
+ enumeration(SequencerRequestType, desc="...", default="SequencerRequestType_NULL") {
+diff --git a/src/mem/protocol/RubySlicc_Types.sm b/src/mem/protocol/RubySlicc_Types.sm
+--- a/src/mem/protocol/RubySlicc_Types.sm
++++ b/src/mem/protocol/RubySlicc_Types.sm
+@@ -154,6 +154,7 @@
+   void setMRU(Address);
+   void recordRequestType(CacheRequestType);
+   bool checkResourceAvailable(CacheResourceType, Address);
++  void flashInvalidate();
+ 
+   Scalar demand_misses;
+   Scalar demand_hits;
+diff --git a/src/mem/ruby/structures/CacheMemory.cc b/src/mem/ruby/structures/CacheMemory.cc
+--- a/src/mem/ruby/structures/CacheMemory.cc
++++ b/src/mem/ruby/structures/CacheMemory.cc
+@@ -323,6 +323,24 @@
+ }
+ 
+ void
++CacheMemory::flashInvalidate()
++{
++    // NOTE: It may make sense to invalidate Read_Write data but the assert
++    //       is added for safety.
++    for (int i = 0; i < m_cache_num_sets; i++) {
++        for (int j = 0; j < m_cache_assoc; j++) {
++            if (m_cache[i][j] == NULL) {
++                continue;
++            }
++            assert(m_cache[i][j]->m_Permission != AccessPermission_Busy);
++            assert(m_cache[i][j]->m_Permission != AccessPermission_Read_Write);
++            m_cache[i][j]->changePermission(AccessPermission_NotPresent);
++        }
++    }
++    m_tag_index.clear();
++}
++
++void
+ CacheMemory::recordCacheContents(int cntrl, CacheRecorder* tr) const
+ {
+     uint64 warmedUpBlocks = 0;
+diff --git a/src/mem/ruby/structures/CacheMemory.hh b/src/mem/ruby/structures/CacheMemory.hh
+--- a/src/mem/ruby/structures/CacheMemory.hh
++++ b/src/mem/ruby/structures/CacheMemory.hh
+@@ -102,6 +102,8 @@
+     void clearLocked (const Address& addr);
+     bool isLocked (const Address& addr, int context);
+ 
++    void flashInvalidate();
++
+     // Print cache contents
+     void print(std::ostream& out) const;
+     void printData(std::ostream& out) const;
+diff --git a/src/mem/ruby/system/Sequencer.cc b/src/mem/ruby/system/Sequencer.cc
+--- a/src/mem/ruby/system/Sequencer.cc
++++ b/src/mem/ruby/system/Sequencer.cc
+@@ -286,7 +286,8 @@
+         (request_type == RubyRequestType_Store_Conditional) ||
+         (request_type == RubyRequestType_Locked_RMW_Read) ||
+         (request_type == RubyRequestType_Locked_RMW_Write) ||
+-        (request_type == RubyRequestType_FLUSH)) {
++        (request_type == RubyRequestType_FLUSH) ||
++        (request_type == RubyRequestType_FLUSHALL)) {
+ 
+         // Check if there is any outstanding read request for the same
+         // cache line.
+@@ -496,7 +497,8 @@
+            (request->m_type == RubyRequestType_Store_Conditional) ||
+            (request->m_type == RubyRequestType_Locked_RMW_Read) ||
+            (request->m_type == RubyRequestType_Locked_RMW_Write) ||
+-           (request->m_type == RubyRequestType_FLUSH));
++           (request->m_type == RubyRequestType_FLUSH) ||
++           (request->m_type == RubyRequestType_FLUSHALL));
+ 
+     //
+     // For Alpha, properly handle LL, SC, and write requests with respect to
+@@ -536,7 +538,8 @@
+     markRemoved();
+ 
+     assert((request->m_type == RubyRequestType_LD) ||
+-           (request->m_type == RubyRequestType_IFETCH));
++           (request->m_type == RubyRequestType_IFETCH) ||
++           (request->m_type == RubyRequestType_FLUSHALL));
+ 
+     hitCallback(request, data, true, mach, externalHit,
+                 initialRequestTime, forwardRequestTime, firstResponseTime);
+@@ -708,7 +711,11 @@
+             //
+             primary_type = secondary_type = RubyRequestType_ST;
+         } else if (pkt->isFlush()) {
+-          primary_type = secondary_type = RubyRequestType_FLUSH;
++            if (pkt->cmd == MemCmd::FlushAllReq) {
++                primary_type = secondary_type = RubyRequestType_FLUSHALL;
++            } else {
++                primary_type = secondary_type = RubyRequestType_FLUSH;
++            }
+         } else {
+             panic("Unsupported ruby packet type\n");
+         }

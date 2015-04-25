@@ -1,0 +1,29 @@
+# HG changeset patch
+# Parent 4ac6d5156d4b22e77845ba6b844d5e903ffc8652
+# User Joel Hestness <jthestness@gmail.com>
+HACKY! Allow Ruby to Proceed on Func Access Fail
+
+When accessing memory functionally, if packets should access the cannonical
+physical memory anyway (access_phys_mem), there is no need to fail in the event
+that the cache state is incorrect, because the backing store will be accessed
+AND hold correct data. Put in a check to dodge this for now.
+
+NOTE! THIS PATCH SHOULD BE USED WITH CAUTION:
+This patch has been tested and shows seemingly correct execution for all
+benchmarks, but this is still considered a hack, because it side-steps
+appropriate handling of data in Ruby caches. This side-stepping may result in
+incorrect benchmark output and mask performance issues of illegitimately
+designed cache behavior.
+
+diff --git a/src/mem/ruby/system/RubyPort.cc b/src/mem/ruby/system/RubyPort.cc
+--- a/src/mem/ruby/system/RubyPort.cc
++++ b/src/mem/ruby/system/RubyPort.cc
+@@ -304,7 +304,7 @@
+ 
+     // Unless the requester explicitly said otherwise, generate an error if
+     // the functional request failed
+-    if (!accessSucceeded && !pkt->suppressFuncError()) {
++    if (!accessSucceeded && !pkt->suppressFuncError() && !access_phys_mem) {
+         fatal("Ruby functional %s failed for address %#x\n",
+               pkt->isWrite() ? "write" : "read", pkt->getAddr());
+     }

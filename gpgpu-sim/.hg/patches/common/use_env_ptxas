@@ -1,0 +1,26 @@
+# HG changeset patch
+# Parent 33b96e5ab332da74f4d94d9f3f0f198fbd2ac256
+# User Joel Hestness <jthestness@gmail.com>
+PTX generation: Use environment ptxas
+
+GPGPU-Sim v3.2 changed to using an environment variable (CUDA_INSTALL_PATH) to
+designate the PTX assembler (ptxas) that should be used when generating PTX
+code information. Since scons does not source environment variables for
+regressions, running gem5-gpu through scons fails to resolve the environment
+variable, so ptxas is not found.
+
+In the future, it may make sense to try to fix the environment variable
+handling in scons, but for now, revert ptxas path back to older GPGPU-Sim.
+
+diff --git a/cuda-sim/ptx_loader.cc b/cuda-sim/ptx_loader.cc
+--- a/cuda-sim/ptx_loader.cc
++++ b/cuda-sim/ptx_loader.cc
+@@ -219,7 +219,7 @@
+     snprintf(extra_flags,1024,"--gpu-name=sm_20");
+ #endif
+ 
+-    snprintf(commandline,1024,"$CUDA_INSTALL_PATH/bin/ptxas %s -v %s --output-file  /dev/null 2> %s",
++    snprintf(commandline,1024,"ptxas %s -v %s --output-file  /dev/null 2> %s",
+              extra_flags, fname2, tempfile_ptxinfo);
+     printf("GPGPU-Sim PTX: generating ptxinfo using \"%s\"\n", commandline);
+     result = system(commandline);

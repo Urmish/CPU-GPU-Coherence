@@ -1,0 +1,19 @@
+# HG changeset patch
+# Parent ab2b8467108d98861d572042bcc7e2850307f076
+# User Joel Hestness <hestness@cs.utexas.edu>
+DirectoryMemory: Fix the number of directory bits calculation
+
+diff --git a/src/mem/ruby/structures/DirectoryMemory.cc b/src/mem/ruby/structures/DirectoryMemory.cc
+--- a/src/mem/ruby/structures/DirectoryMemory.cc
++++ b/src/mem/ruby/structures/DirectoryMemory.cc
+@@ -126,8 +126,8 @@
+     if (m_num_directories_bits == 0)
+         return 0;
+ 
+-    uint64 ret = address.bitSelect(m_numa_high_bit - m_num_directories_bits + 1,
+-                                   m_numa_high_bit);
++    uint64 ret = address.shiftLowOrderBits(m_numa_high_bit - m_num_directories_bits + 1) % m_num_directories;
++
+     return ret;
+ }
+ 

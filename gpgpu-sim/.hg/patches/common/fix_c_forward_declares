@@ -1,0 +1,35 @@
+# HG changeset patch
+# Parent 2e884a38803a93fa76022b57254b0ea9cb35cfb0
+# User Joel Hestness <jthestness@gmail.com>
+Abstract Hardware Model: Fix Forward Declares for C
+
+C doesn't have classes, so when abstract_hardware_model.h is included from a C
+file, the class declarations cause compiler errors. Move the declarations to
+within the __cplusplus ifdef.
+
+diff --git a/abstract_hardware_model.h b/abstract_hardware_model.h
+--- a/abstract_hardware_model.h
++++ b/abstract_hardware_model.h
+@@ -28,11 +28,6 @@
+ #ifndef ABSTRACT_HARDWARE_MODEL_INCLUDED
+ #define ABSTRACT_HARDWARE_MODEL_INCLUDED
+ 
+-
+-// Forward declarations
+-class gpgpu_sim;
+-class kernel_info_t;
+-
+ enum _memory_space_t {
+    undefined_space=0,
+    reg_space,
+@@ -67,6 +62,10 @@
+ typedef new_addr_type address_type;
+ typedef new_addr_type addr_t;
+ 
++// Forward declarations
++class gpgpu_sim;
++class kernel_info_t;
++
+ // the following are operations the timing model can see 
+ 
+ enum uarch_op_t {

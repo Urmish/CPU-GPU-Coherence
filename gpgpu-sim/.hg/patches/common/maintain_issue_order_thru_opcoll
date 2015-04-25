@@ -1,0 +1,109 @@
+# HG changeset patch
+# Parent 6df10ad6c02fbfa48c14124c7cff0d915747a3be
+# User Joel Hestness <jthestness@gmail.com>
+Operand Collector: Maintain instruction ordering
+
+The GPGPU-Sim operand collector did not enforce instruction ordering, which
+allowed memory instructions to be incorrectly reordered. This patch replaces
+the instruction dispatch logic to select instructions in order. Regressions
+show no slowdown, though runtimes do change less than +-1%. This could be
+optimized in the future to allow instructions from different warps to be
+reordered.
+* * *
+CUDA-Sim: Writeback tweaks
+
+Add a panic if global or local memory operations are returned to the ldst_unit
+through the GPGPU-Sim interconnect m_response_fifo. All global and local memory
+accesses *should* now go through gem5-gpu and use writebackInst to schedule
+writeback.
+
+Move the writebackInst implementation from shader.h into shader.cc in
+preparation for atomics implementation additions.
+
+diff --git a/gpgpu-sim/shader.cc b/gpgpu-sim/shader.cc
+--- a/gpgpu-sim/shader.cc
++++ b/gpgpu-sim/shader.cc
+@@ -1777,6 +1777,7 @@
+             break;
+         case 3: // global/local
+             if( m_next_global ) {
++                panic("This should never execute in gem5-gpu! Writebacks from CudaCore must occur with writebackInst()!");
+                 m_next_wb = m_next_global->get_inst();
+                 if( m_next_global->isatomic() ) 
+                     m_core->decrement_atomic_count(m_next_global->get_wid(),m_next_global->get_access_warp_mask().count());
+@@ -1804,6 +1805,16 @@
+     }
+ }
+ 
++bool ldst_unit::writebackInst(warp_inst_t &inst)
++{
++    if (m_next_wb.empty()) {
++        m_next_wb = inst;
++    } else if (m_next_wb.get_uid() != inst.get_uid()) {
++        return false; // WB reg full
++    }
++    return true;
++}
++
+ unsigned ldst_unit::clock_multiplier() const
+ { 
+     return m_config->mem_warp_parts; 
+diff --git a/gpgpu-sim/shader.h b/gpgpu-sim/shader.h
+--- a/gpgpu-sim/shader.h
++++ b/gpgpu-sim/shader.h
+@@ -784,6 +784,7 @@
+       const active_mask_t & get_active_mask() const { return m_warp->get_active_mask(); }
+       unsigned get_sp_op() const { return m_warp->sp_op; }
+       unsigned get_id() const { return m_cuid; } // returns CU hw id
++      unsigned get_inst_uniq_id() { return m_warp->get_uid(); }
+ 
+       // modifiers
+       void init(unsigned n, 
+@@ -832,14 +833,26 @@
+ 
+       collector_unit_t *find_ready()
+       {
++         unsigned least_inst_uid = (unsigned)-1;
++         collector_unit_t *to_return = NULL;
++         // gem5-gpu NOTE: gem5-gpu requires that all memory instructions be
++         // issued in-order to the load-store queues to correctly enforce
++         // fences. GPGPU-Sim did not have this requirement, so this ready
++         // instruction select code is different than GPGPU-Sim.
+          for( unsigned n=0; n < m_num_collectors; n++ ) {
+-            unsigned c=(m_last_cu+n+1)%m_num_collectors;
+-            if( (*m_collector_units)[c].ready() ) {
+-               m_last_cu=c;
+-               return &((*m_collector_units)[c]);
++            collector_unit_t *cu = &((*m_collector_units)[n]);
++            if( !cu->is_free() ) {
++               if( cu->get_inst_uniq_id() < least_inst_uid ) {
++                  least_inst_uid = cu->get_inst_uniq_id();
++                  if( cu->ready() ) {
++                     to_return = cu;
++                  } else {
++                     to_return = NULL;
++                  }
++               }
+             }
+          }
+-         return NULL;
++         return to_return;
+       }
+ 
+    private:
+@@ -1090,14 +1103,7 @@
+ 
+     /// Inserts this instruction into the writeback stage of the pipeline
+     /// Returns true if successful, false if there is an instruction blocking
+-    bool writebackInst(warp_inst_t &inst) {
+-      if (m_next_wb.empty()) {
+-        m_next_wb = inst;
+-      } else if (m_next_wb.m_uid != inst.m_uid) {
+-        return false; // WB reg full
+-      }
+-      return true;
+-    }
++    bool writebackInst(warp_inst_t &inst);
+ 
+     // accessors
+     virtual unsigned clock_multiplier() const;

@@ -1,0 +1,24 @@
+# HG changeset patch
+# Parent 5c44ae58b8f41d9a46335f9fd55e76e0d4d69d5c
+# User Joel Hestness <hestness@cs.wisc.edu>
+Ruby Memory Controller: Remove refresh deadline
+
+With longer latency memory requests that come with more accurate modeling of
+the bus contention, the prior refresh deadlines no longer make sense. Add a
+warning when refresh time exceeds 500 cycles, but do not kill simulation.
+
+TODO: If accurate refresh modeling becomes desirable, this should be fixed to
+ensure refresh happens promptly.
+
+diff --git a/src/mem/ruby/structures/RubyMemoryControl.cc b/src/mem/ruby/structures/RubyMemoryControl.cc
+--- a/src/mem/ruby/structures/RubyMemoryControl.cc
++++ b/src/mem/ruby/structures/RubyMemoryControl.cc
+@@ -597,7 +597,7 @@
+         m_refresh_count = m_refresh_period_system;
+ 
+         // Are we overrunning our ability to refresh?
+-        assert(m_need_refresh < 10);
++        if (m_need_refresh >= 500) warn_once("Refresh delayed more than 500 cycles!\n");
+         m_need_refresh++;
+     }
+ 
