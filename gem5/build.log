@@ -5657,7 +5657,7 @@ TriggerType
 TypeAST.py -
 TriggerType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dc410>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29410>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5672,7 +5672,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dc450>, <m5.util.code_formatter.code_formatter object at 0x59dc510>, <m5.util.code_formatter.code_formatter object at 0x59dc5d0>, <m5.util.code_formatter.code_formatter object at 0x59dc610>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29450>, <m5.util.code_formatter.code_formatter object at 0x4a29510>, <m5.util.code_formatter.code_formatter object at 0x4a295d0>, <m5.util.code_formatter.code_formatter object at 0x4a29610>]
 TypeAST.py -
 TriggerType
 TypeAST.py -
@@ -5680,7 +5680,7 @@ TriggerType
 TypeAST.py -
 TriggerType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dc810>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29810>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5695,7 +5695,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dc850>, <m5.util.code_formatter.code_formatter object at 0x59dc910>, <m5.util.code_formatter.code_formatter object at 0x59dc950>, <m5.util.code_formatter.code_formatter object at 0x59dc990>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29850>, <m5.util.code_formatter.code_formatter object at 0x4a29910>, <m5.util.code_formatter.code_formatter object at 0x4a29950>, <m5.util.code_formatter.code_formatter object at 0x4a29990>]
 FuncCallExprAST - 
 ("Unexpected message")
 DeclListAST generate
@@ -5723,7 +5723,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dc550>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29550>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5738,7 +5738,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dc2d0>, <m5.util.code_formatter.code_formatter object at 0x59dc250>, <m5.util.code_formatter.code_formatter object at 0x59dc8d0>, <m5.util.code_formatter.code_formatter object at 0x59dc850>]
+[<m5.util.code_formatter.code_formatter object at 0x4a292d0>, <m5.util.code_formatter.code_formatter object at 0x4a29250>, <m5.util.code_formatter.code_formatter object at 0x4a298d0>, <m5.util.code_formatter.code_formatter object at 0x4a29850>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -5746,7 +5746,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dca50>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29a50>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5761,7 +5761,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dca90>, <m5.util.code_formatter.code_formatter object at 0x59dcad0>, <m5.util.code_formatter.code_formatter object at 0x59dcbd0>, <m5.util.code_formatter.code_formatter object at 0x59dcc10>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29a90>, <m5.util.code_formatter.code_formatter object at 0x4a29ad0>, <m5.util.code_formatter.code_formatter object at 0x4a29bd0>, <m5.util.code_formatter.code_formatter object at 0x4a29c10>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -5769,7 +5769,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dca90>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29a90>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5784,7 +5784,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dcad0>, <m5.util.code_formatter.code_formatter object at 0x59dcbd0>, <m5.util.code_formatter.code_formatter object at 0x59dcb50>, <m5.util.code_formatter.code_formatter object at 0x59dcc90>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29ad0>, <m5.util.code_formatter.code_formatter object at 0x4a29bd0>, <m5.util.code_formatter.code_formatter object at 0x4a29b50>, <m5.util.code_formatter.code_formatter object at 0x4a29c90>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -5792,7 +5792,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dcad0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29ad0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5807,7 +5807,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dca50>, <m5.util.code_formatter.code_formatter object at 0x59dcbd0>, <m5.util.code_formatter.code_formatter object at 0x59dca90>, <m5.util.code_formatter.code_formatter object at 0x59dcb90>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29a50>, <m5.util.code_formatter.code_formatter object at 0x4a29bd0>, <m5.util.code_formatter.code_formatter object at 0x4a29a90>, <m5.util.code_formatter.code_formatter object at 0x4a29b90>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -5815,7 +5815,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dca50>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29a50>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5830,7 +5830,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dcbd0>, <m5.util.code_formatter.code_formatter object at 0x59dcd10>, <m5.util.code_formatter.code_formatter object at 0x59dcb50>, <m5.util.code_formatter.code_formatter object at 0x59dcd50>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29bd0>, <m5.util.code_formatter.code_formatter object at 0x4a29d10>, <m5.util.code_formatter.code_formatter object at 0x4a29b50>, <m5.util.code_formatter.code_formatter object at 0x4a29d50>]
 FuncCallExprAST - 
 ("Unexpected message")
 DeclListAST generate
@@ -5864,7 +5864,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dc5d0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a295d0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5879,7 +5879,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dc690>, <m5.util.code_formatter.code_formatter object at 0x59dc850>, <m5.util.code_formatter.code_formatter object at 0x59dc190>, <m5.util.code_formatter.code_formatter object at 0x59dc2d0>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29690>, <m5.util.code_formatter.code_formatter object at 0x4a29850>, <m5.util.code_formatter.code_formatter object at 0x4a29190>, <m5.util.code_formatter.code_formatter object at 0x4a292d0>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -5887,7 +5887,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dcbd0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29bd0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5902,7 +5902,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dcd90>, <m5.util.code_formatter.code_formatter object at 0x59dcd50>, <m5.util.code_formatter.code_formatter object at 0x59dcad0>, <m5.util.code_formatter.code_formatter object at 0x59dca50>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29d90>, <m5.util.code_formatter.code_formatter object at 0x4a29d50>, <m5.util.code_formatter.code_formatter object at 0x4a29ad0>, <m5.util.code_formatter.code_formatter object at 0x4a29a50>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -5926,7 +5926,7 @@ MachineType
 FuncCallExprAST - 
 MachineType_GPUL2Cache
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dcd50>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29d50>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5941,9 +5941,9 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dcbd0>, <m5.util.code_formatter.code_formatter object at 0x59dce90>, <m5.util.code_formatter.code_formatter object at 0x59dce50>, <m5.util.code_formatter.code_formatter object at 0x59dced0>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29bd0>, <m5.util.code_formatter.code_formatter object at 0x4a29e90>, <m5.util.code_formatter.code_formatter object at 0x4a29e50>, <m5.util.code_formatter.code_formatter object at 0x4a29ed0>]
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dced0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29ed0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5958,7 +5958,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dcbd0>, <m5.util.code_formatter.code_formatter object at 0x59dce90>, <m5.util.code_formatter.code_formatter object at 0x59dcf10>, <m5.util.code_formatter.code_formatter object at 0x59dce50>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29bd0>, <m5.util.code_formatter.code_formatter object at 0x4a29e90>, <m5.util.code_formatter.code_formatter object at 0x4a29f10>, <m5.util.code_formatter.code_formatter object at 0x4a29e50>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -5966,7 +5966,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dcdd0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29dd0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5981,7 +5981,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dcbd0>, <m5.util.code_formatter.code_formatter object at 0x59dcd50>, <m5.util.code_formatter.code_formatter object at 0x59dced0>, <m5.util.code_formatter.code_formatter object at 0x59dce10>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29bd0>, <m5.util.code_formatter.code_formatter object at 0x4a29d50>, <m5.util.code_formatter.code_formatter object at 0x4a29ed0>, <m5.util.code_formatter.code_formatter object at 0x4a29e10>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -5989,7 +5989,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dcbd0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29bd0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6004,7 +6004,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dcd50>, <m5.util.code_formatter.code_formatter object at 0x59dced0>, <m5.util.code_formatter.code_formatter object at 0x59dcdd0>, <m5.util.code_formatter.code_formatter object at 0x59dce50>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29d50>, <m5.util.code_formatter.code_formatter object at 0x4a29ed0>, <m5.util.code_formatter.code_formatter object at 0x4a29dd0>, <m5.util.code_formatter.code_formatter object at 0x4a29e50>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -6012,7 +6012,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dcd50>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29d50>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6027,7 +6027,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dced0>, <m5.util.code_formatter.code_formatter object at 0x59dcf50>, <m5.util.code_formatter.code_formatter object at 0x59dcf10>, <m5.util.code_formatter.code_formatter object at 0x59dcf90>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29ed0>, <m5.util.code_formatter.code_formatter object at 0x4a29f50>, <m5.util.code_formatter.code_formatter object at 0x4a29f10>, <m5.util.code_formatter.code_formatter object at 0x4a29f90>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -6035,7 +6035,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dced0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a29ed0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6050,7 +6050,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x59dcf50>, <m5.util.code_formatter.code_formatter object at 0x59dcfd0>, <m5.util.code_formatter.code_formatter object at 0x59e5050>, <m5.util.code_formatter.code_formatter object at 0x59e5090>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29f50>, <m5.util.code_formatter.code_formatter object at 0x4a29fd0>, <m5.util.code_formatter.code_formatter object at 0x4a32050>, <m5.util.code_formatter.code_formatter object at 0x4a32090>]
 FuncCallExprAST - 
 ("Unexpected message")
 DeclListAST generate
@@ -6070,7 +6070,7 @@ FuncCallExprAST -
 ((*in_msg_ptr)).m_Addr
 (((*m_L2cache_ptr)).cacheAvail(((*in_msg_ptr)).m_Addr))
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dc8d0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a298d0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6092,9 +6092,9 @@ FuncCallExprAST -
 (((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(((*in_msg_ptr)).m_Addr))))
 FuncCallExprAST - 
 (((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(((*in_msg_ptr)).m_Addr))))
-[<m5.util.code_formatter.code_formatter object at 0x59dc2d0>, <m5.util.code_formatter.code_formatter object at 0x59dca50>, <m5.util.code_formatter.code_formatter object at 0x59dc9d0>, <m5.util.code_formatter.code_formatter object at 0x59dc650>]
+[<m5.util.code_formatter.code_formatter object at 0x4a292d0>, <m5.util.code_formatter.code_formatter object at 0x4a29a50>, <m5.util.code_formatter.code_formatter object at 0x4a299d0>, <m5.util.code_formatter.code_formatter object at 0x4a29650>]
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x59dc2d0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4a292d0>)
 FuncCallExprAST - 
 ((*in_msg_ptr)).m_Type
 FuncCallExprAST - 
@@ -6112,7 +6112,7 @@ cache_entry
 (((*m_TBEs_ptr)).lookup(((*in_msg_ptr)).m_Addr))
 FuncCallExprAST - 
 (((*m_TBEs_ptr)).lookup(((*in_msg_ptr)).m_Addr))
-[<m5.util.code_formatter.code_formatter object at 0x59dc910>, <m5.util.code_formatter.code_formatter object at 0x59dcf50>, <m5.util.code_formatter.code_formatter object at 0x59dcf90>, <m5.util.code_formatter.code_formatter object at 0x59dced0>]
+[<m5.util.code_formatter.code_formatter object at 0x4a29910>, <m5.util.code_formatter.code_formatter object at 0x4a29f50>, <m5.util.code_formatter.code_formatter object at 0x4a29f90>, <m5.util.code_formatter.code_formatter object at 0x4a29ed0>]
 DeclListAST generate
 [ActionDecl: 'a_issueGETS']
 ActionDeclAST adding EntryType var
@@ -16812,7 +16812,7 @@ TriggerType
 TypeAST.py -
 TriggerType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b050>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f32e90>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -16827,7 +16827,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b090>, <m5.util.code_formatter.code_formatter object at 0x1701b110>, <m5.util.code_formatter.code_formatter object at 0x1701b1d0>, <m5.util.code_formatter.code_formatter object at 0x1701b210>]
+[<m5.util.code_formatter.code_formatter object at 0x15f32ed0>, <m5.util.code_formatter.code_formatter object at 0x15f32f90>, <m5.util.code_formatter.code_formatter object at 0x15f34090>, <m5.util.code_formatter.code_formatter object at 0x15f340d0>]
 TypeAST.py -
 TriggerType
 TypeAST.py -
@@ -16835,7 +16835,7 @@ TriggerType
 TypeAST.py -
 TriggerType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b410>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f342d0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -16850,7 +16850,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b450>, <m5.util.code_formatter.code_formatter object at 0x1701b510>, <m5.util.code_formatter.code_formatter object at 0x1701b550>, <m5.util.code_formatter.code_formatter object at 0x1701b590>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34310>, <m5.util.code_formatter.code_formatter object at 0x15f343d0>, <m5.util.code_formatter.code_formatter object at 0x15f34410>, <m5.util.code_formatter.code_formatter object at 0x15f34450>]
 FuncCallExprAST - 
 ("Unexpected message")
 DeclListAST generate
@@ -16878,7 +16878,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b250>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34110>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -16893,7 +16893,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b290>, <m5.util.code_formatter.code_formatter object at 0x1701b350>, <m5.util.code_formatter.code_formatter object at 0x1701b410>, <m5.util.code_formatter.code_formatter object at 0x1701b450>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34150>, <m5.util.code_formatter.code_formatter object at 0x15f34210>, <m5.util.code_formatter.code_formatter object at 0x15f342d0>, <m5.util.code_formatter.code_formatter object at 0x15f34310>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -16901,7 +16901,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b650>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34510>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -16916,7 +16916,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b690>, <m5.util.code_formatter.code_formatter object at 0x1701b6d0>, <m5.util.code_formatter.code_formatter object at 0x1701b7d0>, <m5.util.code_formatter.code_formatter object at 0x1701b810>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34550>, <m5.util.code_formatter.code_formatter object at 0x15f34590>, <m5.util.code_formatter.code_formatter object at 0x15f34690>, <m5.util.code_formatter.code_formatter object at 0x15f346d0>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -16924,7 +16924,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b690>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34550>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -16939,7 +16939,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b6d0>, <m5.util.code_formatter.code_formatter object at 0x1701b7d0>, <m5.util.code_formatter.code_formatter object at 0x1701b750>, <m5.util.code_formatter.code_formatter object at 0x1701b890>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34590>, <m5.util.code_formatter.code_formatter object at 0x15f34690>, <m5.util.code_formatter.code_formatter object at 0x15f34610>, <m5.util.code_formatter.code_formatter object at 0x15f34750>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -16947,7 +16947,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b6d0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34590>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -16962,7 +16962,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b650>, <m5.util.code_formatter.code_formatter object at 0x1701b7d0>, <m5.util.code_formatter.code_formatter object at 0x1701b690>, <m5.util.code_formatter.code_formatter object at 0x1701b790>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34510>, <m5.util.code_formatter.code_formatter object at 0x15f34690>, <m5.util.code_formatter.code_formatter object at 0x15f34550>, <m5.util.code_formatter.code_formatter object at 0x15f34650>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -16970,7 +16970,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b650>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34510>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -16985,7 +16985,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b7d0>, <m5.util.code_formatter.code_formatter object at 0x1701b910>, <m5.util.code_formatter.code_formatter object at 0x1701b750>, <m5.util.code_formatter.code_formatter object at 0x1701b950>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34690>, <m5.util.code_formatter.code_formatter object at 0x15f347d0>, <m5.util.code_formatter.code_formatter object at 0x15f34610>, <m5.util.code_formatter.code_formatter object at 0x15f34810>]
 FuncCallExprAST - 
 ("Unexpected message")
 DeclListAST generate
@@ -17019,7 +17019,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b610>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34450>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -17034,7 +17034,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b450>, <m5.util.code_formatter.code_formatter object at 0x1701b550>, <m5.util.code_formatter.code_formatter object at 0x1701b310>, <m5.util.code_formatter.code_formatter object at 0x1701b290>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34490>, <m5.util.code_formatter.code_formatter object at 0x15f34390>, <m5.util.code_formatter.code_formatter object at 0x15f341d0>, <m5.util.code_formatter.code_formatter object at 0x15f34150>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -17042,7 +17042,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b7d0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34690>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -17057,7 +17057,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b990>, <m5.util.code_formatter.code_formatter object at 0x1701b950>, <m5.util.code_formatter.code_formatter object at 0x1701b6d0>, <m5.util.code_formatter.code_formatter object at 0x1701b650>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34850>, <m5.util.code_formatter.code_formatter object at 0x15f34810>, <m5.util.code_formatter.code_formatter object at 0x15f34590>, <m5.util.code_formatter.code_formatter object at 0x15f34510>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -17081,7 +17081,7 @@ MachineType
 FuncCallExprAST - 
 MachineType_GPUL2Cache
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b950>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34810>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -17096,9 +17096,9 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b7d0>, <m5.util.code_formatter.code_formatter object at 0x1701ba90>, <m5.util.code_formatter.code_formatter object at 0x1701ba50>, <m5.util.code_formatter.code_formatter object at 0x1701bad0>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34690>, <m5.util.code_formatter.code_formatter object at 0x15f34950>, <m5.util.code_formatter.code_formatter object at 0x15f34910>, <m5.util.code_formatter.code_formatter object at 0x15f34990>]
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701bad0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34990>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -17113,7 +17113,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b7d0>, <m5.util.code_formatter.code_formatter object at 0x1701ba90>, <m5.util.code_formatter.code_formatter object at 0x1701bb10>, <m5.util.code_formatter.code_formatter object at 0x1701ba50>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34690>, <m5.util.code_formatter.code_formatter object at 0x15f34950>, <m5.util.code_formatter.code_formatter object at 0x15f349d0>, <m5.util.code_formatter.code_formatter object at 0x15f34910>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -17121,7 +17121,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b9d0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34890>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -17136,7 +17136,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b7d0>, <m5.util.code_formatter.code_formatter object at 0x1701b950>, <m5.util.code_formatter.code_formatter object at 0x1701bad0>, <m5.util.code_formatter.code_formatter object at 0x1701ba10>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34690>, <m5.util.code_formatter.code_formatter object at 0x15f34810>, <m5.util.code_formatter.code_formatter object at 0x15f34990>, <m5.util.code_formatter.code_formatter object at 0x15f348d0>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -17144,7 +17144,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b7d0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34690>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -17159,7 +17159,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701b950>, <m5.util.code_formatter.code_formatter object at 0x1701bad0>, <m5.util.code_formatter.code_formatter object at 0x1701b9d0>, <m5.util.code_formatter.code_formatter object at 0x1701ba50>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34810>, <m5.util.code_formatter.code_formatter object at 0x15f34990>, <m5.util.code_formatter.code_formatter object at 0x15f34890>, <m5.util.code_formatter.code_formatter object at 0x15f34910>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -17167,7 +17167,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b950>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34810>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -17182,7 +17182,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701bad0>, <m5.util.code_formatter.code_formatter object at 0x1701bb50>, <m5.util.code_formatter.code_formatter object at 0x1701bb10>, <m5.util.code_formatter.code_formatter object at 0x1701bb90>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34990>, <m5.util.code_formatter.code_formatter object at 0x15f34a10>, <m5.util.code_formatter.code_formatter object at 0x15f349d0>, <m5.util.code_formatter.code_formatter object at 0x15f34a50>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -17190,7 +17190,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701bad0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34990>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -17205,7 +17205,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x1701bb50>, <m5.util.code_formatter.code_formatter object at 0x1701bbd0>, <m5.util.code_formatter.code_formatter object at 0x1701bc10>, <m5.util.code_formatter.code_formatter object at 0x1701bc50>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34a10>, <m5.util.code_formatter.code_formatter object at 0x15f34a90>, <m5.util.code_formatter.code_formatter object at 0x15f34ad0>, <m5.util.code_formatter.code_formatter object at 0x15f34b10>]
 FuncCallExprAST - 
 ("Unexpected message")
 DeclListAST generate
@@ -17225,7 +17225,7 @@ FuncCallExprAST -
 ((*in_msg_ptr)).m_Addr
 (((*m_L2cache_ptr)).cacheAvail(((*in_msg_ptr)).m_Addr))
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b2d0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34550>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -17247,9 +17247,9 @@ FuncCallExprAST -
 (((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(((*in_msg_ptr)).m_Addr))))
 FuncCallExprAST - 
 (((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(((*in_msg_ptr)).m_Addr))))
-[<m5.util.code_formatter.code_formatter object at 0x1701b690>, <m5.util.code_formatter.code_formatter object at 0x1701b650>, <m5.util.code_formatter.code_formatter object at 0x1701b0d0>, <m5.util.code_formatter.code_formatter object at 0x1701b5d0>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34750>, <m5.util.code_formatter.code_formatter object at 0x15f34510>, <m5.util.code_formatter.code_formatter object at 0x15f34150>, <m5.util.code_formatter.code_formatter object at 0x15f34410>]
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x1701b690>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x15f34750>)
 FuncCallExprAST - 
 ((*in_msg_ptr)).m_Type
 FuncCallExprAST - 
@@ -17267,7 +17267,7 @@ cache_entry
 (((*m_TBEs_ptr)).lookup(((*in_msg_ptr)).m_Addr))
 FuncCallExprAST - 
 (((*m_TBEs_ptr)).lookup(((*in_msg_ptr)).m_Addr))
-[<m5.util.code_formatter.code_formatter object at 0x1701b410>, <m5.util.code_formatter.code_formatter object at 0x1701bc50>, <m5.util.code_formatter.code_formatter object at 0x1701bb90>, <m5.util.code_formatter.code_formatter object at 0x1701bbd0>]
+[<m5.util.code_formatter.code_formatter object at 0x15f34210>, <m5.util.code_formatter.code_formatter object at 0x15f34b10>, <m5.util.code_formatter.code_formatter object at 0x15f34a50>, <m5.util.code_formatter.code_formatter object at 0x15f34a90>]
 DeclListAST generate
 [ActionDecl: 'a_issueGETS']
 ActionDeclAST adding EntryType var
@@ -22330,65 +22330,4 @@ TypeAST.py -
 MessageBuffer
 TypeAST.py -
 MessageBuffer
- [     CXX] X86_VI_hammer_GPU/mem/protocol/GPUL2Cache_Controller.cc -> .o
- [     CXX] X86_VI_hammer_GPU/mem/protocol/GPUL2Cache_Transitions.cc -> .o
- [     CXX] X86_VI_hammer_GPU/mem/protocol/GPUL2Cache_Wakeup.cc -> .o
- [     CXX] X86_VI_hammer_GPU/mem/protocol/L1Cache_Controller.cc -> .o
- [     CXX] X86_VI_hammer_GPU/mem/protocol/L1Cache_Transitions.cc -> .o
- [     CXX] X86_VI_hammer_GPU/mem/protocol/L1Cache_Wakeup.cc -> .o
- [     CXX] X86_VI_hammer_GPU/mem/protocol/MachineType.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/BasicExtLink_vector_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/BasicIntLink_vector_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/NetworkLink_vector_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_BaseGarnetNetwork_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_BasicExtLink_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_BasicIntLink_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_BasicLink_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_CudaCore_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_CudaGPU_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_DMASequencer_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_DMA_Controller_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_DirectedGenerator_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_Directory_Controller_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GPGPUSimComponentWrapper_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GPUCopyDMA_Controller_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GPUCopyEngine_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GPUL1Cache_Controller_wrap.cc -> .o
- [    SWIG] X86_VI_hammer_GPU/python/m5/internal/param_GPUL2Cache_Controller.i -> _wrap.cc, .py
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GPUL2Cache_Controller_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetExtLink_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetExtLink_d_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetIntLink_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetIntLink_d_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetNetwork_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetNetworkInterface_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetNetworkInterface_d_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetNetwork_d_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetRouter_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_GarnetRouter_d_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_InvalidateGenerator_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_L1Cache_Controller_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_NetworkLink_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_Prefetcher_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyCache_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyController_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyDirectedTester_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyDirectoryMemory_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyMemoryControl_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyNetwork_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyPort_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyPortProxy_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyRegionBuffer_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubySequencer_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubySystem_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_RubyTester_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_SeriesRequestGenerator_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_ShaderLSQ_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_ShaderTLB_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_SimpleExtLink_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_SimpleIntLink_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_SimpleNetwork_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/python/m5/internal/param_Switch_wrap.cc -> .o
- [     CXX] X86_VI_hammer_GPU/base/date.cc -> .o
- [    LINK]  -> X86_VI_hammer_GPU/gem5.opt
 scons: done building targets.

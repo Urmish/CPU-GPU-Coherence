@@ -369,6 +369,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
         Entry cache_entry := getCacheEntry(in_msg.Addr);
 	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
+	//Urmish - For both GET and PUT Request, the L2 creates space if cache entry is invalid, ie it is not in L2
         if (is_invalid(cache_entry) &&
             L2cache.cacheAvail(in_msg.Addr) == false ) {
           // make room for the block

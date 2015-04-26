@@ -1,0 +1,6 @@
+Jason-Infrastructure/
+gem5/build/*
+*.pyc
+*.swp
+stats*
+m5out*
