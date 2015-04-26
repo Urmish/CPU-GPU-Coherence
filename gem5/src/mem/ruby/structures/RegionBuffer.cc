@@ -35,6 +35,7 @@
 #include "mem/ruby/structures/RegionBuffer.hh"
 #include "mem/ruby/system/System.hh"
 
+#include "debug/DebugRegionBuffer.hh" 
 using namespace std;
 
 ostream&
@@ -146,7 +147,7 @@ RegionBuffer::tryCacheAccess(const Address& address, RubyRequestType type,
                             DataBlock*& data_ptr)
 {
     assert(address == line_address(address));
-    DPRINTF(RubyCache, "address: %s\n", address);
+    DPRINTF(DebugRegionBuffer, "address: %s\n", address);
     int64 cacheSet = addressToCacheSet(address);
     int loc = findTagInSet(cacheSet, address);
     if (loc != -1) {
@@ -173,7 +174,7 @@ RegionBuffer::testCacheAccess(const Address& address, RubyRequestType type,
                              DataBlock*& data_ptr)
 {
     assert(address == line_address(address));
-    DPRINTF(RubyCache, "address: %s\n", address);
+    DPRINTF(DebugRegionBuffer, "address: %s\n", address);
     int64 cacheSet = addressToCacheSet(address);
     int loc = findTagInSet(cacheSet, address);
 
@@ -201,10 +202,10 @@ RegionBuffer::isTagPresent(const Address& address) const
 
     if (loc == -1) {
         // We didn't find the tag
-        DPRINTF(RubyCache, "No tag match for address: %s\n", address);
+        DPRINTF(DebugRegionBuffer, "No tag match for address: %s\n", address);
         return false;
     }
-    DPRINTF(RubyCache, "address: %s found\n", address);
+    DPRINTF(DebugRegionBuffer, "address: %s found\n", address);
     return true;
 }
 
@@ -239,7 +240,7 @@ RegionBuffer::allocate(const Address& address, AbstractProbeEntry* entry)
     assert(address == line_address(address));
     assert(!isTagPresent(address));
     assert(cacheAvail(address));
-    DPRINTF(RubyCache, "address: %s\n", address);
+    DPRINTF(DebugRegionBuffer, "address: %s\n", address);
 
     // Find the first open slot
     int64 cacheSet = addressToCacheSet(address);
@@ -249,7 +250,7 @@ RegionBuffer::allocate(const Address& address, AbstractProbeEntry* entry)
             set[i] = entry;  // Init entry
             set[i]->m_Address = address;
             set[i]->m_Permission = AccessPermission_Invalid;
-            DPRINTF(RubyCache, "Allocate clearing lock for addr: %x\n",
+            DPRINTF(DebugRegionBuffer, "Allocate clearing lock for addr: %x\n",
                     address);
             set[i]->m_locked = -1;
             m_tag_index[address] = i;
@@ -267,7 +268,7 @@ RegionBuffer::deallocate(const Address& address)
 {
     assert(address == line_address(address));
     assert(isTagPresent(address));
-    DPRINTF(RubyCache, "address: %s\n", address);
+    DPRINTF(DebugRegionBuffer, "address: %s\n", address);
     int64 cacheSet = addressToCacheSet(address);
     int loc = findTagInSet(cacheSet, address);
     if (loc != -1) {
@@ -373,7 +374,7 @@ RegionBuffer::recordCacheContents(int cntrl, CacheRecorder* tr) const
         }
     }
 
-    DPRINTF(RubyCacheTrace, "%s: %lli blocks of %lli total blocks"
+    DPRINTF(DebugRegionBuffer, "%s: %lli blocks of %lli total blocks"
             "recorded %.2f%% \n", name().c_str(), warmedUpBlocks,
             (uint64)m_cache_num_sets * (uint64)m_cache_assoc,
             (float(warmedUpBlocks)/float(totalBlocks))*100.0);
@@ -407,7 +408,7 @@ RegionBuffer::printData(ostream& out) const
 void
 RegionBuffer::setLocked(const Address& address, int context)
 {
-    DPRINTF(RubyCache, "Setting Lock for addr: %x to %d\n", address, context);
+    DPRINTF(DebugRegionBuffer, "Setting Lock for addr: %x to %d\n", address, context);
     assert(address == line_address(address));
     int64 cacheSet = addressToCacheSet(address);
     int loc = findTagInSet(cacheSet, address);
@@ -418,7 +419,7 @@ RegionBuffer::setLocked(const Address& address, int context)
 void
 RegionBuffer::clearLocked(const Address& address)
 {
-    DPRINTF(RubyCache, "Clear Lock for addr: %x\n", address);
+    DPRINTF(DebugRegionBuffer, "Clear Lock for addr: %x\n", address);
     assert(address == line_address(address));
     int64 cacheSet = addressToCacheSet(address);
     int loc = findTagInSet(cacheSet, address);
@@ -433,7 +434,7 @@ RegionBuffer::isLocked(const Address& address, int context)
     int64 cacheSet = addressToCacheSet(address);
     int loc = findTagInSet(cacheSet, address);
     assert(loc != -1);
-    DPRINTF(RubyCache, "Testing Lock for addr: %llx cur %d con %d\n",
+    DPRINTF(DebugRegionBuffer, "Testing Lock for addr: %llx cur %d con %d\n",
             address, m_cache[cacheSet][loc]->m_locked, context);
     return m_cache[cacheSet][loc]->m_locked == context;
 }
@@ -530,7 +531,7 @@ RegionBuffer::regStats()
 void
 RegionBuffer::recordRequestType(CacheRequestType requestType)
 {
-    DPRINTF(RubyStats, "Recorded statistic: %s\n",
+    DPRINTF(DebugRegionBuffer, "Recorded statistic: %s\n",
             CacheRequestType_to_string(requestType));
     switch(requestType) {
     case CacheRequestType_DataArrayRead:
@@ -561,7 +562,7 @@ RegionBuffer::checkResourceAvailable(CacheResourceType res, Address addr)
     if (res == CacheResourceType_TagArray) {
         if (tagArray.tryAccess(addressToCacheSet(addr))) return true;
         else {
-            DPRINTF(RubyResourceStalls,
+            DPRINTF(DebugRegionBuffer,
                     "Tag array stall on addr %s in set %d\n",
                     addr, addressToCacheSet(addr));
             numTagArrayStalls++;
@@ -570,7 +571,7 @@ RegionBuffer::checkResourceAvailable(CacheResourceType res, Address addr)
     } else if (res == CacheResourceType_DataArray) {
         if (dataArray.tryAccess(addressToCacheSet(addr))) return true;
         else {
-            DPRINTF(RubyResourceStalls,
+            DPRINTF(DebugRegionBuffer,
                     "Data array stall on addr %s in set %d\n",
                     addr, addressToCacheSet(addr));
             numDataArrayStalls++;
