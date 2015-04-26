@@ -48,6 +48,11 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
     M_W, AccessPermission:Read_Only, "M^W", desc="Issued GetS, received exclusive data, waiting for acks";
     MM_W, AccessPermission:Read_Write, "MM^W", desc="Issued GetX, received exclusive data";
+    //Urmish
+    //Region Buffer -
+    // Shared Region Implies Block in S/SS/SM?/O/OM/IS/OI/M_W/IM/II
+    // Invalid Region Implies Block in I/IM/ISM/MM_W
+    // Modified Region Implies Block in M/MM/MI/II
   }
 
   // EVENTS
@@ -1131,6 +1136,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(IS, Data, SS) {DataArrayWrite} {
+    //Allocate Region Buffer Space Here
     u_writeDataToCache;
     m_decrementNumberOfMessages;
     o_checkForCompletion;
@@ -1150,6 +1156,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(IS, Shared_Data, SS) {DataArrayWrite} {
+    //Allocate Region Buffer Space Here
     u_writeDataToCache;
     r_setSharerBit;
     m_decrementNumberOfMessages;
