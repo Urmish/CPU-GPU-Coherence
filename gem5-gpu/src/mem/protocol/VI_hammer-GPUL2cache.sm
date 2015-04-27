@@ -104,7 +104,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     DataBlock DataBlk,       desc="Data in the block";
   }
 
-  // ProbeEntry
+  // ProbeEntry	//Swapnil can get rid off Dirty, and DataBlk, and have a havePermission bool for quick lookup, as they have a Dirty bit even though the state should tell them.
   structure(ProbeEntry, desc="...", interface="AbstractProbeEntry") {
     State CacheState,        desc="cache state";
     bool Dirty,              desc="Is the data dirty (different than memory)?";
@@ -167,7 +167,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     return static_cast(ProbeEntry, "pointer", regionBuffer.lookup(address));
   }
   //End Urmish
-  State getState(TBE tbe, Entry cache_entry, ProbeEntry probe_entry, Address addr) { //Urmish
+  State getState(TBE tbe, Entry cache_entry, ProbeEntry probe_entry, Address addr) { //Urmish //SWAPNIL - we need to add stuff here right?
     if (is_valid(tbe)) {
       return tbe.TBEState;
     }
@@ -300,7 +300,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
         TBE tbe := TBEs[in_msg.Addr];
 	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
         if (in_msg.Type == TriggerType:ALL_ACKS) {
-          trigger(Event:All_acks, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+          trigger(Event:All_acks, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish //Swapnil why do we need to give all these entries for every trigger, hopefully we dont dereference a null pointer.
         } else if (in_msg.Type == TriggerType:ALL_ACKS_NO_SHARERS) {
           trigger(Event:All_acks_no_sharers, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
         } else {
