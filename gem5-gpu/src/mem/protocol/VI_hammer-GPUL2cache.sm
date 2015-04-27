@@ -992,18 +992,22 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   // TRANSITIONS
 
   transition({IM, IS, OI, MI, II}, {Get, Store, Replacement}) {} {
+    //Urmish - T8
     zz_stallAndWaitRequestQueue;
   }
 
   transition({ISM, SM, OM, SS}, {Replacement, Store}) {} {
+    //Urmish - T12
     zz_stallAndWaitRequestQueue;
   }
 
   transition({M_W,MM_W}, {Replacement}) {} {
+    //Urmish - T60
     zz_stallAndWaitRequestQueue;
   }
 
   transition(I, Store, IM) {TagArrayRead, TagArrayWrite} {
+    //Urmish - T1
     ii_allocateL2CacheBlock;
     i_allocateTBE;
     es_recordRequestor;
@@ -1013,34 +1017,40 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition({S,MM,O,M}, Get) {TagArrayRead, DataArrayRead} {
+    //Urmish - T15
     h_load_hit;
     rq_popL1IncomingQueue;
   }
 
   transition({SS,M_W,MM_W,SM,OM,ISM}, Get) {DataArrayRead} {
+    //Urmish - T13
     h_load_hit;
     rq_popL1IncomingQueue;
   }
 
   transition(MM, Store) {TagArrayRead, DataArrayWrite} {
+    //Urmish - T32
     hh_store_hit;
     as_ackStore;
     rq_popL1IncomingQueue;
   }
 
   transition(MM_W, Store) {DataArrayWrite} {
+    //Urmish - T64
     hh_store_hit;
     as_ackStore;
     rq_popL1IncomingQueue;
   }
 
   transition(M, Store, MM) {TagArrayRead, TagArrayWrite, DataArrayWrite} {
+    //Urmish - T31
     hh_store_hit;
     as_ackStore;
     rq_popL1IncomingQueue;
   }
 
   transition(O, Store, OM) {TagArrayRead} {
+    //Urmish - T19
     i_allocateTBE;
     es_recordRequestor;
     b_issueGETX;
@@ -1050,6 +1060,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(S, Store, SM) {TagArrayRead} {
+    //Urmish - T16
     i_allocateTBE;
     es_recordRequestor;
     b_issueGETX;
@@ -1058,6 +1069,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(I, Get, IS) {TagArrayRead} {
+    //Urmish - T5
     ii_allocateL2CacheBlock;
     i_allocateTBE;
     es_recordRequestor;
@@ -1069,16 +1081,19 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   // Transistions for replacements
 
   transition(I, Replacement) {TagArrayRead} {
+    //Urmish - T4
     rr_deallocateL2CacheBlock;
     ka_wakeUpAllDependents;
   }
 
   transition(S, Replacement, I) {TagArrayRead, TagArrayWrite} {
+    //Urmish - T6
     rr_deallocateL2CacheBlock;
     ka_wakeUpAllDependents;
   }
 
   transition(O, Replacement, OI) {TagArrayRead} {
+    //Urmish - T20
     i_allocateTBE;
     d_issuePUT;
     rr_deallocateL2CacheBlock;
@@ -1086,11 +1101,13 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(O, Merged_GETS) {TagArrayRead, DataArrayRead} {
+    //Urmish - T21
     em_sendDataSharedMultiple;
     l_popForwardQueue;
   }
 
   transition({M,MM}, Replacement, MI) {TagArrayRead, DataArrayRead} {
+    //Urmish - T30
     i_allocateTBE;
     d_issuePUT;
     rr_deallocateL2CacheBlock;
@@ -1098,6 +1115,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(MI, Writeback_Ack, I) {TagArrayWrite} {
+    //Urmish - T56
     t_sendExclusiveDataFromTBEToMemory;
     s_deallocateTBE;
     l_popForwardQueue;
@@ -1105,6 +1123,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(OI, Writeback_Ack, I) {TagArrayWrite} {
+    //Urmish - T52
     qq_sendDataFromTBEToMemory;
     s_deallocateTBE;
     l_popForwardQueue;
@@ -1112,16 +1131,19 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition({OI, MI}, {Other_GETX, Invalidate}, II) {
+    //Urmish - T55
     q_sendDataFromTBEToCache;
     l_popForwardQueue;
   }
 
   transition({OI, MI}, {NC_DMA_GETS, Other_GETS}, OI) {
+    //Urmish - T53
     sq_sendSharedDataFromTBEToCache;
     l_popForwardQueue;
   }
 
   transition({OI, MI}, Merged_GETS, OI) {
+    //Urmish - T54
     qm_sendDataFromTBEToCache;
     l_popForwardQueue;
   }
@@ -1131,11 +1153,13 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   // Transitions from IS
 
   transition(IS, {Other_GETX, NC_DMA_GETS, Other_GETS, Invalidate}) {
+    //Urmish - T44
     f_sendAck;
     l_popForwardQueue;
   }
 
   transition(IS, Data, SS) {DataArrayWrite} {
+    //Urmish - T45
     //Allocate Region Buffer Space Here
     u_writeDataToCache;
     m_decrementNumberOfMessages;
@@ -1147,6 +1171,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(IS, Exclusive_Data, M_W) {DataArrayWrite} {
+    //Urmish - T47
     u_writeDataToCache;
     m_decrementNumberOfMessages;
     o_checkForCompletion;
@@ -1156,6 +1181,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(IS, Shared_Data, SS) {DataArrayWrite} {
+    //Urmish - T46
     //Allocate Region Buffer Space Here
     u_writeDataToCache;
     r_setSharerBit;
@@ -1168,12 +1194,14 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(IS, Ack) {
+    //Urmish - T67
     m_decrementNumberOfMessages;
     o_checkForCompletion;
     n_popResponseQueue;
   }
 
   transition(IS, Shared_Ack) {
+    //Urmish - T49
     m_decrementNumberOfMessages;
     r_setSharerBit;
     o_checkForCompletion;
@@ -1182,18 +1210,21 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   // Transitions from M_W
   transition(M_W, Store, MM_W) {DataArrayWrite} {
+    //Urmish - T61
     hh_store_hit;
     as_ackStore;
     rq_popL1IncomingQueue;
   }
 
   transition(M_W, Ack)  {
+    //Urmish - T62
     m_decrementNumberOfMessages;
     o_checkForCompletion;
     n_popResponseQueue;
   }
 
   transition(M_W, All_acks_no_sharers, M) {TagArrayWrite} {
+    //Urmish - T63
     gm_sendUnblockM;
     s_deallocateTBE;
     j_popTriggerQueue;
@@ -1203,12 +1234,14 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   // Transitions from MM_W
 
   transition(MM_W, Ack) {
+    //Urmish - T65
     m_decrementNumberOfMessages;
     o_checkForCompletion;
     n_popResponseQueue;
   }
 
   transition(MM_W, All_acks_no_sharers, MM) {TagArrayWrite} {
+    //Urmish - T66
     gm_sendUnblockM;
     s_deallocateTBE;
     j_popTriggerQueue;
@@ -1217,27 +1250,32 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   // Transitions from IM
   transition(SM, {NC_DMA_GETS, Other_GETS}) {
+    //Urmish - T39
     ff_sendAckShared;
     l_popForwardQueue;
   }
 
   transition(SM, {Other_GETX, Invalidate}, IM) {
+    //Urmish - T36
     f_sendAck;
     l_popForwardQueue;
   }
 
   transition(IM, {Other_GETX, NC_DMA_GETS, Other_GETS, Invalidate}) {
+    //Urmish - T9
     f_sendAck;
     l_popForwardQueue;
   }
 
   transition(IM, Ack) {
+    //Urmish - T10
     m_decrementNumberOfMessages;
     o_checkForCompletion;
     n_popResponseQueue;
   }
 
   transition(IM, Data, ISM) {DataArrayWrite} {
+    //Urmish - T2
     u_writeDataToCache;
     m_decrementNumberOfMessages;
     o_checkForCompletion;
@@ -1246,6 +1284,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(IM, Exclusive_Data, MM_W) {DataArrayWrite} {
+    //Urmish - T3
     u_writeDataToCache;
     m_decrementNumberOfMessages;
     o_checkForCompletion;
@@ -1257,12 +1296,14 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   // Transitions from ISM
   transition(ISM, Ack) {
+    //Urmish - T11
     m_decrementNumberOfMessages;
     o_checkForCompletion;
     n_popResponseQueue;
   }
 
   transition(ISM, All_acks_no_sharers, MM) {DataArrayWrite, TagArrayWrite} {
+    //Urmish - T14
     sxt_trig_ext_store_hit;
     aes_ackExternalStore;
     gm_sendUnblockM;
@@ -1273,12 +1314,14 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   // Transitions from SS
   transition(SS, Ack) {
+    //Urmish - T48
     m_decrementNumberOfMessages;
     o_checkForCompletion;
     n_popResponseQueue;
   }
 
   transition(SS, Shared_Ack) {
+    //Urmish - T49
     m_decrementNumberOfMessages;
     r_setSharerBit;
     o_checkForCompletion;
@@ -1286,6 +1329,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(SS, All_acks, S) {TagArrayWrite} {
+    //Urmish - T50
     gs_sendUnblockS;
     s_deallocateTBE;
     j_popTriggerQueue;
@@ -1293,6 +1337,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(SS, All_acks_no_sharers, S) {TagArrayWrite} {
+    //Urmish - T51
     // Note: The directory might still be the owner, so that is why we go to S
     gs_sendUnblockS;
     s_deallocateTBE;
@@ -1303,28 +1348,33 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   // Transitions from OM
 
   transition(OM, {Other_GETX, Invalidate}, IM) {
+    //Urmish - T37
     e_sendData;
     pp_incrementNumberOfMessagesByOne;
     l_popForwardQueue;
   }
 
   transition(OM, {NC_DMA_GETS, Other_GETS}) {
+    //Urmish - T41
     ee_sendDataShared;
     l_popForwardQueue;
   }
 
   transition(OM, Merged_GETS) {
+    //Urmish - T42
     em_sendDataSharedMultiple;
     l_popForwardQueue;
   }
 
   transition(OM, Ack) {
+    //Urmish - T43
     m_decrementNumberOfMessages;
     o_checkForCompletion;
     n_popResponseQueue;
   }
 
   transition(OM, {All_acks, All_acks_no_sharers}, MM) {TagArrayWrite, DataArrayWrite} {
+    //Urmish - T33
     sxt_trig_ext_store_hit;
     aes_ackExternalStore;
     gm_sendUnblockM;
@@ -1335,12 +1385,14 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   // Transitions from SM
   transition(SM, Ack) {
+    //Urmish - T40
     m_decrementNumberOfMessages;
     o_checkForCompletion;
     n_popResponseQueue;
   }
 
   transition(SM, {Data, Exclusive_Data}, ISM) {
+    //Urmish - T38
     v_writeDataToCacheVerify;
     m_decrementNumberOfMessages;
     o_checkForCompletion;
@@ -1350,77 +1402,92 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   // Transitions for other cache requests
 
   transition(I, {Other_GETX, NC_DMA_GETS, Other_GETS, Invalidate}) {TagArrayRead} {
+    //Urmish - T7
     f_sendAck;
     l_popForwardQueue;
   }
 
   transition(S, {NC_DMA_GETS, Other_GETS}) {TagArrayRead} {
+    //Urmish - T17
     ff_sendAckShared;
     l_popForwardQueue;
   }
 
   transition(S, {Other_GETX, Invalidate}, I) {TagArrayRead, TagArrayWrite} {
+    //Urmish - T18
     f_sendAck;
     l_popForwardQueue;
   }
 
   transition(O, {Other_GETX, Invalidate}, I) {TagArrayRead, TagArrayWrite, DataArrayRead} {
+    //Urmish - T23
     e_sendData;
     l_popForwardQueue;
   }
 
   transition(O, {NC_DMA_GETS, Other_GETS}) {TagArrayRead, DataArrayRead} {
+    //Urmish - T22
     ee_sendDataShared;
     l_popForwardQueue;
   }
 
   transition(MM, {Other_GETX, Invalidate}, I) {TagArrayRead, TagArrayWrite, DataArrayRead} {
+    //Urmish - T34
     c_sendExclusiveData;
     l_popForwardQueue;
   }
 
   transition(MM, Other_GETS, I) {TagArrayRead, TagArrayWrite, DataArrayRead} {
+    //Urmish - T35
     c_sendExclusiveData;
     l_popForwardQueue;
   }
 
   transition(MM, NC_DMA_GETS, O) {TagArrayRead, TagArrayWrite, DataArrayRead} {
+    //Urmish - T24
     ee_sendDataShared;
     l_popForwardQueue;
   }
 
   transition(MM, Merged_GETS, O) {TagArrayRead, TagArrayWrite, DataArrayRead} {
+    //Urmish - T25
     em_sendDataSharedMultiple;
     l_popForwardQueue;
   }
 
   transition(M, {Other_GETX, Invalidate}, I) {TagArrayRead, TagArrayWrite, DataArrayRead} {
+    //Urmish - T29
     c_sendExclusiveData;
     l_popForwardQueue;
   }
 
   transition(M, Other_GETS, O) {TagArrayRead, TagArrayWrite, DataArrayRead} {
+    //Urmish - T26
     ee_sendDataShared;
     l_popForwardQueue;
   }
 
   transition(M, NC_DMA_GETS, O) {TagArrayRead, TagArrayWrite, DataArrayRead} {
+    //Urmish - T27
     ee_sendDataShared;
     l_popForwardQueue;
   }
 
   transition(M, Merged_GETS, O) {TagArrayRead, TagArrayWrite, DataArrayRead} {
+    //Urmish - T28
     em_sendDataSharedMultiple;
     l_popForwardQueue;
   }
 
   // Transitions from II
   transition(II, {NC_DMA_GETS, Other_GETS, Other_GETX, Invalidate}, II) {
+    //Urmish - T57
     f_sendAck;
     l_popForwardQueue;
   }
 
   transition(II, Writeback_Ack, I) {
+    //Urmish - T58
     g_sendUnblock;
     s_deallocateTBE;
     l_popForwardQueue;
@@ -1428,6 +1495,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition(II, Writeback_Nack, I) {
+    //Urmish - T59
     s_deallocateTBE;
     l_popForwardQueue;
     kd_wakeUpDependents;
