@@ -41,6 +41,8 @@ enumeration(CoherenceRequestType, desc="...") {
   GETF,      desc="Issue exclusive for Flushing";
   BLOCK_ACK, desc="Dir Block ack";
   INV,       desc="Invalidate";
+  GETS_MERA,      desc="Get Shared, Yo! But I already have it";
+  GETX_MERA,      desc="Get eXclusive, Yo! But I already have it";
 }
 enumeration(CoherenceRequestTypeVI, desc="...") {
     GET,       desc="Get";

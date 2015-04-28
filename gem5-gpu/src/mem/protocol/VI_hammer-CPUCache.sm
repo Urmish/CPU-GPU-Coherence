@@ -38,6 +38,7 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
   CacheMemory * L1Icache;
   CacheMemory * L1Dcache;
   CacheMemory * L2cache;
+  RegionBuffer *regionBuffer;
   Cycles cache_response_latency := 10;
   Cycles issue_latency := 1;
   Cycles l2_cache_hit_latency := 15;
@@ -154,7 +155,12 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
     bool FromL2, default="false", desc="block just moved from L2";
     bool AtomicAccessed, default="false", desc="block just moved from L2";
   }
-
+  // ProbeEntry	//Swapnil can get rid off Dirty, and DataBlk, and have a havePermission bool for quick lookup, as they have a Dirty bit even though the state should tell them.
+  structure(ProbeEntry, desc="...", interface="AbstractProbeEntry") {
+    State CacheState,        desc="cache state";
+    bool Dirty,              desc="Is the data dirty (different than memory)?";
+    DataBlock DataBlk,       desc="Data in the block";
+  }
   // TBE fields
   structure(TBE, desc="...") {
     State TBEState,          desc="Transient state";
@@ -190,14 +196,20 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
   void wakeUpAllBuffers();
   void wakeUpBuffers(Address a);
   Cycles curCycle();
+
   void set_probe_entry(AbstractCacheEntry b);
   void unset_probe_entry();
  
+  //Urmish
+  ProbeEntry getProbeEntry(Address address), return_by_pointer="yes" {
+    return static_cast(ProbeEntry, "pointer", regionBuffer.lookup(address));
+  }
   Entry getCacheEntry(Address address), return_by_pointer="yes" {
     Entry L2cache_entry := static_cast(Entry, "pointer", L2cache.lookup(address));
     if(is_valid(L2cache_entry)) {
       return L2cache_entry;
     }
+
 
     Entry L1Dcache_entry := static_cast(Entry, "pointer", L1Dcache.lookup(address));
     if(is_valid(L1Dcache_entry)) {
@@ -253,7 +265,7 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
     return L1Icache_entry;
   }
 
-  State getState(TBE tbe, Entry cache_entry, Address addr) {
+  State getState(TBE tbe, Entry cache_entry, ProbeEntry probe_entry, Address addr) {
     if(is_valid(tbe)) {
       return tbe.TBEState;
     } else if (is_valid(cache_entry)) {
@@ -262,7 +274,7 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
     return State:I;
   }
 
-  void setState(TBE tbe, Entry cache_entry, Address addr, State state) {
+  void setState(TBE tbe, Entry cache_entry,  ProbeEntry probe_entry,Address addr, State state) {
     assert((L1Dcache.isTagPresent(addr) && L1Icache.isTagPresent(addr)) == false);
     assert((L1Icache.isTagPresent(addr) && L2cache.isTagPresent(addr)) == false);
     assert((L1Dcache.isTagPresent(addr) && L2cache.isTagPresent(addr)) == false);
@@ -290,7 +302,7 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
     return AccessPermission:NotPresent;
   }
 
-  void setAccessPermission(Entry cache_entry, Address addr, State state) {
+  void setAccessPermission(Entry cache_entry, ProbeEntry probe_entry,Address addr, State state) {
     if (is_valid(cache_entry)) {
       cache_entry.changePermission(L1Cache_State_to_permission(state));
     }
@@ -342,12 +354,13 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
         Entry cache_entry := getCacheEntry(in_msg.Addr);
         TBE tbe := TBEs[in_msg.Addr];
 
+	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
         if (in_msg.Type == TriggerType:L2_to_L1) {
-          trigger(Event:Complete_L2_to_L1, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Complete_L2_to_L1, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == TriggerType:ALL_ACKS) {
-          trigger(Event:All_acks, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:All_acks, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == TriggerType:ALL_ACKS_NO_SHARERS) {
-          trigger(Event:All_acks_no_sharers, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:All_acks_no_sharers, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else {
           error("Unexpected message");
         }
@@ -365,16 +378,17 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
         Entry cache_entry := getCacheEntry(in_msg.Addr);
         TBE tbe := TBEs[in_msg.Addr];
 
+	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
         if (in_msg.Type == CoherenceResponseType:ACK) {
-          trigger(Event:Ack, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Ack, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == CoherenceResponseType:ACK_SHARED) {
-          trigger(Event:Shared_Ack, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Shared_Ack, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == CoherenceResponseType:DATA) {
-          trigger(Event:Data, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Data, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == CoherenceResponseType:DATA_SHARED) {
-          trigger(Event:Shared_Data, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Shared_Data, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == CoherenceResponseType:DATA_EXCLUSIVE) {
-          trigger(Event:Exclusive_Data, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Exclusive_Data, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else {
           error("Unexpected message");
         }
@@ -390,33 +404,35 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
         Entry cache_entry := getCacheEntry(in_msg.Addr);
         TBE tbe := TBEs[in_msg.Addr];
 
+	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
         if ((in_msg.Type == CoherenceRequestType:GETX) ||
             (in_msg.Type == CoherenceRequestType:GETF)) {
-          trigger(Event:Other_GETX, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Other_GETX, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == CoherenceRequestType:MERGED_GETS) {
-          trigger(Event:Merged_GETS, in_msg.Addr, cache_entry, tbe);
+          DPRINTF(LOKI,"Lokid!! Merged_GETS aa gaya to CPU");
+          trigger(Event:Merged_GETS, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == CoherenceRequestType:GETS) {
           if (machineCount(MachineType:L1Cache)+machineCount(MachineType:GPUL2Cache) > 1) {
             if (is_valid(cache_entry)) {
               if (IsAtomicAccessed(cache_entry) && no_mig_atomic) {
-                trigger(Event:Other_GETS_No_Mig, in_msg.Addr, cache_entry, tbe);
+                trigger(Event:Other_GETS_No_Mig, in_msg.Addr, cache_entry, tbe, probe_entry);
               } else {
-                trigger(Event:Other_GETS, in_msg.Addr, cache_entry, tbe);
+                trigger(Event:Other_GETS, in_msg.Addr, cache_entry, tbe, probe_entry);
               }
             } else {
-              trigger(Event:Other_GETS, in_msg.Addr, cache_entry, tbe);
+              trigger(Event:Other_GETS, in_msg.Addr, cache_entry, tbe, probe_entry);
             }
           } else {
-            trigger(Event:NC_DMA_GETS, in_msg.Addr, cache_entry, tbe);
+            trigger(Event:NC_DMA_GETS, in_msg.Addr, cache_entry, tbe, probe_entry);
           }
         } else if (in_msg.Type == CoherenceRequestType:INV) {
-          trigger(Event:Invalidate, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Invalidate, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == CoherenceRequestType:WB_ACK) {
-          trigger(Event:Writeback_Ack, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Writeback_Ack, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == CoherenceRequestType:WB_NACK) {
-          trigger(Event:Writeback_Nack, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Writeback_Nack, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else if (in_msg.Type == CoherenceRequestType:BLOCK_ACK) {
-          trigger(Event:Block_Ack, in_msg.Addr, cache_entry, tbe);
+          trigger(Event:Block_Ack, in_msg.Addr, cache_entry, tbe, probe_entry);
         } else {
           error("Unexpected message");
         }
@@ -434,6 +450,7 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
         // Check for data access to blocks in I-cache and ifetchs to blocks in D-cache
         TBE tbe := TBEs[in_msg.LineAddress];
 
+	ProbeEntry probe_entry := getProbeEntry(in_msg.LineAddress); //Urmish
         if (in_msg.Type == RubyRequestType:IFETCH) {
           // ** INSTRUCTION ACCESS ***
 
@@ -442,20 +459,20 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
             // The tag matches for the L1, so the L1 fetches the line.
             // We know it can't be in the L2 due to exclusion
             trigger(mandatory_request_type_to_event(in_msg.Type),
-                    in_msg.LineAddress, L1Icache_entry, tbe);
+                    in_msg.LineAddress, L1Icache_entry, tbe, probe_entry);
           } else {
             // Check to see if it is in the OTHER L1
             Entry L1Dcache_entry := getL1DCacheEntry(in_msg.LineAddress);
             if (is_valid(L1Dcache_entry)) {
               // The block is in the wrong L1, try to write it to the L2
               if (L2cache.cacheAvail(in_msg.LineAddress)) {
-                trigger(Event:L1_to_L2, in_msg.LineAddress, L1Dcache_entry, tbe);
+                trigger(Event:L1_to_L2, in_msg.LineAddress, L1Dcache_entry, tbe, probe_entry);
               } else {
                 Address l2_victim_addr := L2cache.cacheProbe(in_msg.LineAddress);
                 trigger(Event:L2_Replacement,
                         l2_victim_addr,
                         getL2CacheEntry(l2_victim_addr),
-                        TBEs[l2_victim_addr]);
+                        TBEs[l2_victim_addr], probe_entry);
               }
             }
 
@@ -466,11 +483,11 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
               if (is_valid(L2cache_entry)) {
                 // L2 has it (maybe not with the right permissions)
                 trigger(Event:Trigger_L2_to_L1I, in_msg.LineAddress,
-                        L2cache_entry, tbe);
+                        L2cache_entry, tbe, probe_entry);
               } else {
                 // We have room, the L2 doesn't have it, so the L1 fetches the line
                 trigger(mandatory_request_type_to_event(in_msg.Type),
-                        in_msg.LineAddress, L1Icache_entry, tbe);
+                        in_msg.LineAddress, L1Icache_entry, tbe, probe_entry);
               }
             } else {
               // No room in the L1, so we need to make room
@@ -480,14 +497,14 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
                 trigger(Event:L1_to_L2,
                         l1i_victim_addr,
                         getL1ICacheEntry(l1i_victim_addr),
-                        TBEs[l1i_victim_addr]);
+                        TBEs[l1i_victim_addr], probe_entry);
               } else {
                 Address l2_victim_addr := L2cache.cacheProbe(l1i_victim_addr);
                 // The L2 does not have room, so we replace a line from the L2
                 trigger(Event:L2_Replacement,
                         l2_victim_addr,
                         getL2CacheEntry(l2_victim_addr),
-                        TBEs[l2_victim_addr]);
+                        TBEs[l2_victim_addr], probe_entry);
               }
             }
           }
@@ -499,7 +516,7 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
             // The tag matches for the L1, so the L1 fetches the line.
             // We know it can't be in the L2 due to exclusion
             trigger(mandatory_request_type_to_event(in_msg.Type),
-                    in_msg.LineAddress, L1Dcache_entry, tbe);
+                    in_msg.LineAddress, L1Dcache_entry, tbe, probe_entry);
           } else {
 
             // Check to see if it is in the OTHER L1
@@ -507,13 +524,13 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
             if (is_valid(L1Icache_entry)) {
               // The block is in the wrong L1, try to write it to the L2
               if (L2cache.cacheAvail(in_msg.LineAddress)) {
-                trigger(Event:L1_to_L2, in_msg.LineAddress, L1Icache_entry, tbe);
+                trigger(Event:L1_to_L2, in_msg.LineAddress, L1Icache_entry, tbe, probe_entry);
               } else {
                 Address l2_victim_addr := L2cache.cacheProbe(in_msg.LineAddress);
                 trigger(Event:L2_Replacement,
                         l2_victim_addr,
                         getL2CacheEntry(l2_victim_addr),
-                        TBEs[l2_victim_addr]);
+                        TBEs[l2_victim_addr], probe_entry);
               }
             }
 
@@ -523,11 +540,11 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
               if (is_valid(L2cache_entry)) {
                 // L2 has it (maybe not with the right permissions)
                 trigger(Event:Trigger_L2_to_L1D, in_msg.LineAddress,
-                        L2cache_entry, tbe);
+                        L2cache_entry, tbe, probe_entry);
               } else {
                 // We have room, the L2 doesn't have it, so the L1 fetches the line
                 trigger(mandatory_request_type_to_event(in_msg.Type),
-                        in_msg.LineAddress, L1Dcache_entry, tbe);
+                        in_msg.LineAddress, L1Dcache_entry, tbe, probe_entry);
               }
             } else {
               // No room in the L1, so we need to make room
@@ -537,14 +554,14 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
                 trigger(Event:L1_to_L2,
                         l1d_victim_addr,
                         getL1DCacheEntry(l1d_victim_addr),
-                        TBEs[l1d_victim_addr]);
+                        TBEs[l1d_victim_addr], probe_entry);
               } else {
                 Address l2_victim_addr := L2cache.cacheProbe(l1d_victim_addr);
                 // The L2 does not have room, so we replace a line from the L2
                 trigger(Event:L2_Replacement,
                         l2_victim_addr,
                         getL2CacheEntry(l2_victim_addr),
-                        TBEs[l2_victim_addr]);
+                        TBEs[l2_victim_addr], probe_entry);
               }
             }
           }
@@ -556,7 +573,26 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
   // ACTIONS
 
   action(a_issueGETS, "a", desc="Issue GETS") {
+    
+    ProbeEntry probe_entry_2 := getProbeEntry(address); //Urmish
+    if(is_valid(probe_entry_2)) {//Urmish
     enqueue(requestNetwork_out, RequestMsg, issue_latency) {
+      assert(is_valid(tbe));
+      out_msg.Addr := address;
+      out_msg.Type := CoherenceRequestType:GETS_MERA;
+      out_msg.Requestor := machineID;
+      out_msg.Destination.add(map_Address_to_Directory(address));
+      out_msg.MessageSize := MessageSizeType:Request_Control;
+      out_msg.InitialRequestTime := curCycle();
+
+      // One from each other cache (n-1) plus the memory (+1)
+      tbe.NumPendingMsgs := machineCount(MachineType:L1Cache) +
+                            machineCount(MachineType:GPUL2Cache);
+    }
+    }
+    else
+    { 
+      enqueue(requestNetwork_out, RequestMsg, issue_latency) {
       assert(is_valid(tbe));
       out_msg.Addr := address;
       out_msg.Type := CoherenceRequestType:GETS;
@@ -569,9 +605,12 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
       tbe.NumPendingMsgs := machineCount(MachineType:L1Cache) +
                             machineCount(MachineType:GPUL2Cache);
     }
+    }
   }
 
   action(b_issueGETX, "b", desc="Issue GETX") {
+    ProbeEntry probe_entry_2 := getProbeEntry(address); //Urmish
+    if(is_valid(probe_entry_2)) {//Urmish
     enqueue(requestNetwork_out, RequestMsg, issue_latency) {
       assert(is_valid(tbe));
       out_msg.Addr := address;
@@ -584,6 +623,23 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
       // One from each other cache (n-1) plus the memory (+1)
       tbe.NumPendingMsgs := machineCount(MachineType:L1Cache) +
                             machineCount(MachineType:GPUL2Cache);
+    }
+    }
+    else
+    { 
+      enqueue(requestNetwork_out, RequestMsg, issue_latency) {
+      assert(is_valid(tbe));
+      out_msg.Addr := address;
+      out_msg.Type := CoherenceRequestType:GETX;
+      out_msg.Requestor := machineID;
+      out_msg.Destination.add(map_Address_to_Directory(address));
+      out_msg.MessageSize := MessageSizeType:Request_Control;
+      out_msg.InitialRequestTime := curCycle();
+
+      // One from each other cache (n-1) plus the memory (+1)
+      tbe.NumPendingMsgs := machineCount(MachineType:L1Cache) +
+                            machineCount(MachineType:GPUL2Cache);
+      }
     }
   }
 

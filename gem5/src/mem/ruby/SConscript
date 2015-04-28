@@ -56,6 +56,7 @@ DebugFlag('RubyStats')
 DebugFlag('RubyResourceStalls')
 
 DebugFlag('DebugRegionBuffer') #Urmish
+DebugFlag('LOKI')
 
 CompoundFlag('Ruby', [ 'RubyQueue', 'RubyNetwork', 'RubyTester',
     'RubyGenerated', 'RubySlicc', 'RubySystem', 'RubyCache',

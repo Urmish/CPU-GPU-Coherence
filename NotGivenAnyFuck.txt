@@ -1,1 +1,3 @@
 GETF/FLUSH - Assuming not taking care of as we think it is used when an old x86 code calls an assembly instruction CLFLUSH
+
+Merged_Gets - Ignored

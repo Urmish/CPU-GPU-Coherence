@@ -166,6 +166,10 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   ProbeEntry getProbeEntry(Address address), return_by_pointer="yes" {
     return static_cast(ProbeEntry, "pointer", regionBuffer.lookup(address));
   }
+  
+  //bool getLock(Address address), return_by_pointer="no" {
+  //  return regionBuffer.isLocked(address,1));
+  //}
   //End Urmish
   State getState(TBE tbe, Entry cache_entry, ProbeEntry probe_entry, Address addr) { //Urmish //SWAPNIL - we need to add stuff here right?
     if (is_valid(tbe)) {
@@ -346,6 +350,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
         if ((in_msg.Type == CoherenceRequestType:GETX) || (in_msg.Type == CoherenceRequestType:GETF)) {
           trigger(Event:Other_GETX, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
         } else if (in_msg.Type == CoherenceRequestType:MERGED_GETS) {
+	  DPRINTF(LOKI,"Lokid!! Merged GETS aa gaya bc - GPU\n"); //Urmish - We dont expect this to happen with 2 L2s
           trigger(Event:Merged_GETS, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
         } else if (in_msg.Type == CoherenceRequestType:GETS) {
           if (machineCount(MachineType:L1Cache)+machineCount(MachineType:GPUL2Cache) > 1) {
@@ -394,7 +399,23 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   // ACTIONS
 
   action(a_issueGETS, "a", desc="Issue GETS") {
+    ProbeEntry probe_entry_2 := getProbeEntry(address); //Urmish
+    if(is_valid(probe_entry_2)) {//Urmish
+  
     enqueue(requestNetwork_out, RequestMsg, l2_request_latency) {
+      assert(is_valid(tbe));
+      out_msg.Addr := address;
+      out_msg.Type := CoherenceRequestType:GETS_MERA;
+      out_msg.Requestor := machineID;
+      out_msg.Destination.add(map_Address_to_Directory(address));
+      out_msg.MessageSize := MessageSizeType:Request_Control;
+      out_msg.InitialRequestTime := curCycle();
+      tbe.NumPendingMsgs := machineCount(MachineType:L1Cache)+machineCount(MachineType:GPUL2Cache); // One from each other cache (n-1) plus the memory (+1)
+    }
+  }
+  else
+  {
+      enqueue(requestNetwork_out, RequestMsg, l2_request_latency) {
       assert(is_valid(tbe));
       out_msg.Addr := address;
       out_msg.Type := CoherenceRequestType:GETS;
@@ -404,9 +425,29 @@ machine(GPUL2Cache, "Simple write back L2 cache")
       out_msg.InitialRequestTime := curCycle();
       tbe.NumPendingMsgs := machineCount(MachineType:L1Cache)+machineCount(MachineType:GPUL2Cache); // One from each other cache (n-1) plus the memory (+1)
     }
+
+  }
   }
 
   action(b_issueGETX, "b", desc="Issue GETX") {
+    
+    ProbeEntry probe_entry_2 := getProbeEntry(address); //Urmish
+    if(is_valid(probe_entry_2)) 
+    {//Urmish
+      enqueue(requestNetwork_out, RequestMsg, l2_request_latency) {
+      assert(is_valid(tbe));
+      out_msg.Addr := address;
+      out_msg.Type := CoherenceRequestType:GETX_MERA;
+      out_msg.Requestor := machineID;
+      out_msg.Destination.add(map_Address_to_Directory(address));
+      out_msg.MessageSize := MessageSizeType:Request_Control;
+      out_msg.InitialRequestTime := curCycle();
+      tbe.NumPendingMsgs := machineCount(MachineType:L1Cache)+machineCount(MachineType:GPUL2Cache); // One from each other cache (n-1) plus the memory (+1)
+    }
+   
+    }
+    else
+    {
     enqueue(requestNetwork_out, RequestMsg, l2_request_latency) {
       assert(is_valid(tbe));
       out_msg.Addr := address;
@@ -417,6 +458,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
       out_msg.InitialRequestTime := curCycle();
       tbe.NumPendingMsgs := machineCount(MachineType:L1Cache)+machineCount(MachineType:GPUL2Cache); // One from each other cache (n-1) plus the memory (+1)
     }
+   }
   }
 
   action(d_issuePUT, "d", desc="Issue PUT") {
