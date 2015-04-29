@@ -3,3 +3,5 @@ GETF/FLUSH - Assuming not taking care of as we think it is used when an old x86 
 Merged_Gets - Ignored
 
 l2 size and region buffer size fixed in VI_hammer*.py
+
+What will happen when we have no space in RCA and we try to allocate bc!

@@ -98,7 +98,7 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
                            assoc = options.l2_assoc,
                            start_index_bit = block_size_bits)
 	
-	region_buffer = regionBuffer_Obj(size = "2MB",
+	region_buffer = regionBuffer_Obj(size = "4MB",
                            assoc = 2^15,
                            start_index_bit = l2_index_start,
                            replacement_policy = "LRU",

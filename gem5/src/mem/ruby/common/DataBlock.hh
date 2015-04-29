@@ -63,10 +63,10 @@ class DataBlock
     void copyPartial(const DataBlock & dblk, int offset, int len);
     bool equal(const DataBlock& obj) const;
     void print(std::ostream& out) const;
+    uint8_t *m_data;
 
   private:
     void alloc();
-    uint8_t *m_data;
     bool m_alloc;
 };
 

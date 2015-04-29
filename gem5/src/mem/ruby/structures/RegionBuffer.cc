@@ -109,7 +109,7 @@ RegionBuffer::~RegionBuffer()
 int64
 RegionBuffer::addressToCacheSet(const Address& address) const
 {
-    assert(address == line_address(address));
+    //assert(address == line_address(address));
     return address.bitSelect(m_start_index_bit,
                              m_start_index_bit + m_cache_num_set_bits - 1);
 }
@@ -246,20 +246,21 @@ RegionBuffer::allocate(const Address& address, AbstractProbeEntry* entry)
     mask_address.m_address = address.m_address & ((unsigned long long int)~0 << regionSize );
 
     // Find the first open slot
-    int64 cacheSet = addressToCacheSet(address);
+    int64 cacheSet = addressToCacheSet(mask_address);
     std::vector<AbstractProbeEntry*> &set = m_cache[cacheSet];
     for (int i = 0; i < m_cache_assoc; i++) {
         if (!set[i] || set[i]->m_Permission == AccessPermission_NotPresent) {
             set[i] = entry;  // Init entry
-            set[i]->m_Address = address;
+            set[i]->m_Address = mask_address;
             set[i]->m_Permission = AccessPermission_Invalid;
-            DPRINTF(DebugRegionBuffer, "Allocate clearing lock for addr: %x\n",
-                    address);
+            DPRINTF(DebugRegionBuffer, "Allocate clearing lock for addr: %x\n", mask_address);
             set[i]->m_locked = -1;
-            m_tag_index[address] = i;
+            m_tag_index[mask_address] = i;
 
             m_replacementPolicy_ptr->touch(cacheSet, i, curTick());
-
+	    DataBlock* data_ptr = &(set[i]->getDataBlk());
+	    const uint8_t cache_data = 1;
+	    data_ptr->setData(&cache_data,(int)(address.m_address & ~(( unsigned long long int)~0 << regionSize )),0);
             return entry;
         }
     }
@@ -269,15 +270,37 @@ RegionBuffer::allocate(const Address& address, AbstractProbeEntry* entry)
 void
 RegionBuffer::deallocate(const Address& address)
 {
-    assert(address == line_address(address));
-    assert(isTagPresent(address));
-    DPRINTF(DebugRegionBuffer, "address: %s\n", address);
-    int64 cacheSet = addressToCacheSet(address);
-    int loc = findTagInSet(cacheSet, address);
-    if (loc != -1) {
+    //assert(address == line_address(address));
+    Address mask_address(address);
+    mask_address.m_address = address.m_address & ((unsigned long long int)~0 << regionSize );
+    assert(isTagPresent(mask_address));
+    DPRINTF(DebugRegionBuffer, "address: %s\n", mask_address);
+    int64 cacheSet = addressToCacheSet(mask_address);
+    int loc = findTagInSet(cacheSet, mask_address);
+    int allClear = 0;
+    if (loc != -1)
+    {
+    //Urmish
+    	std::vector<AbstractProbeEntry*> &set = m_cache[cacheSet];
+    	DataBlock* data_ptr = &(set[loc]->getDataBlk());
+    	const uint8_t cache_data = 0;
+    	data_ptr->setData(&cache_data,(int)(address.m_address & ~(( unsigned long long int)~0 << regionSize )),0);
+	const uint8_t* data_temp = data_ptr->getData(0,16);
+	for (int i=0;i<16;i++)
+	{
+		if (data_temp[i] != 0)
+		{
+			allClear = 1;
+			break;	
+		}
+		data_temp++;
+	}
+    //End Urmish, possible LOKID
+    }
+    if (loc != -1 && !allClear) {
         delete m_cache[cacheSet][loc];
         m_cache[cacheSet][loc] = NULL;
-        m_tag_index.erase(address);
+        m_tag_index.erase(mask_address);
     }
 }
 

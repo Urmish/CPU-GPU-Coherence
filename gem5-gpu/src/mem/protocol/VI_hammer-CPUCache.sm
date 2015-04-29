@@ -197,7 +197,7 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
   void wakeUpBuffers(Address a);
   Cycles curCycle();
 
-  void set_probe_entry(AbstractCacheEntry b);
+  void set_probe_entry(AbstractProbeEntry b);
   void unset_probe_entry();
  
   //Urmish
@@ -571,6 +571,28 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
   }
 
   // ACTIONS
+  //Urmish - ProbeArray Allocation Start
+  action(ii_allocateRegionArrayBlock, "rb_i", desc="Allocate a region entry array") 
+  {
+  	if (is_valid(probe_entry)) {
+    	      set_probe_entry(regionBuffer.allocate(address, probe_entry));
+        } else {
+    	      set_probe_entry(regionBuffer.allocate(address, new ProbeEntry));
+  	}
+  }
+
+  action(rr_deallocateRegionArrayBlock, "rb_r", desc="deallocate a region entry array") 
+  {
+  	if (is_valid(probe_entry)) { 
+  	      regionBuffer.deallocate(address);
+      	      unset_probe_entry();
+    	}
+	else
+	{
+	  DPRINTF(LOKI,"Lokid!! Region Deaalocate called for a region not present. Kahe bc? - GPU\n"); //Urmish
+	}
+  }
+  //Urmish - ProbeArray Allocation End
 
   action(a_issueGETS, "a", desc="Issue GETS") {
     
@@ -1401,6 +1423,7 @@ machine({L1Cache, L2Cache}, "AMD Hammer-like protocol")
     i_allocateTBE;
     gg_deallocateL1CacheBlock;
     vv_allocateL2CacheBlock;
+    ii_allocateRegionArrayBlock;
     hp_copyFromTBEToL2;
     s_deallocateTBE;
   }

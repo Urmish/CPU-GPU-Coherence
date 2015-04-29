@@ -1,0 +1,1 @@
+handle gets and gets_mera - consecutive gets to different cahce lines in same region, only one invalidate will be sent and other will be blocked .

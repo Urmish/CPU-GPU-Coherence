@@ -1013,6 +1013,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   action(ii_allocateRegionArrayBlock, "rb_i", desc="Allocate a region entry array") 
   {
   	if (is_valid(probe_entry)) {
+    	      set_probe_entry(regionBuffer.allocate(address, probe_entry));
         } else {
     	      set_probe_entry(regionBuffer.allocate(address, new ProbeEntry));
   	}
@@ -1024,6 +1025,10 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   	      regionBuffer.deallocate(address);
       	      unset_probe_entry();
     	}
+	else
+	{
+	  DPRINTF(LOKI,"Lokid!! Region Deaalocate called for a region not present. Kahe bc? - GPU\n"); //Urmish
+	}
   }
   //Urmish - ProbeArray Allocation End
 
@@ -1050,6 +1055,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   transition(I, Store, IM) {TagArrayRead, TagArrayWrite} {
     //Urmish - T1
     ii_allocateL2CacheBlock;
+    ii_allocateRegionArrayBlock;
     i_allocateTBE;
     es_recordRequestor;
     b_issueGETX;
@@ -1112,6 +1118,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   transition(I, Get, IS) {TagArrayRead} {
     //Urmish - T5
     ii_allocateL2CacheBlock;
+    ii_allocateRegionArrayBlock;
     i_allocateTBE;
     es_recordRequestor;
     a_issueGETS;
@@ -1124,12 +1131,14 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   transition(I, Replacement) {TagArrayRead} {
     //Urmish - T4
     rr_deallocateL2CacheBlock;
+    rr_deallocateRegionArrayBlock;
     ka_wakeUpAllDependents;
   }
 
   transition(S, Replacement, I) {TagArrayRead, TagArrayWrite} {
     //Urmish - T6
     rr_deallocateL2CacheBlock;
+    rr_deallocateRegionArrayBlock;
     ka_wakeUpAllDependents;
   }
 
@@ -1138,6 +1147,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     i_allocateTBE;
     d_issuePUT;
     rr_deallocateL2CacheBlock;
+    rr_deallocateRegionArrayBlock;
     ka_wakeUpAllDependents;
   }
 
@@ -1148,10 +1158,12 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   transition({M,MM}, Replacement, MI) {TagArrayRead, DataArrayRead} {
+    rr_deallocateRegionArrayBlock;
     //Urmish - T30
     i_allocateTBE;
     d_issuePUT;
     rr_deallocateL2CacheBlock;
+    rr_deallocateRegionArrayBlock;
     ka_wakeUpAllDependents;
   }
 
@@ -1173,6 +1185,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition({OI, MI}, {Other_GETX, Invalidate}, II) {
     //Urmish - T55
+    rr_deallocateRegionArrayBlock;
     q_sendDataFromTBEToCache;
     l_popForwardQueue;
   }
@@ -1195,6 +1208,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(IS, {Other_GETX, NC_DMA_GETS, Other_GETS, Invalidate}) {
     //Urmish - T44
+    rr_deallocateRegionArrayBlock;
     f_sendAck;
     l_popForwardQueue;
   }
@@ -1298,12 +1312,14 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(SM, {Other_GETX, Invalidate}, IM) {
     //Urmish - T36
+    rr_deallocateRegionArrayBlock;
     f_sendAck;
     l_popForwardQueue;
   }
 
   transition(IM, {Other_GETX, NC_DMA_GETS, Other_GETS, Invalidate}) {
     //Urmish - T9
+    rr_deallocateRegionArrayBlock;
     f_sendAck;
     l_popForwardQueue;
   }
@@ -1390,6 +1406,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(OM, {Other_GETX, Invalidate}, IM) {
     //Urmish - T37
+    rr_deallocateRegionArrayBlock;
     e_sendData;
     pp_incrementNumberOfMessagesByOne;
     l_popForwardQueue;
@@ -1444,6 +1461,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(I, {Other_GETX, NC_DMA_GETS, Other_GETS, Invalidate}) {TagArrayRead} {
     //Urmish - T7
+    rr_deallocateRegionArrayBlock;
     f_sendAck;
     l_popForwardQueue;
   }
@@ -1456,12 +1474,14 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(S, {Other_GETX, Invalidate}, I) {TagArrayRead, TagArrayWrite} {
     //Urmish - T18
+    rr_deallocateRegionArrayBlock;
     f_sendAck;
     l_popForwardQueue;
   }
 
   transition(O, {Other_GETX, Invalidate}, I) {TagArrayRead, TagArrayWrite, DataArrayRead} {
     //Urmish - T23
+    rr_deallocateRegionArrayBlock;
     e_sendData;
     l_popForwardQueue;
   }
@@ -1474,6 +1494,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(MM, {Other_GETX, Invalidate}, I) {TagArrayRead, TagArrayWrite, DataArrayRead} {
     //Urmish - T34
+    rr_deallocateRegionArrayBlock;
     c_sendExclusiveData;
     l_popForwardQueue;
   }
@@ -1498,6 +1519,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(M, {Other_GETX, Invalidate}, I) {TagArrayRead, TagArrayWrite, DataArrayRead} {
     //Urmish - T29
+    rr_deallocateRegionArrayBlock;
     c_sendExclusiveData;
     l_popForwardQueue;
   }
@@ -1523,6 +1545,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   // Transitions from II
   transition(II, {NC_DMA_GETS, Other_GETS, Other_GETX, Invalidate}, II) {
     //Urmish - T57
+    rr_deallocateRegionArrayBlock;
     f_sendAck;
     l_popForwardQueue;
   }

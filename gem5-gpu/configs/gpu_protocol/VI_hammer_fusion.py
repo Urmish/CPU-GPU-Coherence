@@ -156,7 +156,7 @@ def create_system(options, full_system, system, dma_devices, ruby_system):
                            dataAccessLatency = 4,
                            tagAccessLatency = 4,
                            resourceStalls = options.gpu_l2_resource_stalls)
-	region_buffer = regionBuffer_Obj(size = "4MB",
+	region_buffer = regionBuffer_Obj(size = "8MB",
                            assoc = 2^16,
                            start_index_bit = l2_index_start,
                            replacement_policy = "LRU",
