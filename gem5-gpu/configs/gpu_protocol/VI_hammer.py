@@ -45,6 +45,9 @@ class L1Cache(RubyCache):
 class L2Cache(RubyCache):
     latency = 10
 
+class regionBuffer_Obj(RubyRegionBuffer):
+    latency = 1
+
 #
 # Probe filter is a cache, latency is not used
 #
@@ -91,9 +94,21 @@ def create_system(options, full_system, system, dma_ports, ruby_system):
         l1d_cache = L1Cache(size = options.l1d_size,
                             assoc = options.l1d_assoc,
                             start_index_bit = block_size_bits)
-        l2_cache = L2Cache(size = options.l2_size,
+        l2_cache = L2Cache(size = "2MB",
                            assoc = options.l2_assoc,
                            start_index_bit = block_size_bits)
+	
+	region_buffer = regionBuffer_Obj(size = "2MB",
+                           assoc = 2^15,
+                           start_index_bit = l2_index_start,
+                           replacement_policy = "LRU",
+                           dataArrayBanks = 4,
+                           tagArrayBanks = 4,
+                           dataAccessLatency = 4,
+                           tagAccessLatency = 4,
+                           resourceStalls = options.gpu_l2_resource_stalls
+ 			   regionSize = options.region_size)
+
 
         l1_cntrl = L1Cache_Controller(version = i,
                                       L1Icache = l1i_cache,

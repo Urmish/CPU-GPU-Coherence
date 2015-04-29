@@ -55,7 +55,7 @@ class RegionBuffer : public SimObject
     typedef RubyRegionBufferParams Params;
     RegionBuffer(const Params *p);
     ~RegionBuffer();
-
+    int regionSize;
     void init();
 
     // Public Methods

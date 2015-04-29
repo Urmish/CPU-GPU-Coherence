@@ -49,6 +49,7 @@ class Address
         : m_address(0)
     { }
 
+    physical_address_t m_address;
     explicit
     Address(physical_address_t address)
         : m_address(address)
@@ -86,7 +87,7 @@ class Address
     }
 
   private:
-    physical_address_t m_address;
+    //physical_address_t m_address; Urmish
 };
 
 inline Address

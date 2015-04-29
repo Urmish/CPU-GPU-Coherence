@@ -1010,18 +1010,17 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   }
 
   //Urmish - ProbeArray Allocation Start
-  action(ii_allocateRegionArrayBlock, "rb_i", desc="Allocate a cache block") 
+  action(ii_allocateRegionArrayBlock, "rb_i", desc="Allocate a region entry array") 
   {
-  	if (is_valid(cache_entry)) {
+  	if (is_valid(probe_entry)) {
         } else {
     	      set_probe_entry(regionBuffer.allocate(address, new ProbeEntry));
-              regionBuffer.allocate(address, new ProbeEntry);
   	}
   }
 
-  action(rr_deallocateRegionArrayBlock, "rb_r", desc="deallocate a cache block") 
+  action(rr_deallocateRegionArrayBlock, "rb_r", desc="deallocate a region entry array") 
   {
-  	if (is_valid(cache_entry)) { //Urmish - Add another condition to check wether the region has any cacheblock in the cluster, if no, invalidate it?
+  	if (is_valid(probe_entry)) { 
   	      regionBuffer.deallocate(address);
       	      unset_probe_entry();
     	}

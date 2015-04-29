@@ -64,6 +64,7 @@ RegionBuffer::RegionBuffer(const Params *p)
     m_start_index_bit = p->start_index_bit;
     m_is_instruction_only_cache = p->is_icache;
     m_resource_stalls = p->resourceStalls;
+    regionSize = p->regionSize;
 }
 
 void
@@ -237,10 +238,12 @@ RegionBuffer::cacheAvail(const Address& address) const
 AbstractProbeEntry*
 RegionBuffer::allocate(const Address& address, AbstractProbeEntry* entry)
 {
-    assert(address == line_address(address));
-    assert(!isTagPresent(address));
-    assert(cacheAvail(address));
+    //assert(address == line_address(address));
+    //assert(!isTagPresent(address));
+    //assert(cacheAvail(address));
     DPRINTF(DebugRegionBuffer, "address: %s\n", address);
+    Address mask_address(address);
+    mask_address.m_address = address.m_address & ((unsigned long long int)~0 << regionSize );
 
     // Find the first open slot
     int64 cacheSet = addressToCacheSet(address);

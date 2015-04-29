@@ -147,7 +147,7 @@ def create_system(options, full_system, system, dma_devices, ruby_system):
         #
         # First create the Ruby objects associated with this cpu
         #
-        l2_cache = L2Cache(size = options.sc_l2_size,
+        l2_cache = L2Cache(size = "4MB",
                            assoc = options.sc_l2_assoc,
                            start_index_bit = l2_index_start,
                            replacement_policy = "LRU",
@@ -156,15 +156,16 @@ def create_system(options, full_system, system, dma_devices, ruby_system):
                            dataAccessLatency = 4,
                            tagAccessLatency = 4,
                            resourceStalls = options.gpu_l2_resource_stalls)
-	region_buffer = regionBuffer_Obj(size = options.sc_l2_size,
-                           assoc = options.sc_l2_assoc,
+	region_buffer = regionBuffer_Obj(size = "4MB",
+                           assoc = 2^16,
                            start_index_bit = l2_index_start,
                            replacement_policy = "LRU",
                            dataArrayBanks = 4,
                            tagArrayBanks = 4,
                            dataAccessLatency = 4,
                            tagAccessLatency = 4,
-                           resourceStalls = options.gpu_l2_resource_stalls)
+                           resourceStalls = options.gpu_l2_resource_stalls
+ 			   regionSize = options.region_size)
 
         l2_cntrl = GPUL2Cache_Controller(version = i,
                                 L2cache = l2_cache,

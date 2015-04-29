@@ -46,3 +46,4 @@ class RubyRegionBuffer(SimObject):
     dataAccessLatency = Param.Cycles(1, "cycles for a data array access")
     tagAccessLatency = Param.Cycles(1, "cycles for a tag array access")
     resourceStalls = Param.Bool(False, "stall if there is a resource failure")
+    regionSize = Param.Int(4, "Size of Region");
