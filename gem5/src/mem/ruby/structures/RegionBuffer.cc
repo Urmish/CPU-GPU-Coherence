@@ -315,14 +315,32 @@ RegionBuffer::cacheProbe(const Address& address) const
     return m_cache[cacheSet][m_replacementPolicy_ptr->getVictim(cacheSet)]->
         m_Address;
 }
+Address* 
+RegionBuffer::maskAddress(Address address) 
+{
+    Address mask_address(address);
+    mask_address = mask_address.m_address & ((unsigned long long int)~0 << regionSize );
+    return mask_address;
+}
+
+const Address* 
+RegionBuffer::maskAddress(const Address& address) const
+{
+    Address mask_address(address);
+    mask_address = mask_address.m_address & ((unsigned long long int)~0 << regionSize );
+    return mask_address;
+}
 
 // looks an address up in the cache
 AbstractProbeEntry*
 RegionBuffer::lookup(const Address& address)
 {
-    assert(address == line_address(address));
-    int64 cacheSet = addressToCacheSet(address);
-    int loc = findTagInSet(cacheSet, address);
+    //assert(address == line_address(address));
+    
+    Address mask_address(address);
+    mask_address.m_address = address.m_address & ((unsigned long long int)~0 << regionSize );
+    int64 cacheSet = addressToCacheSet(mask_address);
+    int loc = findTagInSet(cacheSet, mask_address);
     if(loc == -1) return NULL;
     return m_cache[cacheSet][loc];
 }
@@ -331,9 +349,11 @@ RegionBuffer::lookup(const Address& address)
 const AbstractProbeEntry*
 RegionBuffer::lookup(const Address& address) const
 {
-    assert(address == line_address(address));
-    int64 cacheSet = addressToCacheSet(address);
-    int loc = findTagInSet(cacheSet, address);
+    //assert(address == line_address(address));
+    Address mask_address(address);
+    mask_address.m_address = address.m_address & ((unsigned long long int)~0 << regionSize );
+    int64 cacheSet = addressToCacheSet(mask_address);
+    int loc = findTagInSet(cacheSet, mask_address);
     if(loc == -1) return NULL;
     return m_cache[cacheSet][loc];
 }

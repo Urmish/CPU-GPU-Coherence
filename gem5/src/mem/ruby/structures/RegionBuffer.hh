@@ -89,6 +89,9 @@ class RegionBuffer : public SimObject
     // Returns with the physical address of the conflicting cache line
     Address cacheProbe(const Address& address) const;
 
+    const Address* maskAddress(const Address& address) const;
+    Address* maskAddress(Address address);
+    
     // looks an address up in the cache
     AbstractProbeEntry* lookup(const Address& address);
     const AbstractProbeEntry* lookup(const Address& address) const;

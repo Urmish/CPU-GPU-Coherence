@@ -1,0 +1,473 @@
+Binary file src/mem/slicc/ast/ObjDeclAST.pyc matches
+src/mem/slicc/ast/ObjDeclAST.py:        elif self.ident == "machineID":
+src/mem/slicc/ast/ObjDeclAST.py:            c_code = "m_machineID"
+src/mem/slicc/symbols/Type.py:            code('struct MachineID;')
+src/mem/slicc/symbols/Type.py:MachineID map_Address_to_DMA(const Address &addr);
+src/mem/slicc/symbols/Type.py:MachineID get${{enum.ident}}MachineID(NodeID RubyNode);
+src/mem/slicc/symbols/Type.py:            code('#include "mem/ruby/common/MachineID.hh"')
+src/mem/slicc/symbols/Type.py:MachineID
+src/mem/slicc/symbols/Type.py:      MachineID dma = {MachineType_DMA, 0};
+src/mem/slicc/symbols/Type.py:MachineID
+src/mem/slicc/symbols/Type.py:get${{enum.ident}}MachineID(NodeID RubyNode)
+src/mem/slicc/symbols/Type.py:      MachineID mach = {MachineType_${{enum.ident}}, RubyNode};
+src/mem/slicc/symbols/StateMachine.py:    m_machineID.type = MachineType_${ident};
+src/mem/slicc/symbols/StateMachine.py:    m_machineID.num = m_version;
+Binary file src/mem/slicc/symbols/Type.pyc matches
+Binary file src/mem/slicc/symbols/StateMachine.pyc matches
+src/mem/ruby/SConscript:MakeInclude('common/MachineID.hh')
+src/mem/ruby/profiler/Profiler.hh:#include "mem/ruby/common/MachineID.hh"
+src/mem/ruby/common/MachineID.hh:#ifndef __MEM_RUBY_SYSTEM_MACHINEID_HH__
+src/mem/ruby/common/MachineID.hh:#define __MEM_RUBY_SYSTEM_MACHINEID_HH__
+src/mem/ruby/common/MachineID.hh:struct MachineID
+src/mem/ruby/common/MachineID.hh:MachineIDToString(MachineID machine)
+src/mem/ruby/common/MachineID.hh:operator==(const MachineID & obj1, const MachineID & obj2)
+src/mem/ruby/common/MachineID.hh:operator!=(const MachineID & obj1, const MachineID & obj2)
+src/mem/ruby/common/MachineID.hh:std::ostream& operator<<(std::ostream& out, const MachineID& obj);
+src/mem/ruby/common/MachineID.hh:operator<<(std::ostream& out, const MachineID& obj)
+src/mem/ruby/common/MachineID.hh:#endif // __MEM_RUBY_SYSTEM_MACHINEID_HH__
+src/mem/ruby/common/NetDest.hh:#include "mem/ruby/common/MachineID.hh"
+src/mem/ruby/common/NetDest.hh:    void add(MachineID newElement);
+src/mem/ruby/common/NetDest.hh:    void remove(MachineID oldElement);
+src/mem/ruby/common/NetDest.hh:    bool isElement(MachineID element) const;
+src/mem/ruby/common/NetDest.hh:    MachineID smallestElement() const;
+src/mem/ruby/common/NetDest.hh:    MachineID smallestElement(MachineType machine) const;
+src/mem/ruby/common/NetDest.hh:    NodeID elementAt(MachineID index);
+src/mem/ruby/common/NetDest.hh:    vecIndex(MachineID m) const
+src/mem/ruby/common/NetDest.cc:NetDest::add(MachineID newElement)
+src/mem/ruby/common/NetDest.cc:NetDest::remove(MachineID oldElement)
+src/mem/ruby/common/NetDest.cc:        MachineID mach = {machineType, i};
+src/mem/ruby/common/NetDest.cc:NetDest::elementAt(MachineID index)
+src/mem/ruby/common/NetDest.cc:MachineID
+src/mem/ruby/common/NetDest.cc:                MachineID mach = {MachineType_from_base_level(i), j};
+src/mem/ruby/common/NetDest.cc:MachineID
+src/mem/ruby/common/NetDest.cc:            MachineID mach = {machine, j};
+src/mem/ruby/common/NetDest.cc:NetDest::isElement(MachineID element) const
+src/mem/ruby/structures/PersistentTable.cc:                                       MachineID locker,
+src/mem/ruby/structures/PersistentTable.cc:    MachineID locker = (MachineID) persistent_randomize[llocker];
+src/mem/ruby/structures/PersistentTable.cc:                                         MachineID unlocker)
+src/mem/ruby/structures/PersistentTable.cc:    MachineID unlocker = (MachineID) persistent_randomize[uunlocker];
+src/mem/ruby/structures/PersistentTable.cc:                                   MachineID machId) const
+src/mem/ruby/structures/PersistentTable.cc:MachineID
+src/mem/ruby/structures/PersistentTable.hh:#include "mem/ruby/common/MachineID.hh"
+src/mem/ruby/structures/PersistentTable.hh:    void persistentRequestLock(const Address& address, MachineID locker,
+src/mem/ruby/structures/PersistentTable.hh:    void persistentRequestUnlock(const Address& address, MachineID unlocker);
+src/mem/ruby/structures/PersistentTable.hh:    bool okToIssueStarving(const Address& address, MachineID machID) const;
+src/mem/ruby/structures/PersistentTable.hh:    MachineID findSmallest(const Address& address) const;
+src/mem/ruby/system/System.cc:  MachineID id = cntrl->getMachineID();
+src/mem/ruby/slicc_interface/AbstractController.hh:#include "mem/ruby/common/MachineID.hh"
+src/mem/ruby/slicc_interface/AbstractController.hh:    const NodeID getVersion() const { return m_machineID.getNum(); }
+src/mem/ruby/slicc_interface/AbstractController.hh:    const MachineType getType() const { return m_machineID.getType(); }
+src/mem/ruby/slicc_interface/AbstractController.hh:    void queueMemoryRead(const MachineID &id, Address addr, Cycles latency);
+src/mem/ruby/slicc_interface/AbstractController.hh:    void queueMemoryWrite(const MachineID &id, Address addr, Cycles latency,
+src/mem/ruby/slicc_interface/AbstractController.hh:    void queueMemoryWritePartial(const MachineID &id, Address addr, Cycles latency,
+src/mem/ruby/slicc_interface/AbstractController.hh:    MachineID getMachineID() const { return m_machineID; }
+src/mem/ruby/slicc_interface/AbstractController.hh:    MachineID m_machineID;
+src/mem/ruby/slicc_interface/AbstractController.hh:        MachineID id;
+src/mem/ruby/slicc_interface/AbstractController.hh:        SenderState(MachineID _id) : id(_id)
+src/mem/ruby/slicc_interface/AbstractController.cc:AbstractController::queueMemoryRead(const MachineID &id, Address addr,
+src/mem/ruby/slicc_interface/AbstractController.cc:AbstractController::queueMemoryWrite(const MachineID &id, Address addr,
+src/mem/ruby/slicc_interface/AbstractController.cc:AbstractController::queueMemoryWritePartial(const MachineID &id, Address addr,
+src/mem/ruby/slicc_interface/AbstractController.cc:    (*msg).m_Sender = m_machineID;
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:#include "mem/ruby/common/MachineID.hh"
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:inline MachineID
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:    MachineID mach =
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:        MachineID mach = {type, i};
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:inline MachineID
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:    MachineID mach = {type, 0};
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:machineIDToNodeID(MachineID machID)
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:machineIDToMachineType(MachineID machID)
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:inline MachineID
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:createMachineID(MachineType type, NodeID id)
+src/mem/ruby/slicc_interface/RubySlicc_ComponentMapping.hh:    MachineID mach = {type, id};
+src/mem/ruby/network/Topology.cc:                MachineID mach = {(MachineType)m, i};
+src/mem/ruby/network/garnet/flexible-pipeline/NetworkInterface.cc:                    personal_dest.add((MachineID) {(MachineType) m, (destID -
+src/mem/ruby/network/garnet/fixed-pipeline/NetworkInterface_d.cc:                    personal_dest.add((MachineID) {(MachineType) m, (destID -
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:    void persistentRequestLock(Address, MachineID, AccessType);
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:    void persistentRequestUnlock(Address, MachineID);
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:    MachineID findSmallest(Address);
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:      removeSharer(in_msg.Addr, machineIDToNodeID(in_msg.Sender));
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:           //out_msg.Destination := getLocalL1IDs(machineID);
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:      if (machineIDToMachineType(in_msg.Requestor) == MachineType:L1Cache) {
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:          setNewWriter(in_msg.Addr, machineIDToNodeID(in_msg.Requestor));
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:          addNewSharer(in_msg.Addr, machineIDToNodeID(in_msg.Requestor));
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:      if ((machineIDToMachineType(in_msg.Requestor) == MachineType:L1Cache) &&
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L2cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:    MachineID LastResponder, desc="last machine to send a response for this request";
+src/mem/protocol/MOESI_hammer-cache.sm:    MachineID CurOwner,      desc="current owner of the block, used for UnblockS responses";
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:                 machineIDToMachineType(in_msg.Sender), tbe.InitialRequestTime,
+src/mem/protocol/MOESI_hammer-cache.sm:              machineIDToMachineType(in_msg.Sender), tbe.InitialRequestTime,
+src/mem/protocol/MOESI_hammer-cache.sm:            machineIDToMachineType(tbe.LastResponder), tbe.InitialRequestTime,
+src/mem/protocol/MOESI_hammer-cache.sm:        assert(in_msg.Requestor != machineID);
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        assert(in_msg.Requestor != machineID);
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-msg.sm:  MachineID Requestor,            desc="Node who initiated the request";
+src/mem/protocol/MOESI_CMP_directory-msg.sm:  MachineID Sender,               desc="Node who sent the data";
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          if (in_msg.Requestor == machineID && in_msg.RequestorMachine == MachineType:L1Cache) {
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/RubySlicc_ComponentMapping.sm:MachineID mapAddressToRange(Address addr, MachineType type,
+src/mem/protocol/RubySlicc_ComponentMapping.sm:MachineID map_Address_to_DMA(Address addr);
+src/mem/protocol/RubySlicc_ComponentMapping.sm:MachineID map_Address_to_Directory(Address addr);
+src/mem/protocol/RubySlicc_ComponentMapping.sm:NodeID machineIDToNodeID(MachineID machID);
+src/mem/protocol/RubySlicc_ComponentMapping.sm:NodeID machineIDToVersion(MachineID machID);
+src/mem/protocol/RubySlicc_ComponentMapping.sm:MachineType machineIDToMachineType(MachineID machID);
+src/mem/protocol/RubySlicc_ComponentMapping.sm:MachineID createMachineID(MachineType t, NodeID i);
+src/mem/protocol/Network_test-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/Network_test-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/Network_test-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MI_example-msg.sm:  MachineID Requestor,            desc="Node who initiated the request";
+src/mem/protocol/MI_example-msg.sm:  MachineID Sender,               desc="Node who sent the data";
+src/mem/protocol/MI_example-msg.sm:  MachineID Requestor,            desc="Node who initiated the request";
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MESI_Two_Level-L1cache.sm:              machineIDToMachineType(in_msg.Sender) == MachineType:L1Cache) {
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:              out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        DPRINTF(RubySlicc, "%s\n", machineID);
+src/mem/protocol/MESI_Two_Level-L1cache.sm:              out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:              DPRINTF(RubySlicc, "%s\n", machineID);
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:      out_msg.Requestor:= machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-dir.sm:    MachineID Requestor, desc="original requestor";
+src/mem/protocol/MOESI_CMP_directory-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-dir.sm:        out_msg.RequestorMachine := machineIDToMachineType(in_msg.Requestor);
+src/mem/protocol/MOESI_CMP_directory-dir.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-dir.sm:        out_msg.RequestorMachine := machineIDToMachineType(in_msg.Requestor);
+src/mem/protocol/MOESI_CMP_directory-dir.sm:          out_msg.RequestorMachine := machineIDToMachineType(in_msg.Requestor);
+src/mem/protocol/MOESI_CMP_directory-dir.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-dir.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MESI_Three_Level-L1cache.sm:              machineIDToMachineType(in_msg.Sender) == MachineType:L1Cache) {
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        DPRINTF(RubySlicc, "%s\n", machineID);
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:          out_msg.Destination := createMachineID(MachineType:L0Cache, version);
+src/mem/protocol/MESI_Three_Level-L1cache.sm:      out_msg.Requestor:= machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:          out_msg.Destination := createMachineID(MachineType:L0Cache, version);
+src/mem/protocol/MESI_Three_Level-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:          out_msg.Destination := createMachineID(MachineType:L0Cache, version);
+src/mem/protocol/MESI_Three_Level-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L1cache.sm:          out_msg.Destination := createMachineID(MachineType:L0Cache, version);
+src/mem/protocol/MOESI_CMP_directory-dma.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-dma.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-dma.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-dma.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-dma.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:    MachineID Exclusive,          desc="Exclusive holder of block";
+src/mem/protocol/MESI_Two_Level-L2cache.sm:    MachineID L1_GetX_ID,          desc="ID of the L1 cache to forward the block to once we get a response";
+src/mem/protocol/MESI_Two_Level-L2cache.sm:  bool isSharer(Address addr, MachineID requestor, Entry cache_entry) {
+src/mem/protocol/MESI_Two_Level-L2cache.sm:  void addSharer(Address addr, MachineID requestor, Entry cache_entry) {
+src/mem/protocol/MESI_Two_Level-L2cache.sm:    DPRINTF(RubySlicc, "machineID: %s, requestor: %s, address: %s\n",
+src/mem/protocol/MESI_Two_Level-L2cache.sm:            machineID, requestor, addr);
+src/mem/protocol/MESI_Two_Level-L2cache.sm:                                      MachineID requestor, Entry cache_entry) {
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        if(machineIDToMachineType(in_msg.Sender) == MachineType:L1Cache) {
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        assert(machineIDToMachineType(in_msg.Requestor) == MachineType:L1Cache);
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-msg.sm:  MachineID Requestor,            desc="Node who initiated the request";
+src/mem/protocol/MOESI_hammer-msg.sm:  MachineID Sender,               desc="Node who sent the data";
+src/mem/protocol/MOESI_hammer-msg.sm:  MachineID CurOwner,      desc="current owner of the block, used for UnblockS responses";
+src/mem/protocol/MOESI_hammer-msg.sm:  MachineID Requestor,            desc="Node who initiated the request";
+src/mem/protocol/RubySlicc_Defines.sm:MachineID machineID;
+src/mem/protocol/RubySlicc_Defines.sm:void queueMemoryRead(MachineID id, Address addr, Cycles latency);
+src/mem/protocol/RubySlicc_Defines.sm:void queueMemoryWrite(MachineID id, Address addr, Cycles latency,
+src/mem/protocol/RubySlicc_Defines.sm:void queueMemoryWritePartial(MachineID id, Address addr, Cycles latency,
+src/mem/protocol/MOESI_hammer-dma.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-dma.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/RubySlicc_Types.sm:external_type(MachineID);
+src/mem/protocol/RubySlicc_Types.sm:  void add(MachineID);
+src/mem/protocol/RubySlicc_Types.sm:  void remove(MachineID);
+src/mem/protocol/RubySlicc_Types.sm:  bool isElement(MachineID);
+src/mem/protocol/RubySlicc_Types.sm:  MachineID smallestElement(MachineType);
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        assert(in_msg.Destination == machineID);
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        out_msg.Destination := createMachineID(MachineType:L1Cache, version);
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        DPRINTF(RubySlicc, "%s\n", machineID);
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        out_msg.Destination := createMachineID(MachineType:L1Cache, version);
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        out_msg.Destination := createMachineID(MachineType:L1Cache, version);
+src/mem/protocol/MESI_Three_Level-L0cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L0cache.sm:      out_msg.Destination := createMachineID(MachineType:L1Cache, version);
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Three_Level-L0cache.sm:        out_msg.Destination := createMachineID(MachineType:L1Cache, version);
+src/mem/protocol/MESI_Three_Level-L0cache.sm:      out_msg.Sender:= machineID;
+src/mem/protocol/MESI_Three_Level-L0cache.sm:      out_msg.Destination := createMachineID(MachineType:L1Cache, version);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:    void persistentRequestLock(Address, MachineID, AccessType);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:    void persistentRequestUnlock(Address, MachineID);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:    bool okToIssueStarving(Address, MachineID);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:    MachineID findSmallest(Address);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:      if (persistentTable.isLocked(addr) && (persistentTable.findSmallest(addr) != machineID)) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:  bool isExternalHit(Address addr, MachineID sender) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:    if (machineIDToMachineType(sender) == MachineType:L1Cache) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:    } else if (machineIDToMachineType(sender) == MachineType:L2Cache) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:  bool okToIssueStarving(Address addr, MachineID machineID) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:    return persistentTable.okToIssueStarving(addr, machineID);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          (persistentTable.findSmallest(useTimerTable.readyAddress()) != machineID)) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          if (persistentTable.findSmallest(in_msg.Addr) == machineID) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        if ( machineIDToMachineType(in_msg.Sender) == MachineType:L2Cache ) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        } else if ( machineIDToMachineType(in_msg.Sender) == MachineType:Directory ) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        } else if ( machineIDToMachineType(in_msg.Sender) == MachineType:L1Cache) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          //if (isLocalProcessor(machineID, in_msg.Sender) == false) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        if (okToIssueStarving(address, machineID) && (starving == false)) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:            out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          //out_msg.Destination := getOtherLocalL1IDs(machineID);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          out_msg.Destination.remove(machineID);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        if ( okToIssueStarving(address, machineID) && (starving == false)) {
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:            out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          //out_msg.Destination := getOtherLocalL1IDs(machineID);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          out_msg.Destination.remove(machineID);
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:                             machineIDToMachineType(in_msg.Sender));
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:                              machineIDToMachineType(in_msg.Sender));
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:       out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-L1cache.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:    MachineID Owner,    desc="ID of the L1 cache to forward the block to once we get a response";
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:    MachineID Owner,   desc="ID of the L1 cache to forward the block to once we get a response";
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:    MachineID L1_GetX_ID,          desc="ID of the L1 cache to forward the block to once we get a response";
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:    MachineID Fwd_GetX_ID,          desc="ID of the L1 cache to forward the block to once we get a response";
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:  bool isOnlySharer(Entry cache_entry, Address addr, MachineID shar_id) {
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:  void recordLocalSharerInDir(Entry cache_entry, Address addr, MachineID shar_id) {
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:  void recordNewLocalExclusiveInDir(Entry cache_entry, Address addr, MachineID exc_id) {
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:  void removeSharerFromDir(Entry cache_entry, Address addr, MachineID sender) {
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:  void removeOwnerFromDir(Entry cache_entry, Address addr, MachineID sender) {
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:  bool isLocalSharer(Entry cache_entry, Address addr, MachineID shar_id) {
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:  MachineID getLocalOwner(Entry cache_entry, Address addr) {
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:  int countLocalSharersExceptRequestor(Entry cache_entry, Address addr, MachineID requestor) {
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:          if (in_msg.Requestor == machineID) {
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_directory-L2cache.sm:      out_msg.Sender := machineID;
+src/mem/protocol/Network_test-msg.sm:  MachineID Requestor,            desc="Node who initiated the request";
+src/mem/protocol/RubySlicc_MemControl.sm:  MachineID Sender,             desc="What component sent the data";
+src/mem/protocol/RubySlicc_MemControl.sm:  MachineID OriginalRequestorMachId, desc="What component originally requested";
+src/mem/protocol/MI_example-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MI_example-cache.sm:      out_msg.Requestor := machineID;
+src/mem/protocol/MI_example-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MI_example-cache.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MI_example-cache.sm:                             machineIDToMachineType(in_msg.Sender));
+src/mem/protocol/MI_example-cache.sm:                              machineIDToMachineType(in_msg.Sender));
+src/mem/protocol/MESI_Three_Level-msg.sm:  MachineID Sender,             desc="What component sent this message";
+src/mem/protocol/MESI_Three_Level-msg.sm:  MachineID Destination,        desc="What machine receives this message";
+src/mem/protocol/MI_example-dir.sm:    MachineID DmaRequestor, desc="DMA requestor";
+src/mem/protocol/MI_example-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MI_example-dir.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MI_example-dma.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MI_example-dma.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-dir.sm:    MachineID Owner,               desc="Owner node";
+src/mem/protocol/MOESI_hammer-dir.sm:    MachineID DmaRequestor, desc="DMA requestor";
+src/mem/protocol/MOESI_hammer-dir.sm:          assert(cache_entry.Sharers.isElement(machineIDToNodeID(in_msg.Sender)) == false);
+src/mem/protocol/MOESI_hammer-dir.sm:          cache_entry.Sharers.add(machineIDToNodeID(in_msg.Sender));
+src/mem/protocol/MOESI_hammer-dir.sm:        cache_entry.Sharers.add(machineIDToNodeID(in_msg.Sender));
+src/mem/protocol/MOESI_hammer-dir.sm:        fwd_set.remove(machineIDToNodeID(in_msg.Requestor));
+src/mem/protocol/MOESI_hammer-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-dir.sm:        fwd_set.remove(machineIDToNodeID(in_msg.Requestor));
+src/mem/protocol/MOESI_hammer-dir.sm:          fwd_set.remove(machineIDToNodeID(in_msg.Requestor));
+src/mem/protocol/MOESI_hammer-dir.sm:            out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-dir.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-dir.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-dir.sm:          fwd_set.remove(machineIDToNodeID(in_msg.Requestor));
+src/mem/protocol/MOESI_hammer-dir.sm:            out_msg.Sender := machineID;
+src/mem/protocol/MOESI_hammer-dir.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-dir.sm:          out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_hammer-dir.sm:        assert(cache_entry.Sharers.isElement(machineIDToNodeID(in_msg.Requestor)) == false);
+src/mem/protocol/MOESI_hammer-dir.sm:        assert(cache_entry.Sharers.isElement(machineIDToNodeID(in_msg.Sender)));
+src/mem/protocol/MOESI_hammer-dir.sm:        cache_entry.Sharers.remove(machineIDToNodeID(in_msg.Sender));
+src/mem/protocol/MOESI_hammer-dir.sm:        cache_entry.Sharers.add(machineIDToNodeID(in_msg.Requestor));
+src/mem/protocol/MOESI_hammer-dir.sm:    queueMemoryWrite(machineID, address, to_memory_controller_latency,
+src/mem/protocol/MESI_Two_Level-msg.sm:  MachineID Requestor      ,    desc="What component request";
+src/mem/protocol/MESI_Two_Level-msg.sm:  MachineID Sender,             desc="What component sent the data";
+src/mem/protocol/MESI_Two_Level-dir.sm:    MachineID Owner;
+src/mem/protocol/MESI_Two_Level-dir.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MESI_Two_Level-dir.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MESI_Two_Level-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MESI_Two_Level-dir.sm:      queueMemoryWritePartial(machineID, address, to_mem_ctrl_latency,
+src/mem/protocol/MESI_Two_Level-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:    void persistentRequestLock(Address, MachineID, AccessType);
+src/mem/protocol/MOESI_CMP_token-dir.sm:    void persistentRequestUnlock(Address, MachineID);
+src/mem/protocol/MOESI_CMP_token-dir.sm:    bool okToIssueStarving(Address, MachineID);
+src/mem/protocol/MOESI_CMP_token-dir.sm:    MachineID findSmallest(Address);
+src/mem/protocol/MOESI_CMP_token-dir.sm:    MachineID DmaRequestor, desc="DMA requestor";
+src/mem/protocol/MOESI_CMP_token-dir.sm:  bool okToIssueStarving(Address addr, MachineID machinID) {
+src/mem/protocol/MOESI_CMP_token-dir.sm:    return persistentTable.okToIssueStarving(addr, machineID);
+src/mem/protocol/MOESI_CMP_token-dir.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-dir.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-dir.sm:            if (persistentTable.findSmallest(in_msg.Addr) == machineID) {
+src/mem/protocol/MOESI_CMP_token-dir.sm:          if (persistentTable.findSmallest(in_msg.Addr) == machineID) {
+src/mem/protocol/MOESI_CMP_token-dir.sm:        assert(in_msg.Destination.isElement(machineID));
+src/mem/protocol/MOESI_CMP_token-dir.sm:          out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:    if (okToIssueStarving(address, machineID) && (starving == false)) {
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:    if (okToIssueStarving(address, machineID) && (starving == false)) {
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:      out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:      queueMemoryWrite(machineID, address, to_memory_controller_latency,
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Requestor := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-dir.sm:        out_msg.Sender := machineID;
+src/mem/protocol/MOESI_CMP_token-msg.sm:  MachineID Requestor,            desc="Node who initiated the request";
+src/mem/protocol/MOESI_CMP_token-msg.sm:  MachineID Requestor,            desc="Node who initiated the request";
+src/mem/protocol/MOESI_CMP_token-msg.sm:  MachineID Sender,               desc="Node who sent the data";
+src/mem/protocol/MOESI_CMP_token-msg.sm:  MachineID Requestor,            desc="Node who initiated the request";

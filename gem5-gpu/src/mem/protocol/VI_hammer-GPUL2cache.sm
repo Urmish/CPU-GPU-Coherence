@@ -61,6 +61,10 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     Get,          desc="Get request from L1";
     Store,        desc="Put request from L1";
     Replacement,  desc="Replace a block";
+    
+    //SELF
+    Prefetch,          desc="Prefetch to mimic region invalidate";
+  	
 
     // From CPU caches
     Other_GETX,      desc="A GetX from another processor";
@@ -131,6 +135,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     int Size,               desc="Size of the write";
 
     MachineID Requestor,     desc="The requestor for this block";
+    int isPrefetch,         default ="0", desc="Is this entry for a prefetch";
   }
 
   structure(TBETable, external="yes") {
@@ -377,6 +382,9 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     if (requestQueue_in.isReady()) {
       peek(requestQueue_in, RequestMsgVI, block_on="Addr") {
 
+        Entry cache_entry := getCacheEntry(regionBuffer.maskAddress(in_msg.Addr));
+
+
         Entry cache_entry := getCacheEntry(in_msg.Addr);
 	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
 	//Urmish - For both GET and PUT Request, the L2 creates space if cache entry is invalid, ie it is not in L2
@@ -518,18 +526,25 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   action(hx_external_load_hit, "hx", desc="load required external msgs, send data to L1") {
     assert(is_valid(cache_entry));
+  //SWAPNIL
     assert(is_valid(tbe));
-    peek(responseToCache_in, ResponseMsg) {
-      enqueue(responseNetworkL1_out, ResponseMsgVI, l2_response_latency) {
-        out_msg.Addr := address;
-        out_msg.Type := CoherenceResponseTypeVI:DATA;
-        out_msg.Sender := in_msg.Sender;
-        out_msg.Destination.add(tbe.Requestor);
-        out_msg.DataBlk := in_msg.DataBlk;
-        out_msg.MessageSize := MessageSizeType:Response_Data;
+    if(tbe.isPrefetch ==  0) {
+      peek(responseToCache_in, ResponseMsg) {
+	enqueue(responseNetworkL1_out, ResponseMsgVI, l2_response_latency) {
+	  out_msg.Addr := address;
+	  out_msg.Type := CoherenceResponseTypeVI:DATA;
+	  out_msg.Sender := in_msg.Sender;
+	  out_msg.Destination.add(tbe.Requestor);
+	  out_msg.DataBlk := in_msg.DataBlk;
+	  out_msg.MessageSize := MessageSizeType:Response_Data;
+	}
       }
+    }	
+    else {	  
+	  DPRINTF(LOKI,"NOT Lokid!! Prefetcher \n"); //Urmish - We dont expect this to happen with 2 L2s
     }
-  }
+  }	
+  
 
   action(hh_store_hit, "\h", desc="Notify L1 that store completed.") {
     assert(is_valid(cache_entry));
@@ -611,7 +626,17 @@ machine(GPUL2Cache, "Simple write back L2 cache")
       DPRINTF(RubySlicc, "Recording requestor %s %s\n", address, in_msg.Requestor);
     }
   }
-
+  action(es_recordRequestor_prefetch, "es_p", desc="record the requestor ID in the TBE") {
+    assert(is_valid(tbe));
+    peek(requestQueue_in, RequestMsgVI) {
+      //tbe.Requestor := in_msg.Requestor;
+      //tbe.DirtyDataBlk := in_msg.DataBlk;
+      //tbe.Offset := in_msg.Offset;
+      //tbe.Size := in_msg.Size;
+      tbe.isPrefetch := 1;
+      DPRINTF(LOKI, "Not Lokid!! Prefetch variable set\n");
+    }
+  }
   action(u_writeDataToCache, "u", desc="Write data to cache") {
     peek(responseToCache_in, ResponseMsg) {
       assert(is_valid(cache_entry));
@@ -1126,6 +1151,16 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     rq_popL1IncomingQueue;
   }
 
+  transition(I, Prefetch, IS) {TagArrayRead} { //SWAPNIL
+    //Urmish - T5
+    ii_allocateL2CacheBlock;
+    ii_allocateRegionArrayBlock;
+    i_allocateTBE;
+    es_recordRequestor_prefetch;
+    a_issueGETS;
+  // vv_profileReadMiss;
+  //rq_popL1IncomingQueue;
+  }
   // Transistions for replacements
 
   transition(I, Replacement) {TagArrayRead} {
