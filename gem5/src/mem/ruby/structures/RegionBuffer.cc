@@ -315,21 +315,16 @@ RegionBuffer::cacheProbe(const Address& address) const
     return m_cache[cacheSet][m_replacementPolicy_ptr->getVictim(cacheSet)]->
         m_Address;
 }
-Address* 
-RegionBuffer::maskAddress(Address address) 
-{
-    Address mask_address(address);
-    mask_address = mask_address.m_address & ((unsigned long long int)~0 << regionSize );
-    return mask_address;
-}
 
-const Address* 
-RegionBuffer::maskAddress(const Address& address) const
-{
-    Address mask_address(address);
-    mask_address = mask_address.m_address & ((unsigned long long int)~0 << regionSize );
-    return mask_address;
-}
+//AbstractProbeEntry* 
+//void
+//RegionBuffer::incAddress(Address& pe)
+//RegionBuffer::incAddress(AbstractProbeEntry& pe)
+//{
+//    pe.m_address = pe.m_address+64;
+//    //mask_address = mask_address.m_address & ((unsigned long long int)~0 << regionSize );
+//    //return pe;
+//}
 
 // looks an address up in the cache
 AbstractProbeEntry*

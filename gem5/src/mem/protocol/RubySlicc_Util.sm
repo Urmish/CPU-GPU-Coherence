@@ -29,6 +29,9 @@
 
 // Miscallaneous Functions
 
+bool cmpAddress(Address A, Address B);
+Address incAddress(Address addr);
+Address maskAddress(Address addr);
 void error(std::string msg);
 void assert(bool condition);
 int random(int number);

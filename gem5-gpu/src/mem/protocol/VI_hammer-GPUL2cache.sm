@@ -113,6 +113,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     State CacheState,        desc="cache state";
     bool Dirty,              desc="Is the data dirty (different than memory)?";
     DataBlock DataBlk,       desc="Data in the block";
+    //Address mask_address,    desc="Beginning address of the region";
   }
 
 
@@ -171,6 +172,12 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   ProbeEntry getProbeEntry(Address address), return_by_pointer="yes" {
     return static_cast(ProbeEntry, "pointer", regionBuffer.lookup(address));
   }
+  
+  //void incrementProbeEntryAddress (ProbeEntry pe_entry), return_by_pointer="no" {
+  //  //return static_cast(ProbeEntry, "pointer", regionBuffer.incAddress(pe_entry.address));
+  //  //regionBuffer.incAddress(pe_entry.m_address);
+  //  regionBuffer.incAddress(static_cast(AbstractProbeEntry, "pointer", pe_entry));
+  //}
   
   //bool getLock(Address address), return_by_pointer="no" {
   //  return regionBuffer.isLocked(address,1));
@@ -382,24 +389,301 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     if (requestQueue_in.isReady()) {
       peek(requestQueue_in, RequestMsgVI, block_on="Addr") {
 
-        Entry cache_entry := getCacheEntry(regionBuffer.maskAddress(in_msg.Addr));
-
-
         Entry cache_entry := getCacheEntry(in_msg.Addr);
 	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
+        if (is_invalid(probe_entry) && L1Cache_request_type_to_event(in_msg.Type, in_msg.Addr,
+                                                in_msg.Requestor, cache_entry) == Event:Get) 
+	{
+		if (is_invalid(cache_entry) && L2cache.cacheAvail(in_msg.Addr) == false ) 
+		{
+         	 // make room for the block
+          		trigger(Event:Replacement, L2cache.cacheProbe(in_msg.Addr),
+                  		getCacheEntry(L2cache.cacheProbe(in_msg.Addr)),
+                  		TBEs[L2cache.cacheProbe(in_msg.Addr)], probe_entry); //Urmish
+        	}
+        	else 
+		{
+          		trigger(L1Cache_request_type_to_event(in_msg.Type, in_msg.Addr, in_msg.Requestor, cache_entry), in_msg.Addr, cache_entry, TBEs[in_msg.Addr], probe_entry); //Urmish
+        	}
+		//----------------PREFETCH 1/16------------------
+		Address prefetchAddr := maskAddress(in_msg.Addr);
+	
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+		  cache_entry := getCacheEntry(prefetchAddr);
+        	  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false ) 
+		  {
+          		// make room for the block
+          		trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                  		getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                  		TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+        	  }
+        	  else 
+		  {
+          		trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+        	  }
+		}
+		
+		
+		//----------------PREFETCH 2/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+		//----------------PREFETCH 3/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 4/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 5/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 6/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 7/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 8/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 9/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 10/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 11/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 12/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 13/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 14/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 15/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+ 		//----------------PREFETCH 16/16------------------
+		prefetchAddr := incAddress(prefetchAddr);
+		if(cmpAddress(in_msg.Addr,prefetchAddr) == false) {
+                  cache_entry := getCacheEntry(prefetchAddr);
+                  if (is_invalid(cache_entry) && L2cache.cacheAvail(prefetchAddr) == false )
+                  {
+                        // make room for the block
+                        trigger(Event:Replacement, L2cache.cacheProbe(prefetchAddr),
+                                getCacheEntry(L2cache.cacheProbe(prefetchAddr)),
+                                TBEs[L2cache.cacheProbe(prefetchAddr)], probe_entry); //Urmish
+                  }
+                  else
+                  {
+                        trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
+                  }
+                }
+         
+
+		
+	}
+	else 
+	{
 	//Urmish - For both GET and PUT Request, the L2 creates space if cache entry is invalid, ie it is not in L2
-        if (is_invalid(cache_entry) &&
-            L2cache.cacheAvail(in_msg.Addr) == false ) {
-          // make room for the block
-          trigger(Event:Replacement, L2cache.cacheProbe(in_msg.Addr),
-                  getCacheEntry(L2cache.cacheProbe(in_msg.Addr)),
-                  TBEs[L2cache.cacheProbe(in_msg.Addr)], probe_entry); //Urmish
-        }
-        else {
-          trigger(L1Cache_request_type_to_event(in_msg.Type, in_msg.Addr,
-                                                in_msg.Requestor, cache_entry),
-            in_msg.Addr, cache_entry, TBEs[in_msg.Addr], probe_entry); //Urmish
-        }
+        	if (is_invalid(cache_entry) &&
+        	    L2cache.cacheAvail(in_msg.Addr) == false ) {
+        	  // make room for the block
+        	  trigger(Event:Replacement, L2cache.cacheProbe(in_msg.Addr),
+        	          getCacheEntry(L2cache.cacheProbe(in_msg.Addr)),
+        	          TBEs[L2cache.cacheProbe(in_msg.Addr)], probe_entry); //Urmish
+        	}
+        	else {
+        	  trigger(L1Cache_request_type_to_event(in_msg.Type, in_msg.Addr,
+        	                                        in_msg.Requestor, cache_entry),
+        	    in_msg.Addr, cache_entry, TBEs[in_msg.Addr], probe_entry); //Urmish
+        	}
+        }	
       }
     }
   }
@@ -1080,10 +1364,11 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   transition(I, Store, IM) {TagArrayRead, TagArrayWrite} {
     //Urmish - T1
     ii_allocateL2CacheBlock;
-    ii_allocateRegionArrayBlock;
+    //ii_allocateRegionArrayBlock;
     i_allocateTBE;
     es_recordRequestor;
     b_issueGETX;
+    ii_allocateRegionArrayBlock;
     uu_profileWriteMiss;
     rq_popL1IncomingQueue;
   }
@@ -1143,10 +1428,11 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   transition(I, Get, IS) {TagArrayRead} {
     //Urmish - T5
     ii_allocateL2CacheBlock;
-    ii_allocateRegionArrayBlock;
+    //ii_allocateRegionArrayBlock;
     i_allocateTBE;
     es_recordRequestor;
     a_issueGETS;
+    ii_allocateRegionArrayBlock;
     vv_profileReadMiss;
     rq_popL1IncomingQueue;
   }

@@ -5,3 +5,5 @@ Merged_Gets - Ignored
 l2 size and region buffer size fixed in VI_hammer*.py
 
 What will happen when we have no space in RCA and we try to allocate bc!
+
+Gets_MERA/GETX_MERA - Not given a fuck!

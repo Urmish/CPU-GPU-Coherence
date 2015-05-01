@@ -164,7 +164,7 @@ def create_system(options, full_system, system, dma_devices, ruby_system):
                            tagArrayBanks = 4,
                            dataAccessLatency = 4,
                            tagAccessLatency = 4,
-                           resourceStalls = options.gpu_l2_resource_stalls
+                           resourceStalls = options.gpu_l2_resource_stalls,
  			   regionSize = options.region_size)
 
         l2_cntrl = GPUL2Cache_Controller(version = i,

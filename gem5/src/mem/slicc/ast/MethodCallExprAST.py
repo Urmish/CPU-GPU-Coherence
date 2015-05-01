@@ -133,8 +133,11 @@ class MemberMethodCallExprAST(MethodCallExprAST):
                   implemented_paramTypes = []
                   for paramType in paramTypes:
                       implemented_paramType = paramType
+		      print "paramType is"
+		      print paramType
                       if paramType.isInterface:
                           implements_interface = True
+			  print "implements_interface set to true"
                           implemented_paramType.abstract_ident = paramType["interface"]
                       else:
                           implemented_paramType.abstract_ident = paramType.c_ident
@@ -143,9 +146,12 @@ class MemberMethodCallExprAST(MethodCallExprAST):
 
                   implementedMethodId = ""
                   if implements_interface:
+		      print obj_type
+		      print self.proc_name
+		      print implemented_paramTypes
                       implementedMethodId = obj_type.methodIdAbstract(
                               self.proc_name, implemented_paramTypes)
-
+		 
                   if implementedMethodId not in obj_type.methods:
                       self.error("Invalid method call: Type '%s' " \
                                  "does not have a method %s, '%s' nor '%s'",

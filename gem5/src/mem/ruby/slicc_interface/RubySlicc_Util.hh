@@ -42,6 +42,31 @@
 
 inline Cycles zero_time() { return Cycles(0); }
 
+
+inline bool 
+cmpAddress(Address A, Address B) 
+{
+	if(A.m_address == B.m_address) {
+		return true;
+	}
+	return false;
+}
+
+
+inline Address 
+incAddress(Address in)
+{
+	Address Addr(in.m_address+64);
+	return Addr;
+}
+
+inline Address 
+maskAddress(Address in)
+{
+	Address Addr((in.m_address) & ((unsigned long long int)~0 << 16)) ;
+	return Addr;
+}
+
 inline NodeID
 intToID(int nodenum)
 {

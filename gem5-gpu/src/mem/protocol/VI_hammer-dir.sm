@@ -306,7 +306,13 @@ machine(Directory, "AMD Hammer-like protocol")
   Event cache_request_to_event(CoherenceRequestType type) {
     if (type == CoherenceRequestType:GETS) {
       return Event:GETS;
-    } else if (type == CoherenceRequestType:GETX) {
+    }   
+    else if (type == CoherenceRequestType:GETS_MERA) {
+      return Event:GETS;
+    }
+    else if (type == CoherenceRequestType:GETX) {
+      return Event:GETX;
+    } else if (type == CoherenceRequestType:GETX_MERA) {
       return Event:GETX;
     } else if (type == CoherenceRequestType:GETF) {
       return Event:GETF;
