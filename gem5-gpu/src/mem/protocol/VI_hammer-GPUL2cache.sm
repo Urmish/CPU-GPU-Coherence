@@ -334,6 +334,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
         TBE tbe := TBEs[in_msg.Addr];
 
 	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
+	if(is_valid(probe_entry)) { 	//Swapnil
         if (in_msg.Type == CoherenceResponseType:ACK) {
           trigger(Event:Ack, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
         } else if (in_msg.Type == CoherenceResponseType:ACK_SHARED) {
@@ -347,64 +348,23 @@ machine(GPUL2Cache, "Simple write back L2 cache")
         } else {
           error("Unexpected message");
         }
-      }
-    }
-  }
-  // Forward Network
-  in_port(forwardToCache_in, RequestMsg, forwardToCache, rank=1) {
-    if (forwardToCache_in.isReady()) {
-      peek(forwardToCache_in, RequestMsg, block_on="Addr") {
-
-        Entry cache_entry := getCacheEntry(in_msg.Addr);
-        TBE tbe := TBEs[in_msg.Addr];
-
-	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
-        if ((in_msg.Type == CoherenceRequestType:GETX) || (in_msg.Type == CoherenceRequestType:GETF)) {
-          trigger(Event:Other_GETX, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
-        } else if (in_msg.Type == CoherenceRequestType:MERGED_GETS) {
-	  DPRINTF(LOKI,"Lokid!! Merged GETS aa gaya bc - GPU\n"); //Urmish - We dont expect this to happen with 2 L2s
-          trigger(Event:Merged_GETS, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
-        } else if (in_msg.Type == CoherenceRequestType:GETS) {
-          if (machineCount(MachineType:L1Cache)+machineCount(MachineType:GPUL2Cache) > 1) {
-            trigger(Event:Other_GETS, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
-          } else {
-            trigger(Event:NC_DMA_GETS, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
-          }
-        } else if (in_msg.Type == CoherenceRequestType:INV) {
-          trigger(Event:Invalidate, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
-        } else if (in_msg.Type == CoherenceRequestType:WB_ACK) {
-          trigger(Event:Writeback_Ack, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
-        } else if (in_msg.Type == CoherenceRequestType:WB_NACK) {
-          trigger(Event:Writeback_Nack, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
-        } else if (in_msg.Type == CoherenceRequestType:BLOCK_ACK) {
-          trigger(Event:Block_Ack, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+	}
+	//Swapnil
+	else {
+        if (in_msg.Type == CoherenceResponseType:ACK) {
+          trigger(Event:Ack, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else if (in_msg.Type == CoherenceResponseType:ACK_SHARED) {
+          trigger(Event:Shared_Ack, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else if (in_msg.Type == CoherenceResponseType:DATA) {
+          trigger(Event:Data, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else if (in_msg.Type == CoherenceResponseType:DATA_SHARED) {
+          trigger(Event:Shared_Data, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else if (in_msg.Type == CoherenceResponseType:DATA_EXCLUSIVE) {
+          trigger(Event:Exclusive_Data, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
         } else {
           error("Unexpected message");
         }
-      }
-    }
-  }
-
-  in_port(requestQueue_in, RequestMsgVI, requestFromL1Cache, desc="...") {
-    if (requestQueue_in.isReady()) {
-      peek(requestQueue_in, RequestMsgVI, block_on="Addr") {
-
-        Entry cache_entry := getCacheEntry(in_msg.Addr);
-	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
-        if (is_invalid(probe_entry) && L1Cache_request_type_to_event(in_msg.Type, in_msg.Addr,
-                                                in_msg.Requestor, cache_entry) == Event:Get) 
-	{
-		if (is_invalid(cache_entry) && L2cache.cacheAvail(in_msg.Addr) == false ) 
-		{
-         	 // make room for the block
-          		trigger(Event:Replacement, L2cache.cacheProbe(in_msg.Addr),
-                  		getCacheEntry(L2cache.cacheProbe(in_msg.Addr)),
-                  		TBEs[L2cache.cacheProbe(in_msg.Addr)], probe_entry); //Urmish
-        	}
-        	else 
-		{
-          		trigger(L1Cache_request_type_to_event(in_msg.Type, in_msg.Addr, in_msg.Requestor, cache_entry), in_msg.Addr, cache_entry, TBEs[in_msg.Addr], probe_entry); //Urmish
-        	}
+	if ((in_msg.Type == CoherenceResponseType:DATA) || (in_msg.Type == CoherenceResponseType:DATA_SHARED) || (in_msg.Type == CoherenceResponseType:DATA_EXCLUSIVE)) {
 		//----------------PREFETCH 1/16------------------
 		Address prefetchAddr := maskAddress(in_msg.Addr);
 	
@@ -663,13 +623,75 @@ machine(GPUL2Cache, "Simple write back L2 cache")
                   {
                         trigger(Event:Prefetch, prefetchAddr, cache_entry, TBEs[prefetchAddr], probe_entry); //Urmish
                   }
-                }
+                }	
+	    }
+	}
+      }
+    }
+  }
+  // Forward Network
+  in_port(forwardToCache_in, RequestMsg, forwardToCache, rank=1) {
+    if (forwardToCache_in.isReady()) {
+      peek(forwardToCache_in, RequestMsg, block_on="Addr") {
+
+        Entry cache_entry := getCacheEntry(in_msg.Addr);
+        TBE tbe := TBEs[in_msg.Addr];
+
+	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
+        if ((in_msg.Type == CoherenceRequestType:GETX) || (in_msg.Type == CoherenceRequestType:GETF)) {
+          trigger(Event:Other_GETX, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else if (in_msg.Type == CoherenceRequestType:MERGED_GETS) {
+	  DPRINTF(LOKI,"Lokid!! Merged GETS aa gaya bc - GPU\n"); //Urmish - We dont expect this to happen with 2 L2s
+          trigger(Event:Merged_GETS, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else if (in_msg.Type == CoherenceRequestType:GETS) {
+          if (machineCount(MachineType:L1Cache)+machineCount(MachineType:GPUL2Cache) > 1) {
+            trigger(Event:Other_GETS, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+          } else {
+            trigger(Event:NC_DMA_GETS, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+          }
+        } else if (in_msg.Type == CoherenceRequestType:INV) {
+          trigger(Event:Invalidate, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else if (in_msg.Type == CoherenceRequestType:WB_ACK) {
+          trigger(Event:Writeback_Ack, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else if (in_msg.Type == CoherenceRequestType:WB_NACK) {
+          trigger(Event:Writeback_Nack, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else if (in_msg.Type == CoherenceRequestType:BLOCK_ACK) {
+          trigger(Event:Block_Ack, in_msg.Addr, cache_entry, tbe, probe_entry); //Urmish
+        } else {
+          error("Unexpected message");
+        }
+      }
+    }
+  }
+
+  in_port(requestQueue_in, RequestMsgVI, requestFromL1Cache, desc="...") {
+    if (requestQueue_in.isReady()) {
+      peek(requestQueue_in, RequestMsgVI, block_on="Addr") {
+
+        Entry cache_entry := getCacheEntry(in_msg.Addr);
+	ProbeEntry probe_entry := getProbeEntry(in_msg.Addr); //Urmish
+        if (is_invalid(probe_entry)) // Here we need to forward both PUT AND GET
+		//	&& L1Cache_request_type_to_event(in_msg.Type, in_msg.Addr,
+                                    //            in_msg.Requestor, cache_entry) == Event:Get) 
+	{
+		if (is_invalid(cache_entry) && L2cache.cacheAvail(in_msg.Addr) == false ) 
+		{
+         	 // make room for the block
+          		trigger(Event:Replacement, L2cache.cacheProbe(in_msg.Addr),
+                  		getCacheEntry(L2cache.cacheProbe(in_msg.Addr)),
+                  		TBEs[L2cache.cacheProbe(in_msg.Addr)], probe_entry); //Urmish
+        	}
+        	else 
+		{
+          		trigger(L1Cache_request_type_to_event(in_msg.Type, in_msg.Addr, in_msg.Requestor, cache_entry), in_msg.Addr, cache_entry, TBEs[in_msg.Addr], probe_entry); //Urmish
+        	}
          
 
 		
 	}
 	else 
 	{
+	//HERE WE ASSUME THAT PUT REQUESTS CAN ONLY HAPPEN IF THERE IS A REGION BUFFER ENTRY ALLOCATED		
 	//Urmish - For both GET and PUT Request, the L2 creates space if cache entry is invalid, ie it is not in L2
         	if (is_invalid(cache_entry) &&
         	    L2cache.cacheAvail(in_msg.Addr) == false ) {
@@ -1432,7 +1454,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     i_allocateTBE;
     es_recordRequestor;
     a_issueGETS;
-    ii_allocateRegionArrayBlock;
+//    ii_allocateRegionArrayBlock;
     vv_profileReadMiss;
     rq_popL1IncomingQueue;
   }
@@ -1440,7 +1462,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   transition(I, Prefetch, IS) {TagArrayRead} { //SWAPNIL
     //Urmish - T5
     ii_allocateL2CacheBlock;
-    ii_allocateRegionArrayBlock;
+//    ii_allocateRegionArrayBlock;
     i_allocateTBE;
     es_recordRequestor_prefetch;
     a_issueGETS;
@@ -1513,6 +1535,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition({OI, MI}, {NC_DMA_GETS, Other_GETS}, OI) {
     //Urmish - T53
+    rr_deallocateRegionArrayBlock;
     sq_sendSharedDataFromTBEToCache;
     l_popForwardQueue;
   }
@@ -1537,6 +1560,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   transition(IS, Data, SS) {DataArrayWrite} {
     //Urmish - T45
     //Allocate Region Buffer Space Here
+    ii_allocateRegionArrayBlock;
     u_writeDataToCache;
     m_decrementNumberOfMessages;
     o_checkForCompletion;
@@ -1548,6 +1572,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(IS, Exclusive_Data, M_W) {DataArrayWrite} {
     //Urmish - T47
+    ii_allocateRegionArrayBlock;
     u_writeDataToCache;
     m_decrementNumberOfMessages;
     o_checkForCompletion;
@@ -1559,6 +1584,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   transition(IS, Shared_Data, SS) {DataArrayWrite} {
     //Urmish - T46
     //Allocate Region Buffer Space Here
+    ii_allocateRegionArrayBlock;
     u_writeDataToCache;
     r_setSharerBit;
     m_decrementNumberOfMessages;
@@ -1627,6 +1653,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
   // Transitions from IM
   transition(SM, {NC_DMA_GETS, Other_GETS}) {
     //Urmish - T39
+    rr_deallocateRegionArrayBlock;
     ff_sendAckShared;
     l_popForwardQueue;
   }
@@ -1735,6 +1762,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(OM, {NC_DMA_GETS, Other_GETS}) {
     //Urmish - T41
+    rr_deallocateRegionArrayBlock;
     ee_sendDataShared;
     l_popForwardQueue;
   }
@@ -1789,6 +1817,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(S, {NC_DMA_GETS, Other_GETS}) {TagArrayRead} {
     //Urmish - T17
+    rr_deallocateRegionArrayBlock;
     ff_sendAckShared;
     l_popForwardQueue;
   }
@@ -1809,6 +1838,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(O, {NC_DMA_GETS, Other_GETS}) {TagArrayRead, DataArrayRead} {
     //Urmish - T22
+    rr_deallocateRegionArrayBlock;
     ee_sendDataShared;
     l_popForwardQueue;
   }
@@ -1822,6 +1852,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(MM, Other_GETS, I) {TagArrayRead, TagArrayWrite, DataArrayRead} {
     //Urmish - T35
+    rr_deallocateRegionArrayBlock;
     c_sendExclusiveData;
     l_popForwardQueue;
   }
@@ -1847,6 +1878,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
   transition(M, Other_GETS, O) {TagArrayRead, TagArrayWrite, DataArrayRead} {
     //Urmish - T26
+    rr_deallocateRegionArrayBlock;
     ee_sendDataShared;
     l_popForwardQueue;
   }

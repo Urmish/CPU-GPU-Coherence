@@ -1,0 +1,29 @@
+We need to wait for the data to come back for the first GETS, before issuing all the PREFETCHES. That is, we need to ensure we have ownership of line before sending out prefetches, else the original gets may be stalled behind something,m and then invalidates may come in the IS state. In the IS state, we don't have ownership so we let invalidates slide.
+
+IN FIRST GETS, wait for data to come back before sending prefetch requests and allocating block. If in the middle of this there is another GETS, whoever gets data first will do prefetch + allocate data block, but then the other line may see two requests enqueing, is this okay??
+
+
+Are we doing prefetch for GETX?? YES and also for PUT which is wrong..
+
+remember that l1 will always issue get and put only .. so will we ever issue GETS?
+
+
+
+2) Handle SHARED/MODIFIED ka difference 
+
+3) We don't invalidate for OTHER_GETS/INVALIDATES before we have ownership, so the region still thinks we have ownership when we dont
+
+4) what if OTHER_GETS comes and we have line in GETX which gets downgraded
+=> we should run invalidate sequence for every OTHER_GETS too/.
+
+
+We need to invalidate CPU for every GETS from the DIRECTORY, or we can just send GETM everytime!
+
+FOR EVERY GETS FROM THE CPU, we need to invalidate the GPU. else cpu sees gets_mera or getx_mera
+
+The problem on invalidating for every OTHER_GETS is that this precludes finegrained sharing between cpu and gpu... as we get permission after one GETS, but if CPU asks for it, we deallocate region and lose permissions... we need to maintain state in the region buffer!
+
+ASsuming shared_data data and exclusive data is the only three directory responses valid for us//
+
+Make sure directory does not degrade you but also takes away permissions
+
