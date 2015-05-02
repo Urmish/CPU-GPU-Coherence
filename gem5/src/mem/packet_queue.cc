@@ -116,10 +116,10 @@ PacketQueue::schedSendTiming(PacketPtr pkt, Tick when, bool send_as_snoop)
 
     // add a very basic sanity check on the port to ensure the
     // invisible buffer is not growing beyond reasonable limits
-    if (transmitList.size() > 100) {
-        panic("Packet queue %s has grown beyond 100 packets\n",
-              name());
-    }
+    //Urmish if (transmitList.size() > 100) {
+    //Urmish     panic("Packet queue %s has grown beyond 100 packets\n",
+    //Urmish           name());
+    //Urmish }
 
     // nothing on the list, or earlier than current front element,
     // schedule an event
