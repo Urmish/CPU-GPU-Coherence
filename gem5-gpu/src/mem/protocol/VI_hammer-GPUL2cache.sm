@@ -137,6 +137,7 @@ machine(GPUL2Cache, "Simple write back L2 cache")
 
     MachineID Requestor,     desc="The requestor for this block";
     int isPrefetch,         default ="0", desc="Is this entry for a prefetch";
+    int isGETS,         default ="0", desc="Is this entry for a prefetch";
   }
 
   structure(TBETable, external="yes") {
@@ -1394,6 +1395,19 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     uu_profileWriteMiss;
     rq_popL1IncomingQueue;
   }
+ 
+  transition(I, Prefetch, IM) {TagArrayRead, TagArrayWrite} {
+    //Urmish - T1
+    ii_allocateL2CacheBlock;
+    //ii_allocateRegionArrayBlock;
+    i_allocateTBE;
+//    es_recordRequestor;
+    es_recordRequestor_prefetch;
+    b_issueGETX;
+    ii_allocateRegionArrayBlock;
+    //uu_profileWriteMiss;
+    //rq_popL1IncomingQueue;
+  }
 
   transition({S,MM,O,M}, Get) {TagArrayRead, DataArrayRead} {
     //Urmish - T15
@@ -1459,16 +1473,16 @@ machine(GPUL2Cache, "Simple write back L2 cache")
     rq_popL1IncomingQueue;
   }
 
-  transition(I, Prefetch, IS) {TagArrayRead} { //SWAPNIL
-    //Urmish - T5
-    ii_allocateL2CacheBlock;
-//    ii_allocateRegionArrayBlock;
-    i_allocateTBE;
-    es_recordRequestor_prefetch;
-    a_issueGETS;
-  // vv_profileReadMiss;
-  //rq_popL1IncomingQueue;
-  }
+//  transition(I, Prefetch, IS) {TagArrayRead} { //SWAPNIL
+//    //Urmish - T5
+//    ii_allocateL2CacheBlock;
+////    ii_allocateRegionArrayBlock;
+//    i_allocateTBE;
+//    es_recordRequestor_prefetch;
+//    a_issueGETS;
+//  // vv_profileReadMiss;
+//  //rq_popL1IncomingQueue;
+//  }
   // Transistions for replacements
 
   transition(I, Replacement) {TagArrayRead} {

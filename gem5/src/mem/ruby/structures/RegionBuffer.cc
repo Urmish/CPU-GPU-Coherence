@@ -297,6 +297,7 @@ RegionBuffer::deallocate(const Address& address)
 	}
     //End Urmish, possible LOKID
     }
+    allClear=0;
     if (loc != -1 && !allClear) {
         delete m_cache[cacheSet][loc];
         m_cache[cacheSet][loc] = NULL;
