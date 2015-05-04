@@ -61,6 +61,7 @@ class DataBlock
     void setByte(int whichByte, uint8_t data);
     void setData(const uint8_t *data, int offset, int len);
     void copyPartial(const DataBlock & dblk, int offset, int len);
+    void equal_mera(const DataBlock& obj); //Urmish
     bool equal(const DataBlock& obj) const;
     void print(std::ostream& out) const;
     uint8_t *m_data;

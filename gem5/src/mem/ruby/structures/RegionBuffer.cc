@@ -260,7 +260,8 @@ RegionBuffer::allocate(const Address& address, AbstractProbeEntry* entry)
             m_replacementPolicy_ptr->touch(cacheSet, i, curTick());
 	    DataBlock* data_ptr = &(set[i]->getDataBlk());
 	    const uint8_t cache_data = 1;
-	    data_ptr->setData(&cache_data,(int)(address.m_address & ~(( unsigned long long int)~0 << regionSize )),0);
+	    //data_ptr->setData(&cache_data,(int)(address.m_address & ~(( unsigned long long int)~0 << regionSize )),0);
+	    data_ptr->setData(&cache_data,1,0);
             return entry;
         }
     }

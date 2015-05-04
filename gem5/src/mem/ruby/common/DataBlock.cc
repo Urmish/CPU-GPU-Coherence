@@ -57,6 +57,13 @@ DataBlock::equal(const DataBlock& obj) const
 }
 
 void
+DataBlock::equal_mera(const DataBlock& obj)
+{
+    memcmp(m_data, obj.m_data, RubySystem::getBlockSizeBytes());
+}
+
+
+void
 DataBlock::print(std::ostream& out) const
 {
     using namespace std;
