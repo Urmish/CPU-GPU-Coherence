@@ -3,11 +3,12 @@ gem5/build/*
 gem5/parsetab.py
 *.pyc
 *.swp
-stats*
 !stats.hh
 !stats.cc
 !stats.i
 !stats.h
 !stats.c
+gem5/tests/
+gem5-gpu/tests/
 m5out*
 !gem5/src/python/m5/stats

@@ -5717,7 +5717,7 @@ TriggerType
 TypeAST.py -
 TriggerType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a850>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x4658d10>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5732,7 +5732,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425a890>, <m5.util.code_formatter.code_formatter object at 0x425a950>, <m5.util.code_formatter.code_formatter object at 0x425aa10>, <m5.util.code_formatter.code_formatter object at 0x425aa50>]
+[<m5.util.code_formatter.code_formatter object at 0x4658d50>, <m5.util.code_formatter.code_formatter object at 0x4658e10>, <m5.util.code_formatter.code_formatter object at 0x4658ed0>, <m5.util.code_formatter.code_formatter object at 0x4658f10>]
 TypeAST.py -
 TriggerType
 TypeAST.py -
@@ -5740,7 +5740,7 @@ TriggerType
 TypeAST.py -
 TriggerType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ac50>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a150>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5755,7 +5755,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425ac90>, <m5.util.code_formatter.code_formatter object at 0x425ad50>, <m5.util.code_formatter.code_formatter object at 0x425ad90>, <m5.util.code_formatter.code_formatter object at 0x425add0>]
+[<m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a250>, <m5.util.code_formatter.code_formatter object at 0x465a290>, <m5.util.code_formatter.code_formatter object at 0x465a2d0>]
 FuncCallExprAST - 
 ("Unexpected message")
 DeclListAST generate
@@ -5783,7 +5783,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a990>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a090>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5798,7 +5798,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425a710>, <m5.util.code_formatter.code_formatter object at 0x425a690>, <m5.util.code_formatter.code_formatter object at 0x425ad10>, <m5.util.code_formatter.code_formatter object at 0x425ac90>]
+[<m5.util.code_formatter.code_formatter object at 0x465a110>, <m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a210>, <m5.util.code_formatter.code_formatter object at 0x465a250>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -5806,7 +5806,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ae90>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a110>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5821,7 +5821,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425aed0>, <m5.util.code_formatter.code_formatter object at 0x425af10>, <m5.util.code_formatter.code_formatter object at 0x425b050>, <m5.util.code_formatter.code_formatter object at 0x425b090>]
+[<m5.util.code_formatter.code_formatter object at 0x465a1d0>, <m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a2d0>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -5829,7 +5829,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425afd0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a1d0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5844,7 +5844,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425ae90>, <m5.util.code_formatter.code_formatter object at 0x44d5050>, <m5.util.code_formatter.code_formatter object at 0x44d50d0>, <m5.util.code_formatter.code_formatter object at 0x44d5110>]
+[<m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a210>, <m5.util.code_formatter.code_formatter object at 0x465a350>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -5852,7 +5852,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425af10>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a190>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5867,7 +5867,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x44d6090>, <m5.util.code_formatter.code_formatter object at 0x44d6050>, <m5.util.code_formatter.code_formatter object at 0x44d6110>, <m5.util.code_formatter.code_formatter object at 0x44d6150>]
+[<m5.util.code_formatter.code_formatter object at 0x465a110>, <m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a1d0>, <m5.util.code_formatter.code_formatter object at 0x465a090>]
 TypeAST.py -
 CoherenceResponseType
 TypeAST.py -
@@ -5875,7 +5875,7 @@ CoherenceResponseType
 TypeAST.py -
 CoherenceResponseType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x44d6150>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a110>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5890,9 +5890,962 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x44d6090>, <m5.util.code_formatter.code_formatter object at 0x44d6050>, <m5.util.code_formatter.code_formatter object at 0x44d60d0>, <m5.util.code_formatter.code_formatter object at 0x44d61d0>]
+[<m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a3d0>, <m5.util.code_formatter.code_formatter object at 0x465a210>, <m5.util.code_formatter.code_formatter object at 0x465a410>]
 FuncCallExprAST - 
 ("Unexpected message")
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a150>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Ack
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+cache_entry
+FuncCallExprAST - 
+tbe
+[<m5.util.code_formatter.code_formatter object at 0x465a290>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a090>]
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a290>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Shared_Ack
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+cache_entry
+FuncCallExprAST - 
+tbe
+[<m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a250>, <m5.util.code_formatter.code_formatter object at 0x465a0d0>]
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a350>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Data
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+cache_entry
+FuncCallExprAST - 
+tbe
+[<m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a250>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a410>]
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a310>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Shared_Data
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+cache_entry
+FuncCallExprAST - 
+tbe
+[<m5.util.code_formatter.code_formatter object at 0x465a290>, <m5.util.code_formatter.code_formatter object at 0x465a250>, <m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a150>]
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a290>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Exclusive_Data
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+cache_entry
+FuncCallExprAST - 
+tbe
+[<m5.util.code_formatter.code_formatter object at 0x465a250>, <m5.util.code_formatter.code_formatter object at 0x465a210>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a190>]
+FuncCallExprAST - 
+("Unexpected message")
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+CoherenceResponseType
+TypeAST.py -
+Address
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a510>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a090>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a550>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a090>, <m5.util.code_formatter.code_formatter object at 0x465a550>, <m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a290>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a450>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a450>, <m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a090>, <m5.util.code_formatter.code_formatter object at 0x465a190>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a410>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a4d0>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a410>, <m5.util.code_formatter.code_formatter object at 0x465a4d0>, <m5.util.code_formatter.code_formatter object at 0x465a450>, <m5.util.code_formatter.code_formatter object at 0x465a350>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a510>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a110>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a510>, <m5.util.code_formatter.code_formatter object at 0x465a110>, <m5.util.code_formatter.code_formatter object at 0x465a410>, <m5.util.code_formatter.code_formatter object at 0x465a0d0>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a290>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a290>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a510>, <m5.util.code_formatter.code_formatter object at 0x465a090>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a550>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a550>, <m5.util.code_formatter.code_formatter object at 0x465a290>, <m5.util.code_formatter.code_formatter object at 0x465a450>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a410>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a4d0>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a4d0>, <m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a510>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a090>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a110>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a090>, <m5.util.code_formatter.code_formatter object at 0x465a110>, <m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a290>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a450>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a450>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a090>, <m5.util.code_formatter.code_formatter object at 0x465a190>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a410>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a550>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a410>, <m5.util.code_formatter.code_formatter object at 0x465a550>, <m5.util.code_formatter.code_formatter object at 0x465a450>, <m5.util.code_formatter.code_formatter object at 0x465a350>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a510>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a510>, <m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a410>, <m5.util.code_formatter.code_formatter object at 0x465a0d0>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a290>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a4d0>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a290>, <m5.util.code_formatter.code_formatter object at 0x465a4d0>, <m5.util.code_formatter.code_formatter object at 0x465a510>, <m5.util.code_formatter.code_formatter object at 0x465a090>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a110>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a110>, <m5.util.code_formatter.code_formatter object at 0x465a290>, <m5.util.code_formatter.code_formatter object at 0x465a450>]
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+((*in_msg_ptr)).m_Addr
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+prefetchAddr
+(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a250>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Replacement
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+FuncCallExprAST - 
+(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
+[<m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a390>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
+Trigger Function, Expected ,4 got 5
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a210>)
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+TypeAST.py -
+Event
+FuncCallExprAST - 
+GPUL2Cache_Event_Prefetch
+FuncCallExprAST - 
+prefetchAddr
+FuncCallExprAST - 
+cache_entry
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+FuncCallExprAST - 
+(((*m_TBEs_ptr)).lookup(prefetchAddr))
+[<m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a310>, <m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a410>]
 DeclListAST generate
 [InPortDecl: forwardToCache_in]
 TypeAST.py -
@@ -5924,7 +6877,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aa10>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a410>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5939,7 +6892,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425aad0>, <m5.util.code_formatter.code_formatter object at 0x425ac90>, <m5.util.code_formatter.code_formatter object at 0x425a550>, <m5.util.code_formatter.code_formatter object at 0x425a710>]
+[<m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a0d0>, <m5.util.code_formatter.code_formatter object at 0x465a190>, <m5.util.code_formatter.code_formatter object at 0x465a210>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -5947,7 +6900,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425b090>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a590>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -5962,7 +6915,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425b0d0>, <m5.util.code_formatter.code_formatter object at 0x425b190>, <m5.util.code_formatter.code_formatter object at 0x425b1d0>, <m5.util.code_formatter.code_formatter object at 0x425b210>]
+[<m5.util.code_formatter.code_formatter object at 0x465a5d0>, <m5.util.code_formatter.code_formatter object at 0x465a690>, <m5.util.code_formatter.code_formatter object at 0x465a6d0>, <m5.util.code_formatter.code_formatter object at 0x465a710>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -5986,7 +6939,7 @@ MachineType
 FuncCallExprAST - 
 MachineType_GPUL2Cache
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425b190>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a690>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6001,9 +6954,9 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425b090>, <m5.util.code_formatter.code_formatter object at 0x425b310>, <m5.util.code_formatter.code_formatter object at 0x425b2d0>, <m5.util.code_formatter.code_formatter object at 0x425b350>]
+[<m5.util.code_formatter.code_formatter object at 0x465a590>, <m5.util.code_formatter.code_formatter object at 0x465a810>, <m5.util.code_formatter.code_formatter object at 0x465a7d0>, <m5.util.code_formatter.code_formatter object at 0x465a850>]
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425b350>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a850>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6018,7 +6971,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425b090>, <m5.util.code_formatter.code_formatter object at 0x425b310>, <m5.util.code_formatter.code_formatter object at 0x425b390>, <m5.util.code_formatter.code_formatter object at 0x425b2d0>]
+[<m5.util.code_formatter.code_formatter object at 0x465a590>, <m5.util.code_formatter.code_formatter object at 0x465a810>, <m5.util.code_formatter.code_formatter object at 0x465a890>, <m5.util.code_formatter.code_formatter object at 0x465a7d0>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -6026,7 +6979,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425b250>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a750>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6041,7 +6994,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425b090>, <m5.util.code_formatter.code_formatter object at 0x425b190>, <m5.util.code_formatter.code_formatter object at 0x425b350>, <m5.util.code_formatter.code_formatter object at 0x425b290>]
+[<m5.util.code_formatter.code_formatter object at 0x465a590>, <m5.util.code_formatter.code_formatter object at 0x465a690>, <m5.util.code_formatter.code_formatter object at 0x465a850>, <m5.util.code_formatter.code_formatter object at 0x465a790>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -6049,7 +7002,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425b090>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a590>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6064,7 +7017,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425b190>, <m5.util.code_formatter.code_formatter object at 0x425b350>, <m5.util.code_formatter.code_formatter object at 0x425b250>, <m5.util.code_formatter.code_formatter object at 0x425b2d0>]
+[<m5.util.code_formatter.code_formatter object at 0x465a690>, <m5.util.code_formatter.code_formatter object at 0x465a850>, <m5.util.code_formatter.code_formatter object at 0x465a750>, <m5.util.code_formatter.code_formatter object at 0x465a7d0>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -6072,7 +7025,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425b190>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a690>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6087,7 +7040,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425b350>, <m5.util.code_formatter.code_formatter object at 0x425b3d0>, <m5.util.code_formatter.code_formatter object at 0x425b390>, <m5.util.code_formatter.code_formatter object at 0x425b410>]
+[<m5.util.code_formatter.code_formatter object at 0x465a850>, <m5.util.code_formatter.code_formatter object at 0x465a8d0>, <m5.util.code_formatter.code_formatter object at 0x465a890>, <m5.util.code_formatter.code_formatter object at 0x465a910>]
 TypeAST.py -
 CoherenceRequestType
 TypeAST.py -
@@ -6095,7 +7048,7 @@ CoherenceRequestType
 TypeAST.py -
 CoherenceRequestType
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425b350>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a850>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6110,7 +7063,7 @@ FuncCallExprAST -
 cache_entry
 FuncCallExprAST - 
 tbe
-[<m5.util.code_formatter.code_formatter object at 0x425b3d0>, <m5.util.code_formatter.code_formatter object at 0x425b450>, <m5.util.code_formatter.code_formatter object at 0x425b490>, <m5.util.code_formatter.code_formatter object at 0x425b4d0>]
+[<m5.util.code_formatter.code_formatter object at 0x465a8d0>, <m5.util.code_formatter.code_formatter object at 0x465a950>, <m5.util.code_formatter.code_formatter object at 0x465a990>, <m5.util.code_formatter.code_formatter object at 0x465a9d0>]
 FuncCallExprAST - 
 ("Unexpected message")
 DeclListAST generate
@@ -6128,23 +7081,9 @@ TypeAST.py -
 ProbeEntry
 FuncCallExprAST - 
 ((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Type
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Requestor
-FuncCallExprAST - 
-cache_entry
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
 (((*m_L2cache_ptr)).cacheAvail(((*in_msg_ptr)).m_Addr))
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a4d0>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -6166,9 +7105,9 @@ FuncCallExprAST -
 (((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(((*in_msg_ptr)).m_Addr))))
 FuncCallExprAST - 
 (((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(((*in_msg_ptr)).m_Addr))))
-[<m5.util.code_formatter.code_formatter object at 0x425aad0>, <m5.util.code_formatter.code_formatter object at 0x425aa90>, <m5.util.code_formatter.code_formatter object at 0x425a910>, <m5.util.code_formatter.code_formatter object at 0x425b1d0>]
+[<m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a710>, <m5.util.code_formatter.code_formatter object at 0x465a6d0>, <m5.util.code_formatter.code_formatter object at 0x465a090>]
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a090>)
 FuncCallExprAST - 
 ((*in_msg_ptr)).m_Type
 FuncCallExprAST - 
@@ -6186,828 +7125,10 @@ cache_entry
 (((*m_TBEs_ptr)).lookup(((*in_msg_ptr)).m_Addr))
 FuncCallExprAST - 
 (((*m_TBEs_ptr)).lookup(((*in_msg_ptr)).m_Addr))
-[<m5.util.code_formatter.code_formatter object at 0x425aa90>, <m5.util.code_formatter.code_formatter object at 0x425ab90>, <m5.util.code_formatter.code_formatter object at 0x425a510>, <m5.util.code_formatter.code_formatter object at 0x425b110>]
-TypeAST.py -
-Address
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x425b050>, <m5.util.code_formatter.code_formatter object at 0x425b190>, <m5.util.code_formatter.code_formatter object at 0x425b1d0>, <m5.util.code_formatter.code_formatter object at 0x425b150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x425b150>, <m5.util.code_formatter.code_formatter object at 0x425b190>, <m5.util.code_formatter.code_formatter object at 0x425b090>, <m5.util.code_formatter.code_formatter object at 0x425b2d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ae10>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44d6050>, <m5.util.code_formatter.code_formatter object at 0x44d6190>, <m5.util.code_formatter.code_formatter object at 0x44d61d0>, <m5.util.code_formatter.code_formatter object at 0x44d6150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ae10>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44d6150>, <m5.util.code_formatter.code_formatter object at 0x44d6190>, <m5.util.code_formatter.code_formatter object at 0x44d6090>, <m5.util.code_formatter.code_formatter object at 0x44d62d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44d8050>, <m5.util.code_formatter.code_formatter object at 0x44d8190>, <m5.util.code_formatter.code_formatter object at 0x44d81d0>, <m5.util.code_formatter.code_formatter object at 0x44d8150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44d8150>, <m5.util.code_formatter.code_formatter object at 0x44d8190>, <m5.util.code_formatter.code_formatter object at 0x44d8090>, <m5.util.code_formatter.code_formatter object at 0x44d82d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a910>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44d6090>, <m5.util.code_formatter.code_formatter object at 0x44d60d0>, <m5.util.code_formatter.code_formatter object at 0x44d61d0>, <m5.util.code_formatter.code_formatter object at 0x44d6110>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a910>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44da050>, <m5.util.code_formatter.code_formatter object at 0x44da0d0>, <m5.util.code_formatter.code_formatter object at 0x44da150>, <m5.util.code_formatter.code_formatter object at 0x44da190>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44d8050>, <m5.util.code_formatter.code_formatter object at 0x44d8190>, <m5.util.code_formatter.code_formatter object at 0x44d81d0>, <m5.util.code_formatter.code_formatter object at 0x44d8150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44d8150>, <m5.util.code_formatter.code_formatter object at 0x44d8190>, <m5.util.code_formatter.code_formatter object at 0x44d8090>, <m5.util.code_formatter.code_formatter object at 0x44d82d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ae10>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44d8050>, <m5.util.code_formatter.code_formatter object at 0x44d8190>, <m5.util.code_formatter.code_formatter object at 0x44d81d0>, <m5.util.code_formatter.code_formatter object at 0x44d8150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ae10>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44d8150>, <m5.util.code_formatter.code_formatter object at 0x44d8190>, <m5.util.code_formatter.code_formatter object at 0x44d8090>, <m5.util.code_formatter.code_formatter object at 0x44d82d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44dc050>, <m5.util.code_formatter.code_formatter object at 0x44dc190>, <m5.util.code_formatter.code_formatter object at 0x44dc1d0>, <m5.util.code_formatter.code_formatter object at 0x44dc150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44dc150>, <m5.util.code_formatter.code_formatter object at 0x44dc190>, <m5.util.code_formatter.code_formatter object at 0x44dc090>, <m5.util.code_formatter.code_formatter object at 0x44dc2d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a910>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44df050>, <m5.util.code_formatter.code_formatter object at 0x44df0d0>, <m5.util.code_formatter.code_formatter object at 0x44df1d0>, <m5.util.code_formatter.code_formatter object at 0x44df110>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a910>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44d8050>, <m5.util.code_formatter.code_formatter object at 0x44d80d0>, <m5.util.code_formatter.code_formatter object at 0x44d8150>, <m5.util.code_formatter.code_formatter object at 0x44d8190>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44e0050>, <m5.util.code_formatter.code_formatter object at 0x44e0190>, <m5.util.code_formatter.code_formatter object at 0x44e01d0>, <m5.util.code_formatter.code_formatter object at 0x44e0150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44e0050>, <m5.util.code_formatter.code_formatter object at 0x44e00d0>, <m5.util.code_formatter.code_formatter object at 0x44e0150>, <m5.util.code_formatter.code_formatter object at 0x44e0190>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ae10>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44e0050>, <m5.util.code_formatter.code_formatter object at 0x44e00d0>, <m5.util.code_formatter.code_formatter object at 0x44e01d0>, <m5.util.code_formatter.code_formatter object at 0x44e0110>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ae10>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44e0090>, <m5.util.code_formatter.code_formatter object at 0x44e00d0>, <m5.util.code_formatter.code_formatter object at 0x44e0150>, <m5.util.code_formatter.code_formatter object at 0x44e0190>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44e0090>, <m5.util.code_formatter.code_formatter object at 0x44e00d0>, <m5.util.code_formatter.code_formatter object at 0x44e01d0>, <m5.util.code_formatter.code_formatter object at 0x44e0110>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44e3050>, <m5.util.code_formatter.code_formatter object at 0x44e30d0>, <m5.util.code_formatter.code_formatter object at 0x44e3150>, <m5.util.code_formatter.code_formatter object at 0x44e3190>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a910>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44e7050>, <m5.util.code_formatter.code_formatter object at 0x44e70d0>, <m5.util.code_formatter.code_formatter object at 0x44e71d0>, <m5.util.code_formatter.code_formatter object at 0x44e7110>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a910>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44e7110>, <m5.util.code_formatter.code_formatter object at 0x44e70d0>, <m5.util.code_formatter.code_formatter object at 0x44e7090>, <m5.util.code_formatter.code_formatter object at 0x44e72d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44e7050>, <m5.util.code_formatter.code_formatter object at 0x44e7190>, <m5.util.code_formatter.code_formatter object at 0x44e71d0>, <m5.util.code_formatter.code_formatter object at 0x44e7150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44e7150>, <m5.util.code_formatter.code_formatter object at 0x44e7190>, <m5.util.code_formatter.code_formatter object at 0x44e7090>, <m5.util.code_formatter.code_formatter object at 0x44e72d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ae10>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44e7050>, <m5.util.code_formatter.code_formatter object at 0x44e7190>, <m5.util.code_formatter.code_formatter object at 0x44e71d0>, <m5.util.code_formatter.code_formatter object at 0x44e7150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425ae10>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44e7150>, <m5.util.code_formatter.code_formatter object at 0x44e7190>, <m5.util.code_formatter.code_formatter object at 0x44e7090>, <m5.util.code_formatter.code_formatter object at 0x44e72d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44e7050>, <m5.util.code_formatter.code_formatter object at 0x44e7190>, <m5.util.code_formatter.code_formatter object at 0x44e71d0>, <m5.util.code_formatter.code_formatter object at 0x44e7150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44e7150>, <m5.util.code_formatter.code_formatter object at 0x44e7190>, <m5.util.code_formatter.code_formatter object at 0x44e7090>, <m5.util.code_formatter.code_formatter object at 0x44e72d0>]
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-((*in_msg_ptr)).m_Addr
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-prefetchAddr
-(((*m_L2cache_ptr)).cacheAvail(prefetchAddr))
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a910>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Replacement
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-FuncCallExprAST - 
-(getCacheEntry((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_L2cache_ptr)).cacheProbe(prefetchAddr))
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(prefetchAddr))))
-[<m5.util.code_formatter.code_formatter object at 0x44e7050>, <m5.util.code_formatter.code_formatter object at 0x44e7190>, <m5.util.code_formatter.code_formatter object at 0x44e71d0>, <m5.util.code_formatter.code_formatter object at 0x44e7150>]
-Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a910>)
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-TypeAST.py -
-Event
-FuncCallExprAST - 
-GPUL2Cache_Event_Prefetch
-FuncCallExprAST - 
-prefetchAddr
-FuncCallExprAST - 
-cache_entry
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-FuncCallExprAST - 
-(((*m_TBEs_ptr)).lookup(prefetchAddr))
-[<m5.util.code_formatter.code_formatter object at 0x44e7150>, <m5.util.code_formatter.code_formatter object at 0x44e7190>, <m5.util.code_formatter.code_formatter object at 0x44e7090>, <m5.util.code_formatter.code_formatter object at 0x44e72d0>]
+[<m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a5d0>, <m5.util.code_formatter.code_formatter object at 0x465a4d0>, <m5.util.code_formatter.code_formatter object at 0x465a610>]
 (((*m_L2cache_ptr)).cacheAvail(((*in_msg_ptr)).m_Addr))
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425aad0>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a610>)
 TypeAST.py -
 Event
 TypeAST.py -
@@ -7029,9 +7150,9 @@ FuncCallExprAST -
 (((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(((*in_msg_ptr)).m_Addr))))
 FuncCallExprAST - 
 (((*m_TBEs_ptr)).lookup((((*m_L2cache_ptr)).cacheProbe(((*in_msg_ptr)).m_Addr))))
-[<m5.util.code_formatter.code_formatter object at 0x425a510>, <m5.util.code_formatter.code_formatter object at 0x44e7190>, <m5.util.code_formatter.code_formatter object at 0x44e7090>, <m5.util.code_formatter.code_formatter object at 0x44e72d0>]
+[<m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a910>, <m5.util.code_formatter.code_formatter object at 0x465a650>, <m5.util.code_formatter.code_formatter object at 0x465a4d0>]
 Trigger Function, Expected ,4 got 5
-([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x425a510>)
+([Symbol: ProbeEntry], <m5.util.code_formatter.code_formatter object at 0x465a4d0>)
 FuncCallExprAST - 
 ((*in_msg_ptr)).m_Type
 FuncCallExprAST - 
@@ -7049,7 +7170,7 @@ cache_entry
 (((*m_TBEs_ptr)).lookup(((*in_msg_ptr)).m_Addr))
 FuncCallExprAST - 
 (((*m_TBEs_ptr)).lookup(((*in_msg_ptr)).m_Addr))
-[<m5.util.code_formatter.code_formatter object at 0x425aad0>, <m5.util.code_formatter.code_formatter object at 0x44ee190>, <m5.util.code_formatter.code_formatter object at 0x44ee090>, <m5.util.code_formatter.code_formatter object at 0x44ee150>]
+[<m5.util.code_formatter.code_formatter object at 0x465a490>, <m5.util.code_formatter.code_formatter object at 0x465a350>, <m5.util.code_formatter.code_formatter object at 0x465a610>, <m5.util.code_formatter.code_formatter object at 0x465a6d0>]
 DeclListAST generate
 [ActionDecl: 'a_issueGETS']
 ActionDeclAST adding EntryType var
@@ -12251,7 +12372,4 @@ scons: done reading SConscript files.
 scons: Building targets ...
  [NEW DEPS] X86_VI_hammer_GPU/arch/x86/generated/inc.d -> x86-vi-hammer-gpu-deps
  [ENVIRONS] x86-vi-hammer-gpu-deps -> x86-vi-hammer-gpu-environs
- [     CXX] X86_VI_hammer_GPU/mem/packet_queue.cc -> .o
- [     CXX] X86_VI_hammer_GPU/base/date.cc -> .o
- [    LINK]  -> X86_VI_hammer_GPU/gem5.opt
 scons: done building targets.

@@ -1,0 +1,1855 @@
+From: Joel Hestness <hestness@cs.utexas.edu>
+
+MOESI_hammer: Maintain the McPAT statistics updates
+
+diff --git a/src/mem/protocol/MOESI_hammer-cache.sm b/src/mem/protocol/MOESI_hammer-cache.sm
+--- a/src/mem/protocol/MOESI_hammer-cache.sm
++++ b/src/mem/protocol/MOESI_hammer-cache.sm
+@@ -99,14 +99,15 @@
+ 
+   // EVENTS
+   enumeration(Event, desc="Cache events") {
+-    Load,            desc="Load request from the processor";
+-    Ifetch,          desc="I-fetch request from the processor";
+-    Store,           desc="Store request from the processor";
+-    L2_Replacement,  desc="L2 Replacement";
+-    L1_to_L2,        desc="L1 to L2 transfer";
++    Load,               desc="Load request from the processor";
++    Ifetch,             desc="I-fetch request from the processor";
++    Store,              desc="Store request from the processor";
++    L2_Replacement,     desc="L2 Replacement";
++    L1I_to_L2,          desc="L1I to L2 transfer";
++    L1D_to_L2,          desc="L1D to L2 transfer";
+     Trigger_L2_to_L1D,  desc="Trigger L2 to L1-Data transfer";
+     Trigger_L2_to_L1I,  desc="Trigger L2 to L1-Instruction transfer";
+-    Complete_L2_to_L1, desc="L2 to L1 transfer completed";
++    Complete_L2_to_L1,  desc="L2 to L1 transfer completed";
+ 
+     // Requests
+     Other_GETX,      desc="A GetX from another processor";
+@@ -134,6 +135,26 @@
+     Flush_line,                  desc="flush the cache line from all caches";
+     Block_Ack,                   desc="the directory is blocked and ready for the flush";
+   }
++  
++  // STATISTICS
++  enumeration(Statistic, desc="To communicate stats from transitions to recordStats") {
++    L1IDataArrayRead,    desc="Read the L1I data array";
++    L1IDataArrayWrite,   desc="Write the L1I data array";
++    L1ITagArrayRead,     desc="Read the L1I tag array";
++    L1ITagArrayWrite,    desc="Write the L1I tag array";
++    L1DDataArrayRead,    desc="Read the L1D data array";
++    L1DDataArrayWrite,   desc="Write the L1D data array";
++    L1DTagArrayRead,     desc="Read the L1D tag array";
++    L1DTagArrayWrite,    desc="Write the L1D tag array";
++    L2DataArrayRead,     desc="Read the L2 data array";
++    L2DataArrayWrite,    desc="Write the L2 data array";
++    L2TagArrayRead,      desc="Read the L2 tag array";
++    L2TagArrayWrite,     desc="Write the L2 tag array";
++    TagArrayWrite,       desc="Write the tag array of the cache in which the block exists";
++    DataArrayRead,       desc="Read the data array of the cache in which the block exists";
++    DataArrayWrite,      desc="Write the data array of the cache in which the block exists";
++    TagSearch,   desc="Check all cache tags for presence (e.g. Invalidate)";
++  }
+ 
+   // TYPES
+ 
+@@ -297,6 +318,82 @@
+     return cache_entry.AtomicAccessed;
+   }
+ 
++  void recordStatistic(Statistic stat, Entry cache_entry, Address addr) {
++    if (stat == Statistic:L1IDataArrayRead) {
++      L1IcacheMemory.recordStatistic(CacheStatisticType:DataArrayRead);
++    } else if (stat == Statistic:L1IDataArrayWrite) {
++      L1IcacheMemory.recordStatistic(CacheStatisticType:DataArrayWrite);
++    } else if (stat == Statistic:L1ITagArrayRead) {
++      L1IcacheMemory.recordStatistic(CacheStatisticType:TagArrayRead);
++    } else if (stat == Statistic:L1ITagArrayWrite) {
++      L1IcacheMemory.recordStatistic(CacheStatisticType:TagArrayWrite);
++    } else if (stat == Statistic:L1DDataArrayRead) {
++      L1DcacheMemory.recordStatistic(CacheStatisticType:DataArrayRead);
++    } else if (stat == Statistic:L1DDataArrayWrite) {
++      L1DcacheMemory.recordStatistic(CacheStatisticType:DataArrayWrite);
++    } else if (stat == Statistic:L1DTagArrayRead) {
++      L1DcacheMemory.recordStatistic(CacheStatisticType:TagArrayRead);
++    } else if (stat == Statistic:L1DTagArrayWrite) {
++      L1DcacheMemory.recordStatistic(CacheStatisticType:TagArrayWrite);
++    } else if (stat == Statistic:L2DataArrayRead) {
++      L2cacheMemory.recordStatistic(CacheStatisticType:DataArrayRead);
++    } else if (stat == Statistic:L2DataArrayWrite) {
++      L2cacheMemory.recordStatistic(CacheStatisticType:DataArrayWrite);
++    } else if (stat == Statistic:L2TagArrayRead) {
++      L2cacheMemory.recordStatistic(CacheStatisticType:TagArrayRead);
++    } else if (stat == Statistic:L2TagArrayWrite) {
++      L2cacheMemory.recordStatistic(CacheStatisticType:TagArrayWrite);
++    } else if (stat == Statistic:TagArrayWrite) {
++      if (L1DcacheMemory.isTagPresent(addr)) {
++        L1DcacheMemory.recordStatistic(CacheStatisticType:TagArrayWrite);
++      } else if (L1IcacheMemory.isTagPresent(addr)) {
++        L1IcacheMemory.recordStatistic(CacheStatisticType:TagArrayWrite);
++      } else if (L2cacheMemory.isTagPresent(addr)) {
++        L2cacheMemory.recordStatistic(CacheStatisticType:TagArrayWrite);
++      } else {
++        assert(false);
++        // TODO: assert failure?
++      }
++    } else if (stat == Statistic:DataArrayRead) {
++      if (L1DcacheMemory.isTagPresent(addr)) {
++        L1DcacheMemory.recordStatistic(CacheStatisticType:DataArrayRead);
++      } else if (L1IcacheMemory.isTagPresent(addr)) {
++        L1IcacheMemory.recordStatistic(CacheStatisticType:DataArrayRead);
++      } else if (L2cacheMemory.isTagPresent(addr)) {
++        L2cacheMemory.recordStatistic(CacheStatisticType:DataArrayRead);
++      } else {
++        assert(false);
++        // TODO: assert failure?
++      }
++    } else if (stat == Statistic:DataArrayWrite) {
++      // TODO: We should check if the state transition is on modified data,
++      // because the L1I shouldn't be handling modified data. I have tested
++      // to see if it ever happens, and it does...
++      if (L1DcacheMemory.isTagPresent(addr)) {
++        L1DcacheMemory.recordStatistic(CacheStatisticType:DataArrayWrite);
++      } else if (L1IcacheMemory.isTagPresent(addr)) {
++        L1IcacheMemory.recordStatistic(CacheStatisticType:DataArrayWrite);
++      } else if (L2cacheMemory.isTagPresent(addr)) {
++        L2cacheMemory.recordStatistic(CacheStatisticType:DataArrayWrite);
++      } else {
++        assert(false);
++        // TODO: assert failure?
++      }
++    } else if (stat == Statistic:TagSearch) {
++      // Note: This indicates that the controller received a coherence
++      // request, which could be handled in a number of different ways.
++      // Here, we assume that all cache tags are checked in parallel.
++      // One could imagine, for example, first accessing the TBEs
++      // before the larger power expense of checking the cache tags.
++      L1DcacheMemory.recordStatistic(CacheStatisticType:TagArrayRead);
++      L1IcacheMemory.recordStatistic(CacheStatisticType:TagArrayRead);
++      L2cacheMemory.recordStatistic(CacheStatisticType:TagArrayRead);
++    } else {
++      assert(false);
++      // TODO: assert failure?
++    }
++  }
++
+   MessageBuffer triggerQueue, ordered="false";
+ 
+   // ** OUT_PORTS **
+@@ -421,7 +518,7 @@
+             if (is_valid(L1Dcache_entry)) {
+               // The block is in the wrong L1, try to write it to the L2
+               if (L2cacheMemory.cacheAvail(in_msg.LineAddress)) {
+-                trigger(Event:L1_to_L2, in_msg.LineAddress, L1Dcache_entry, tbe);
++                trigger(Event:L1D_to_L2, in_msg.LineAddress, L1Dcache_entry, tbe);
+               } else {
+                 Address l2_victim_addr := L2cacheMemory.cacheProbe(in_msg.LineAddress);
+                 trigger(Event:L2_Replacement,
+@@ -449,7 +546,7 @@
+               Address l1i_victim_addr := L1IcacheMemory.cacheProbe(in_msg.LineAddress);
+               if (L2cacheMemory.cacheAvail(l1i_victim_addr)) {
+                 // The L2 has room, so we move the line from the L1 to the L2
+-                trigger(Event:L1_to_L2,
++                trigger(Event:L1I_to_L2,
+                         l1i_victim_addr,
+                         getL1ICacheEntry(l1i_victim_addr),
+                         TBEs[l1i_victim_addr]);
+@@ -478,7 +575,7 @@
+             if (is_valid(L1Icache_entry)) {
+               // The block is in the wrong L1, try to write it to the L2
+               if (L2cacheMemory.cacheAvail(in_msg.LineAddress)) {
+-                trigger(Event:L1_to_L2, in_msg.LineAddress, L1Icache_entry, tbe);
++                trigger(Event:L1I_to_L2, in_msg.LineAddress, L1Icache_entry, tbe);
+               } else {
+                 Address l2_victim_addr := L2cacheMemory.cacheProbe(in_msg.LineAddress);
+                 trigger(Event:L2_Replacement,
+@@ -505,7 +602,7 @@
+               Address l1d_victim_addr := L1DcacheMemory.cacheProbe(in_msg.LineAddress);
+               if (L2cacheMemory.cacheAvail(l1d_victim_addr)) {
+                 // The L2 has room, so we move the line from the L1 to the L2
+-                trigger(Event:L1_to_L2,
++                trigger(Event:L1D_to_L2,
+                         l1d_victim_addr,
+                         getL1DCacheEntry(l1d_victim_addr),
+                         TBEs[l1d_victim_addr]);
+@@ -1242,44 +1339,64 @@
+   //*****************************************************
+ 
+   // Transitions for Load/Store/L2_Replacement from transient states
+-  transition({IM, IM_F, MM_WF, SM, SM_F, ISM, ISM_F, OM, OM_F, IS, SS, OI, MI, II, IT, ST, OT, MT, MMT}, {Store, L2_Replacement}) {
++  transition({IM, IM_F, MM_WF, SM, SM_F, ISM, ISM_F, OM, OM_F, IS, SS, OI, MI, II, IT, ST, OT, MT, MMT}, Store) {L1DTagArrayRead} {
+     zz_stallAndWaitMandatoryQueue;
+   }
+ 
+-  transition({IM, IM_F, MM_WF, SM, SM_F, ISM, ISM_F, OM, OM_F, IS, SS, OI, MI, II}, {Flush_line}) {
++  transition({IM, IM_F, MM_WF, SM, SM_F, ISM, ISM_F, OM, OM_F, IS, SS, OI, MI, II, IT, ST, OT, MT, MMT}, L2_Replacement) {L2TagArrayRead} {
+     zz_stallAndWaitMandatoryQueue;
+   }
+ 
+-  transition({M_W, MM_W}, {L2_Replacement, Flush_line}) {
++  transition({IM, IM_F, MM_WF, SM, SM_F, ISM, ISM_F, OM, OM_F, IS, SS, OI, MI, II}, Flush_line) {TagSearch} {
+     zz_stallAndWaitMandatoryQueue;
+   }
+ 
+-  transition({IM, IS, OI, MI, II, IT, ST, OT, MT, MMT, MI_F, MM_F, OM_F, IM_F, ISM_F, SM_F, MM_WF}, {Load, Ifetch}) {
++  transition({M_W, MM_W}, L2_Replacement) {L2TagArrayRead} {
+     zz_stallAndWaitMandatoryQueue;
+   }
+ 
+-  transition({IM, SM, ISM, OM, IS, SS, MM_W, M_W, OI, MI, II, IT, ST, OT, MT, MMT, IM_F, SM_F, ISM_F, OM_F, MM_WF, MI_F, MM_F, IR, SR, OR, MR, MMR}, L1_to_L2) {
++  transition({M_W, MM_W}, Flush_line) {TagSearch} {
+     zz_stallAndWaitMandatoryQueue;
+   }
+ 
+-  transition({MI_F, MM_F}, {Store}) {
++  transition({IM, IS, OI, MI, II, IT, ST, OT, MT, MMT, MI_F, MM_F, OM_F, IM_F, ISM_F, SM_F, MM_WF}, Load) {L1DTagArrayRead, L1DDataArrayRead} {
+     zz_stallAndWaitMandatoryQueue;
+   }
+ 
+-  transition({MM_F, MI_F}, {Flush_line}) {
++  transition({IM, IS, OI, MI, II, IT, ST, OT, MT, MMT, MI_F, MM_F, OM_F, IM_F, ISM_F, SM_F, MM_WF}, Ifetch) {L1ITagArrayRead, L1IDataArrayRead} {
+     zz_stallAndWaitMandatoryQueue;
+   }
+ 
+-  transition({IT, ST, OT, MT, MMT}, {Other_GETX, NC_DMA_GETS, Other_GETS, Merged_GETS, Other_GETS_No_Mig, Invalidate, Flush_line}) {
++  transition({IM, SM, ISM, OM, IS, SS, MM_W, M_W, OI, MI, II, IT, ST, OT, MT, MMT, IM_F, SM_F, ISM_F, OM_F, MM_WF, MI_F, MM_F, IR, SR, OR, MR, MMR}, {L1D_to_L2, L1I_to_L2}) {} {
++    zz_stallAndWaitMandatoryQueue;
++  }
++
++  transition({MI_F, MM_F}, Store) {L1DTagArrayRead} {
++    zz_stallAndWaitMandatoryQueue;
++  }
++
++  transition({MM_F, MI_F}, Flush_line) {TagSearch} {
++    zz_stallAndWaitMandatoryQueue;
++  }
++
++  transition({IT, ST, OT, MT, MMT}, {Other_GETX, NC_DMA_GETS, Other_GETS, Merged_GETS, Other_GETS_No_Mig, Invalidate, Flush_line}) {} {
+     z_stall;
+   }
+ 
+-  transition({IR, SR, OR, MR, MMR}, {Other_GETX, NC_DMA_GETS, Other_GETS, Merged_GETS, Other_GETS_No_Mig, Invalidate}) {
++  transition({IR, SR, OR, MR, MMR}, {Other_GETX, NC_DMA_GETS, Other_GETS, Merged_GETS, Other_GETS_No_Mig, Invalidate}) {} {
+     z_stall;
+   }
+ 
+   // Transitions moving data between the L1 and L2 caches
+-  transition({I, S, O, M, MM}, L1_to_L2) {
++  transition(I, {L1D_to_L2, L1I_to_L2}) {L2TagArrayWrite} {
++    i_allocateTBE;
++    gg_deallocateL1CacheBlock;
++    vv_allocateL2CacheBlock;
++    s_deallocateTBE;
++    ka_wakeUpAllDependents;
++  }
++
++  transition({S, O, M, MM}, L1I_to_L2) {L2TagArrayWrite, L1IDataArrayRead, L2DataArrayWrite, L1ITagArrayWrite} {
+     i_allocateTBE;
+     gg_deallocateL1CacheBlock;
+     vv_allocateL2CacheBlock;
+@@ -1287,7 +1404,16 @@
+     s_deallocateTBE;
+   }
+ 
+-  transition(I, Trigger_L2_to_L1D, IT) {
++  transition({S, O, M, MM}, L1D_to_L2) {L2TagArrayWrite, L1DDataArrayRead, L2DataArrayWrite, L1DTagArrayWrite} {
++    i_allocateTBE;
++    gg_deallocateL1CacheBlock;
++    vv_allocateL2CacheBlock;
++    hp_copyFromTBEToL2;
++    s_deallocateTBE;
++    ka_wakeUpAllDependents;
++  }
++
++  transition(I, Trigger_L2_to_L1D, IT) {L1DTagArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     ii_allocateL1DCacheBlock;
+@@ -1298,7 +1424,7 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(S, Trigger_L2_to_L1D, ST) {
++  transition(S, Trigger_L2_to_L1D, ST) {L1DTagArrayWrite, L2DataArrayRead, L1DDataArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     ii_allocateL1DCacheBlock;
+@@ -1309,7 +1435,7 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(O, Trigger_L2_to_L1D, OT) {
++  transition(O, Trigger_L2_to_L1D, OT) {L1DTagArrayWrite, L2DataArrayRead, L1DDataArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     ii_allocateL1DCacheBlock;
+@@ -1320,7 +1446,7 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(M, Trigger_L2_to_L1D, MT) {
++  transition(M, Trigger_L2_to_L1D, MT) {L1DTagArrayWrite, L2DataArrayRead, L1DDataArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     ii_allocateL1DCacheBlock;
+@@ -1331,7 +1457,7 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(MM, Trigger_L2_to_L1D, MMT) {
++  transition(MM, Trigger_L2_to_L1D, MMT) {L1DTagArrayWrite, L2DataArrayRead, L1DDataArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     ii_allocateL1DCacheBlock;
+@@ -1342,7 +1468,7 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(I, Trigger_L2_to_L1I, IT) {
++  transition(I, Trigger_L2_to_L1I, IT) {L1ITagArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     jj_allocateL1ICacheBlock;
+@@ -1353,7 +1479,7 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(S, Trigger_L2_to_L1I, ST) {
++  transition(S, Trigger_L2_to_L1I, ST) {L1ITagArrayWrite, L2DataArrayRead, L1IDataArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     jj_allocateL1ICacheBlock;
+@@ -1364,7 +1490,7 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(O, Trigger_L2_to_L1I, OT) {
++  transition(O, Trigger_L2_to_L1I, OT) {L1ITagArrayWrite, L2DataArrayRead, L1IDataArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     jj_allocateL1ICacheBlock;
+@@ -1375,7 +1501,7 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(M, Trigger_L2_to_L1I, MT) {
++  transition(M, Trigger_L2_to_L1I, MT) {L1ITagArrayWrite, L2DataArrayRead, L1IDataArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     jj_allocateL1ICacheBlock;
+@@ -1386,7 +1512,7 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(MM, Trigger_L2_to_L1I, MMT) {
++  transition(MM, Trigger_L2_to_L1I, MMT) {L1ITagArrayWrite, L2DataArrayRead, L1IDataArrayWrite, L2TagArrayWrite} {
+     i_allocateTBE;
+     rr_deallocateL2CacheBlock;
+     jj_allocateL1ICacheBlock;
+@@ -1397,33 +1523,34 @@
+     ll_L2toL1Transfer;
+   }
+ 
+-  transition(IT, Complete_L2_to_L1, IR) {
++  transition(IT, Complete_L2_to_L1, IR) {} {
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(ST, Complete_L2_to_L1, SR) {
++  transition(ST, Complete_L2_to_L1, SR) {} {
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(OT, Complete_L2_to_L1, OR) {
++  transition(OT, Complete_L2_to_L1, OR) {} {
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(MT, Complete_L2_to_L1, MR) {
++  transition(MT, Complete_L2_to_L1, MR) {} {
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(MMT, Complete_L2_to_L1, MMR) {
++  transition(MMT, Complete_L2_to_L1, MMR) {} {
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
+ 
+   // Transitions from Idle
+-  transition({I, IR}, Load, IS) {
++  // ASSUMPTION: I state is not really allocated spaces in tag and data arrays
++  transition({I, IR}, Load, IS) {L1DTagArrayRead, L1DTagArrayWrite} {
+     ii_allocateL1DCacheBlock;
+     i_allocateTBE;
+     a_issueGETS;
+@@ -1431,7 +1558,7 @@
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({I, IR}, Ifetch, IS) {
++  transition({I, IR}, Ifetch, IS) {L1ITagArrayRead, L1ITagArrayWrite} {
+     jj_allocateL1ICacheBlock;
+     i_allocateTBE;
+     a_issueGETS;
+@@ -1439,7 +1566,7 @@
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({I, IR}, Store, IM) {
++  transition({I, IR}, Store, IM) {L1DTagArrayRead, L1DTagArrayWrite} {
+     ii_allocateL1DCacheBlock;
+     i_allocateTBE;
+     b_issueGETX;
+@@ -1447,42 +1574,54 @@
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({I, IR}, Flush_line, IM_F) {
++  transition({I, IR}, Flush_line, IM_F) {TagSearch, DataArrayRead} {
+     it_allocateTBE;
+     bf_issueGETF;
+     uu_profileMiss;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition(I, L2_Replacement) {
++  transition(I, L2_Replacement) {L2TagArrayRead} {
+     rr_deallocateL2CacheBlock;
+     ka_wakeUpAllDependents;
+   }
+ 
+-  transition(I, {Other_GETX, NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig, Invalidate}) {
++  transition(I, {Other_GETX, NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig, Invalidate}) {TagSearch} {
+     f_sendAck;
+     l_popForwardQueue;
+   }
+ 
+   // Transitions from Shared
+-  transition({S, SM, ISM}, {Load, Ifetch}) {
++  // ASSUMPTION: S state has allocated space in tag and data arrays
++  // ASSUMPTION: S state has NOT allocated a TBE
++  transition({S, SM, ISM}, Load) {L1DTagArrayRead, L1DDataArrayRead} {
+     h_load_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition(SR, {Load, Ifetch}, S) {
++  transition({S, SM, ISM}, Ifetch) {L1ITagArrayRead, L1IDataArrayRead} {
+     h_load_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({S, SR}, Store, SM) {
++  transition(SR, Load, S) {L1DTagArrayRead, L1DDataArrayRead} {
++    h_load_hit;
++    k_popMandatoryQueue;
++  }
++
++  transition(SR, Ifetch, S) {L1ITagArrayRead, L1IDataArrayRead} {
++    h_load_hit;
++    k_popMandatoryQueue;
++  }
++
++  transition({S, SR}, Store, SM) {L1DTagArrayRead, L1DTagArrayWrite} {
+     i_allocateTBE;
+     b_issueGETX;
+     uu_profileMiss;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({S, SR}, Flush_line, SM_F) {
++  transition({S, SR}, Flush_line, SM_F) {TagSearch, DataArrayRead} {
+     i_allocateTBE;
+     bf_issueGETF;
+     uu_profileMiss;
+@@ -1490,40 +1629,53 @@
+     k_popMandatoryQueue;
+   }
+ 
+-  transition(S, L2_Replacement, I) {
++  transition(S, L2_Replacement, I) {L2TagArrayRead, L2TagArrayWrite} {
+     rr_deallocateL2CacheBlock;
+     ka_wakeUpAllDependents;
+   }
+ 
+-  transition(S, {Other_GETX, Invalidate}, I) {
++  transition(S, {Other_GETX, Invalidate}, I) {TagSearch, TagArrayWrite} {
+     f_sendAck;
+     l_popForwardQueue;
+   }
+ 
+-  transition(S, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {
++  transition(S, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {TagSearch} {
+     ff_sendAckShared;
+     l_popForwardQueue;
+   }
+ 
+   // Transitions from Owned
+-  transition({O, OM, SS, MM_W, M_W}, {Load, Ifetch}) {
++  // ASSUMPTION: O state has allocated space in tag and data arrays
++  // ASSUMPTION: O state has NOT allocated a TBE
++  transition({O, OM, SS, MM_W, M_W}, Load) {L1DTagArrayRead, L1DDataArrayRead} {
+     h_load_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition(OR, {Load, Ifetch}, O) {
++  transition({O, OM, SS, MM_W, M_W}, Ifetch) {L1ITagArrayRead, L1IDataArrayRead} {
+     h_load_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({O, OR}, Store, OM) {
++  transition(OR, Load, O) {L1DTagArrayRead, L1DDataArrayRead} {
++    h_load_hit;
++    k_popMandatoryQueue;
++  }
++
++  transition(OR, Ifetch, O) {L1ITagArrayRead, L1IDataArrayRead} {
++    h_load_hit;
++    k_popMandatoryQueue;
++  }
++
++  transition({O, OR}, Store, OM) {L1DTagArrayRead, L1DTagArrayWrite} {
+     i_allocateTBE;
+     b_issueGETX;
+     p_decrementNumberOfMessagesByOne;
+     uu_profileMiss;
+     k_popMandatoryQueue;
+   }
+-  transition({O, OR}, Flush_line, OM_F) {
++
++  transition({O, OR}, Flush_line, OM_F) {TagSearch, DataArrayRead} {
+     i_allocateTBE;
+     bf_issueGETF;
+     p_decrementNumberOfMessagesByOne;
+@@ -1532,40 +1684,47 @@
+     k_popMandatoryQueue;
+   }
+ 
+-  transition(O, L2_Replacement, OI) {
++  transition(O, L2_Replacement, OI) {L2TagArrayRead, L2TagArrayWrite} {
+     i_allocateTBE;
+     d_issuePUT;
+     rr_deallocateL2CacheBlock;
+     ka_wakeUpAllDependents;
+   }
+ 
+-  transition(O, {Other_GETX, Invalidate}, I) {
++  transition(O, {Other_GETX, Invalidate}, I) {TagSearch, TagArrayWrite, DataArrayRead} {
+     e_sendData;
+     l_popForwardQueue;
+   }
+ 
+-  transition(O, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {
++  transition(O, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {TagSearch, DataArrayRead} {
+     ee_sendDataShared;
+     l_popForwardQueue;
+   }
+ 
+-  transition(O, Merged_GETS) {
++  transition(O, Merged_GETS) {TagSearch, DataArrayRead} {
+     em_sendDataSharedMultiple;
+     l_popForwardQueue;
+   }
+ 
+   // Transitions from Modified
+-  transition({MM, MMR}, {Load, Ifetch}, MM) {
++  // ASSUMPTION: MM state has allocated space in tag and data arrays
++  // ASSUMPTION: MM state has NOT allocated a TBE
++  transition({MM, MMR}, Load, MM) {L1DTagArrayRead, L1DDataArrayRead} {
+     h_load_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({MM, MMR}, Store, MM) {
++  transition({MM, MMR}, Ifetch, MM) {L1ITagArrayRead, L1IDataArrayRead} {
++    h_load_hit;
++    k_popMandatoryQueue;
++  }
++
++  transition({MM, MMR}, Store, MM) {L1DTagArrayRead, L1DDataArrayWrite} {
+     hh_store_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({MM, M, MMR, MR}, Flush_line, MM_F) {
++  transition({MM, M, MMR, MR}, Flush_line, MM_F) {TagSearch, DataArrayRead} {
+     i_allocateTBE;
+     bf_issueGETF;
+     p_decrementNumberOfMessagesByOne;
+@@ -1573,110 +1732,117 @@
+     k_popMandatoryQueue;
+   }
+ 
+-  transition(MM_F, Block_Ack, MI_F) {
++  transition(MM_F, Block_Ack, MI_F) {TagSearch} {
+     df_issuePUTF;
+     l_popForwardQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(MM, L2_Replacement, MI) {
++  transition(MM, L2_Replacement, MI) {L2TagArrayRead, L2TagArrayWrite, L2DataArrayRead} {
+     i_allocateTBE;
+     d_issuePUT;
+     rr_deallocateL2CacheBlock;
+     ka_wakeUpAllDependents;
+   }
+ 
+-  transition(MM, {Other_GETX, Invalidate}, I) {
++  transition(MM, {Other_GETX, Invalidate}, I) {TagSearch, TagArrayWrite, DataArrayRead} {
+     c_sendExclusiveData;
+     l_popForwardQueue;
+   }
+ 
+-  transition(MM, Other_GETS, I) {
++  transition(MM, Other_GETS, I) {TagSearch, TagArrayWrite, DataArrayRead} {
+     c_sendExclusiveData;
+     l_popForwardQueue;
+   }
+   
+-  transition(MM, NC_DMA_GETS, O) {
++  transition(MM, NC_DMA_GETS, O) {TagSearch, DataArrayRead} {
+     ee_sendDataShared;
+     l_popForwardQueue;
+   }
+   
+-  transition(MM, Other_GETS_No_Mig, O) {
++  transition(MM, Other_GETS_No_Mig, O) {TagSearch, TagArrayWrite, DataArrayRead} {
+     ee_sendDataShared;
+     l_popForwardQueue;
+   }
+   
+-  transition(MM, Merged_GETS, O) {
++  transition(MM, Merged_GETS, O) {TagSearch, TagArrayWrite, DataArrayRead} {
+     em_sendDataSharedMultiple;
+     l_popForwardQueue;
+   }
+  
+   // Transitions from Dirty Exclusive
+-  transition({M, MR}, {Load, Ifetch}, M) {
++  // ASSUMPTION: M state has allocated space in tag and data arrays
++  // ASSUMPTION: M state has NOT allocated a TBE
++  transition({M, MR}, Load, M) {L1DTagArrayRead, L1DDataArrayRead} {
+     h_load_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({M, MR}, Store, MM) {
++  transition({M, MR}, Ifetch, M) {L1ITagArrayRead, L1IDataArrayRead} {
++    h_load_hit;
++    k_popMandatoryQueue;
++  }
++
++  transition({M, MR}, Store, MM) {L1DTagArrayRead, L1DTagArrayWrite, L1DDataArrayWrite} {
+     hh_store_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition(M, L2_Replacement, MI) {
++  transition(M, L2_Replacement, MI) {L2TagArrayRead, L2TagArrayWrite, L2DataArrayRead} {
+     i_allocateTBE;
+     d_issuePUT;
+     rr_deallocateL2CacheBlock;
+     ka_wakeUpAllDependents;
+   }
+ 
+-  transition(M, {Other_GETX, Invalidate}, I) {
++  transition(M, {Other_GETX, Invalidate}, I) {TagSearch, TagArrayWrite, DataArrayRead} {
+     c_sendExclusiveData;
+     l_popForwardQueue;
+   }
+ 
+-  transition(M, {Other_GETS, Other_GETS_No_Mig}, O) {
++  transition(M, {Other_GETS, Other_GETS_No_Mig}, O) {TagSearch, TagArrayWrite, DataArrayRead} {
+     ee_sendDataShared;
+     l_popForwardQueue;
+   }
+ 
+-  transition(M, NC_DMA_GETS, O) {
++  transition(M, NC_DMA_GETS, O) {TagSearch, DataArrayRead} {
+     ee_sendDataShared;
+     l_popForwardQueue;
+   }
+ 
+-  transition(M, Merged_GETS, O) {
++  transition(M, Merged_GETS, O) {TagSearch, TagArrayWrite, DataArrayRead} {
+     em_sendDataSharedMultiple;
+     l_popForwardQueue;
+   }
+ 
+   // Transitions from IM
+-
+-  transition({IM, IM_F}, {Other_GETX, NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig, Invalidate}) {
++  // ASSUMPTION: IM state has allocated space in tag and data arrays
++  transition({IM, IM_F}, {Other_GETX, NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig, Invalidate}) {TagSearch} {
+     f_sendAck;
+     l_popForwardQueue;
+   }
+ 
+-  transition({IM, IM_F, MM_F}, Ack) {
++  transition({IM, IM_F, MM_F}, Ack) {} {
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(IM, Data, ISM) {
++  transition(IM, Data, ISM) {DataArrayWrite, TagArrayWrite} {
+     u_writeDataToCache;
+     m_decrementNumberOfMessages; 
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(IM_F, Data, ISM_F) {
++  transition(IM_F, Data, ISM_F) {TagSearch} {
+       uf_writeDataToCacheTBE;
+       m_decrementNumberOfMessages;
+       o_checkForCompletion;
+       n_popResponseQueue;
+   }
+ 
+-  transition(IM, Exclusive_Data, MM_W) {
++  transition(IM, Exclusive_Data, MM_W) {DataArrayWrite, TagArrayWrite} {
+     u_writeDataToCache;
+     m_decrementNumberOfMessages; 
+     o_checkForCompletion;
+@@ -1685,7 +1851,7 @@
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(IM_F, Exclusive_Data, MM_WF) {
++  transition(IM_F, Exclusive_Data, MM_WF) {TagSearch} {
+       uf_writeDataToCacheTBE;
+       m_decrementNumberOfMessages;
+       o_checkForCompletion;
+@@ -1693,35 +1859,36 @@
+   }
+ 
+   // Transitions from SM
+-  transition({SM, SM_F}, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {
++  // ASSUMPTION: SM state has allocated space in tag and data arrays
++  transition({SM, SM_F}, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {TagSearch} {
+     ff_sendAckShared;
+     l_popForwardQueue;
+   }
+ 
+-  transition(SM, {Other_GETX, Invalidate}, IM) {
++  transition(SM, {Other_GETX, Invalidate}, IM) {TagSearch, TagArrayWrite} {
+     f_sendAck;
+     l_popForwardQueue;
+   }
+ 
+-  transition(SM_F, {Other_GETX, Invalidate}, IM_F) {
++  transition(SM_F, {Other_GETX, Invalidate}, IM_F) {TagSearch} {
+     f_sendAck;
+     l_popForwardQueue;
+   }
+ 
+-  transition({SM, SM_F}, Ack) {
++  transition({SM, SM_F}, Ack) {} {
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(SM, {Data, Exclusive_Data}, ISM) {
++  transition(SM, {Data, Exclusive_Data}, ISM) {TagArrayWrite, DataArrayWrite} {
+     v_writeDataToCacheVerify;
+     m_decrementNumberOfMessages; 
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(SM_F, {Data, Exclusive_Data}, ISM_F) {
++  transition(SM_F, {Data, Exclusive_Data}, ISM_F) {TagSearch} {
+     vt_writeDataToTBEVerify;
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+@@ -1729,13 +1896,14 @@
+   }
+ 
+   // Transitions from ISM
+-  transition({ISM, ISM_F}, Ack) {
++  // ASSUMPTION: ISM state has allocated space in tag and data arrays
++  transition({ISM, ISM_F}, Ack) {} {
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(ISM, All_acks_no_sharers, MM) {
++  transition(ISM, All_acks_no_sharers, MM) {TagArrayWrite, DataArrayWrite} {
+     sxt_trig_ext_store_hit;
+     gm_sendUnblockM;
+     s_deallocateTBE;
+@@ -1743,53 +1911,55 @@
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(ISM_F, All_acks_no_sharers, MI_F) {
++  transition(ISM_F, All_acks_no_sharers, MI_F) {TagSearch} {
+     df_issuePUTF;
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
+ 
+   // Transitions from OM
+-
+-  transition(OM, {Other_GETX, Invalidate}, IM) {
++  // ASSUMPTION: OM state has allocated space in tag and data arrays
++  // ASSUMPTION: OM state has allocated a TBE
++  transition(OM, {Other_GETX, Invalidate}, IM) {TagSearch, TagArrayWrite} {
+     e_sendData;
+     pp_incrementNumberOfMessagesByOne;
+     l_popForwardQueue;
+   }
+ 
+-  transition(OM_F, {Other_GETX, Invalidate}, IM_F) {
++  transition(OM_F, {Other_GETX, Invalidate}, IM_F) {TagSearch, DataArrayWrite} {
+     q_sendDataFromTBEToCache;
+     pp_incrementNumberOfMessagesByOne;
+     l_popForwardQueue;
+   }
+ 
+-  transition(OM, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {
++  transition(OM, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {TagSearch} {
+     ee_sendDataShared;
+     l_popForwardQueue;
+   }
+ 
+-  transition(OM, Merged_GETS) {
++  transition(OM, Merged_GETS) {TagSearch} {
+     em_sendDataSharedMultiple;
+     l_popForwardQueue;
+   }
+ 
+-  transition(OM_F, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {
++  transition(OM_F, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}) {TagSearch} {
+     et_sendDataSharedFromTBE;
+     l_popForwardQueue;
+   }
+ 
+-  transition(OM_F, Merged_GETS) {
++  transition(OM_F, Merged_GETS) {TagSearch} {
+     emt_sendDataSharedMultipleFromTBE;
+     l_popForwardQueue;
+   }
+ 
+-  transition({OM, OM_F}, Ack) {
++  transition({OM, OM_F}, Ack) {} {
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(OM, {All_acks, All_acks_no_sharers}, MM) {
++  // DataArrayWrite because store finally completes here
++  transition(OM, {All_acks, All_acks_no_sharers}, MM) {TagArrayWrite, DataArrayWrite} {
+     sxt_trig_ext_store_hit;
+     gm_sendUnblockM;
+     s_deallocateTBE;
+@@ -1797,32 +1967,33 @@
+     kd_wakeUpDependents;
+   }
+ 
+-  transition({MM_F, OM_F}, {All_acks, All_acks_no_sharers}, MI_F) {
++  transition({MM_F, OM_F}, {All_acks, All_acks_no_sharers}, MI_F) {TagSearch} {
+     df_issuePUTF;
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
++
+   // Transitions from IS
+-
+-  transition(IS, {Other_GETX, NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig, Invalidate}) {
++  // ASSUMPTION: IS state has allocated space in tag and data arrays
++  transition(IS, {Other_GETX, NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig, Invalidate}) {TagSearch} {
+     f_sendAck;
+     l_popForwardQueue;
+   }
+ 
+-  transition(IS, Ack) {  
++  transition(IS, Ack) {} {  
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(IS, Shared_Ack) {  
++  transition(IS, Shared_Ack) {} {  
+     m_decrementNumberOfMessages;
+     r_setSharerBit;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(IS, Data, SS) {
++  transition(IS, Data, SS) {TagArrayWrite, DataArrayWrite} {
+     u_writeDataToCache;
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+@@ -1832,7 +2003,7 @@
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(IS, Exclusive_Data, M_W) {
++  transition(IS, Exclusive_Data, M_W) {TagArrayWrite, DataArrayWrite} {
+     u_writeDataToCache;
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+@@ -1841,7 +2012,7 @@
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(IS, Shared_Data, SS) {
++  transition(IS, Shared_Data, SS) {TagArrayWrite, DataArrayWrite} {
+     u_writeDataToCache;
+     r_setSharerBit;
+     m_decrementNumberOfMessages;
+@@ -1853,28 +2024,28 @@
+   }
+ 
+   // Transitions from SS
+-
+-  transition(SS, Ack) {  
++  // ASSUMPTION: SS state has allocated space in tag and data arrays
++  transition(SS, Ack) {} {
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(SS, Shared_Ack) {  
++  transition(SS, Shared_Ack) {} {
+     m_decrementNumberOfMessages;
+     r_setSharerBit;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(SS, All_acks, S) {
++  transition(SS, All_acks, S) {TagArrayWrite} {
+     gs_sendUnblockS;
+     s_deallocateTBE;
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(SS, All_acks_no_sharers, S) {
++  transition(SS, All_acks_no_sharers, S) {TagArrayWrite} {
+     // Note: The directory might still be the owner, so that is why we go to S
+     gs_sendUnblockS;
+     s_deallocateTBE;
+@@ -1883,44 +2054,46 @@
+   }
+ 
+   // Transitions from MM_W
+-
+-  transition(MM_W, Store) {
++  // ASSUMPTION: MM_W state has allocated space in tag and data arrays
++  transition(MM_W, Store) {L1DTagArrayRead, L1DDataArrayWrite} {
+     hh_store_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition({MM_W, MM_WF}, Ack) {  
++  transition({MM_W, MM_WF}, Ack) {} {
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(MM_W, All_acks_no_sharers, MM) {
++  transition(MM_W, All_acks_no_sharers, MM) {TagArrayWrite} {
+     gm_sendUnblockM;
+     s_deallocateTBE;
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(MM_WF, All_acks_no_sharers, MI_F) {
++  transition(MM_WF, All_acks_no_sharers, MI_F) {TagSearch} {
+     df_issuePUTF;
+     j_popTriggerQueue;
+     kd_wakeUpDependents;
+   }
++
+   // Transitions from M_W
+-
+-  transition(M_W, Store, MM_W) {
++  // ASSUMPTION: M_W state has allocated space in tag and data arrays
++  // ASSUMPTION: M_W state has allocated a TBE
++  transition(M_W, Store, MM_W) {L1DTagArrayRead, L1DTagArrayWrite, L1DDataArrayWrite} {
+     hh_store_hit;
+     k_popMandatoryQueue;
+   }
+ 
+-  transition(M_W, Ack) {  
++  transition(M_W, Ack) {} {
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(M_W, All_acks_no_sharers, M) {
++  transition(M_W, All_acks_no_sharers, M) {TagArrayWrite} {
+     gm_sendUnblockM;
+     s_deallocateTBE;
+     j_popTriggerQueue;
+@@ -1928,30 +2101,31 @@
+   }
+ 
+   // Transitions from OI/MI
+-
+-  transition({OI, MI}, {Other_GETX, Invalidate}, II) {
++  // ASSUMPTION: OI/MI states have NOT allocated space in tag and data arrays
++  // ASSUMPTION: OI/MI states have allocated a TBE
++  transition({OI, MI}, {Other_GETX, Invalidate}, II) {TagSearch} {
+     q_sendDataFromTBEToCache;
+     l_popForwardQueue;
+   }
+ 
+-  transition({OI, MI}, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}, OI) {
++  transition({OI, MI}, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig}, OI) {TagSearch} {
+     sq_sendSharedDataFromTBEToCache;
+     l_popForwardQueue;
+   }
+ 
+-  transition({OI, MI}, Merged_GETS, OI) {
++  transition({OI, MI}, Merged_GETS, OI) {TagSearch} {
+     qm_sendDataFromTBEToCache;
+     l_popForwardQueue;
+   }
+ 
+-  transition(MI, Writeback_Ack, I) {
++  transition(MI, Writeback_Ack, I) {} {
+     t_sendExclusiveDataFromTBEToMemory;
+     s_deallocateTBE;
+     l_popForwardQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(MI_F, Writeback_Ack, I) {
++  transition(MI_F, Writeback_Ack, I) {TagSearch} {
+       hh_flush_hit;
+       t_sendExclusiveDataFromTBEToMemory;
+       s_deallocateTBE;
+@@ -1959,7 +2133,7 @@
+       kd_wakeUpDependents;
+   }
+ 
+-  transition(OI, Writeback_Ack, I) {
++  transition(OI, Writeback_Ack, I) {} {
+     qq_sendDataFromTBEToMemory;
+     s_deallocateTBE;
+     l_popForwardQueue;
+@@ -1967,47 +2141,49 @@
+   }
+ 
+   // Transitions from II
+-  transition(II, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig, Other_GETX, Invalidate}, II) {
++  // ASSUMPTION: II state has NOT allocated space in tag and data arrays
++  // ASSUMPTION: II state has allocated a TBE
++  transition(II, {NC_DMA_GETS, Other_GETS, Other_GETS_No_Mig, Other_GETX, Invalidate}) {TagSearch} {
+     f_sendAck;
+     l_popForwardQueue;
+   }
+ 
+-  transition(II, Writeback_Ack, I) {
++  transition(II, Writeback_Ack, I) {} {
+     g_sendUnblock;
+     s_deallocateTBE;
+     l_popForwardQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(II, Writeback_Nack, I) {
++  transition(II, Writeback_Nack, I) {} {
+     s_deallocateTBE;
+     l_popForwardQueue;
+     kd_wakeUpDependents;
+   }
+ 
+-  transition(MM_F, {Other_GETX, Invalidate}, IM_F) {
++  transition(MM_F, {Other_GETX, Invalidate}, IM_F) {TagSearch} {
+     ct_sendExclusiveDataFromTBE;
+     pp_incrementNumberOfMessagesByOne;
+     l_popForwardQueue;
+   }
+ 
+-  transition(MM_F, Other_GETS, IM_F) {
++  transition(MM_F, Other_GETS, IM_F) {TagSearch} {
+     ct_sendExclusiveDataFromTBE;
+     pp_incrementNumberOfMessagesByOne;
+     l_popForwardQueue;
+   }
+ 
+-  transition(MM_F, NC_DMA_GETS, OM_F) {
++  transition(MM_F, NC_DMA_GETS, OM_F) {TagSearch} {
+     sq_sendSharedDataFromTBEToCache;
+     l_popForwardQueue;
+   }
+ 
+-  transition(MM_F, Other_GETS_No_Mig, OM_F) {
++  transition(MM_F, Other_GETS_No_Mig, OM_F) {TagSearch} {
+     et_sendDataSharedFromTBE;
+     l_popForwardQueue;
+   }
+ 
+-  transition(MM_F, Merged_GETS, OM_F) {
++  transition(MM_F, Merged_GETS, OM_F) {TagSearch} {
+     emt_sendDataSharedMultipleFromTBE;
+     l_popForwardQueue;
+   }
+diff --git a/src/mem/protocol/MOESI_hammer-dir.sm b/src/mem/protocol/MOESI_hammer-dir.sm
+--- a/src/mem/protocol/MOESI_hammer-dir.sm
++++ b/src/mem/protocol/MOESI_hammer-dir.sm
+@@ -133,6 +133,11 @@
+     PUTF,  desc="A PUTF arrives";
+   }
+ 
++  // STATISTICS
++  enumeration(Statistic, desc="To communicate stats from transitions to recordStats") {
++    Default,	desc="Replace this with statistics specific to this protocol";
++  }
++
+   // TYPES
+ 
+   // DirectoryEntry
+@@ -273,6 +278,9 @@
+       error("Invalid CoherenceRequestType");
+     }
+   }
++  
++  void recordStatistic(Statistic stat) {
++  }
+ 
+   MessageBuffer triggerQueue, ordered="true";
+ 
+@@ -1277,7 +1285,7 @@
+   // TRANSITIONS
+ 
+   // Transitions out of E state
+-  transition(E, GETX, NO_B_W) {
++  transition(E, GETX, NO_B_W) {} {
+     pfa_probeFilterAllocate;
+     v_allocateTBE;
+     rx_recordExclusiveInTBE;
+@@ -1287,7 +1295,7 @@
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(E, GETF, NO_F_W) {
++  transition(E, GETF, NO_F_W) {} {
+     pfa_probeFilterAllocate;
+     v_allocateTBE;
+     rx_recordExclusiveInTBE;
+@@ -1297,7 +1305,7 @@
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(E, GETS, NO_B_W) {
++  transition(E, GETS, NO_B_W) {} {
+     pfa_probeFilterAllocate;
+     v_allocateTBE;
+     rx_recordExclusiveInTBE;
+@@ -1307,7 +1315,7 @@
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(E, DMA_READ, NO_DR_B_W) {
++  transition(E, DMA_READ, NO_DR_B_W) {} {
+     vd_allocateDmaRequestInTBE;
+     qd_queueMemoryRequestFromDmaRead;
+     spa_setPendingAcksToZeroIfPF;
+@@ -1315,7 +1323,7 @@
+     p_popDmaRequestQueue;
+   }
+ 
+-  transition(E, DMA_WRITE, NO_DW_B_W) {
++  transition(E, DMA_WRITE, NO_DW_B_W) {} {
+     vd_allocateDmaRequestInTBE;
+     spa_setPendingAcksToZeroIfPF;
+     sc_signalCompletionIfPF;
+@@ -1324,7 +1332,7 @@
+   }
+ 
+   // Transitions out of O state
+-  transition(O, GETX, NO_B_W) {
++  transition(O, GETX, NO_B_W) {} {
+     r_setMRU;
+     v_allocateTBE;
+     r_recordDataInTBE;
+@@ -1335,7 +1343,7 @@
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(O, GETF, NO_F_W) {
++  transition(O, GETF, NO_F_W) {} {
+     r_setMRU;
+     v_allocateTBE;
+     r_recordDataInTBE;
+@@ -1349,7 +1357,7 @@
+   // This transition is dumb, if a shared copy exists on-chip, then that should
+   // provide data, not slow off-chip dram.  The problem is that the current
+   // caches don't provide data in S state
+-  transition(O, GETS, O_B_W) {
++  transition(O, GETS, O_B_W) {} {
+     r_setMRU;
+     v_allocateTBE;
+     r_recordDataInTBE;
+@@ -1359,7 +1367,7 @@
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(O, DMA_READ, O_DR_B_W) {
++  transition(O, DMA_READ, O_DR_B_W) {} {
+     vd_allocateDmaRequestInTBE;
+     spa_setPendingAcksToZeroIfPF;
+     qd_queueMemoryRequestFromDmaRead;
+@@ -1367,49 +1375,49 @@
+     p_popDmaRequestQueue;
+   }
+ 
+-  transition(O, Pf_Replacement, O_R) {
++  transition(O, Pf_Replacement, O_R) {} {
+     v_allocateTBE;
+     pa_setPendingMsgsToAll;
+     ia_invalidateAllRequest;
+     pfd_probeFilterDeallocate;
+   }
+ 
+-  transition(S, Pf_Replacement, S_R) {
++  transition(S, Pf_Replacement, S_R) {} {
+     v_allocateTBE;
+     pa_setPendingMsgsToAll;
+     ia_invalidateAllRequest;
+     pfd_probeFilterDeallocate;
+   }
+ 
+-  transition(NO, Pf_Replacement, NO_R) {
++  transition(NO, Pf_Replacement, NO_R) {} {
+     v_allocateTBE;
+     po_setPendingMsgsToOne;
+     io_invalidateOwnerRequest;
+     pfd_probeFilterDeallocate;
+   }
+ 
+-  transition(NX, Pf_Replacement, NO_R) {
++  transition(NX, Pf_Replacement, NO_R) {} {
+     v_allocateTBE;
+     pa_setPendingMsgsToAll;
+     ia_invalidateAllRequest;
+     pfd_probeFilterDeallocate;
+   }
+ 
+-  transition({O, S, NO, NX}, DMA_WRITE, NO_DW_B_W) {
++  transition({O, S, NO, NX}, DMA_WRITE, NO_DW_B_W) {} {
+     vd_allocateDmaRequestInTBE;
+     f_forwardWriteFromDma;
+     p_popDmaRequestQueue;
+   }
+ 
+   // Transitions out of NO state
+-  transition(NX, GETX, NO_B) {
++  transition(NX, GETX, NO_B) {} {
+     r_setMRU;
+     fb_forwardRequestBcast;
+     cs_clearSharers;
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(NX, GETF, NO_F) {
++  transition(NX, GETF, NO_F) {} {
+     r_setMRU;
+     fb_forwardRequestBcast;
+     cs_clearSharers;
+@@ -1417,7 +1425,7 @@
+   }
+ 
+   // Transitions out of NO state
+-  transition(NO, GETX, NO_B) {
++  transition(NO, GETX, NO_B) {} {
+     r_setMRU;
+     ano_assertNotOwner;
+     fc_forwardRequestConditionalOwner;
+@@ -1425,7 +1433,7 @@
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(NO, GETF, NO_F) {
++  transition(NO, GETF, NO_F) {} {
+     r_setMRU;
+     //ano_assertNotOwner;
+     nofc_forwardRequestConditionalOwner; //forward request if the requester is not the owner
+@@ -1434,28 +1442,28 @@
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(S, GETX, NO_B) {
++  transition(S, GETX, NO_B) {} {
+     r_setMRU;
+     fb_forwardRequestBcast;
+     cs_clearSharers;
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(S, GETF, NO_F) {
++  transition(S, GETF, NO_F) {} {
+     r_setMRU;
+     fb_forwardRequestBcast;
+     cs_clearSharers;
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(S, GETS, NO_B) {
++  transition(S, GETS, NO_B) {} {
+     r_setMRU;
+     ano_assertNotOwner;
+     fb_forwardRequestBcast;
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(NO, GETS, NO_B) {
++  transition(NO, GETS, NO_B) {} {
+     r_setMRU;
+     ano_assertNotOwner;
+     ans_assertNotSharer;
+@@ -1463,14 +1471,14 @@
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(NX, GETS, NO_B) {
++  transition(NX, GETS, NO_B) {} {
+     r_setMRU;
+     ano_assertNotOwner;
+     fc_forwardRequestConditionalOwner;
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition({NO, NX, S}, PUT, WB) {
++  transition({NO, NX, S}, PUT, WB) {} {
+     //
+     // note that the PUT requestor may not be the current owner if an invalidate
+     // raced with PUT
+@@ -1479,14 +1487,14 @@
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition({NO, NX, S}, DMA_READ, NO_DR_B_D) {
++  transition({NO, NX, S}, DMA_READ, NO_DR_B_D) {} {
+     vd_allocateDmaRequestInTBE;
+     f_forwardReadFromDma;
+     p_popDmaRequestQueue;
+   }
+ 
+   // Nack PUT requests when races cause us to believe we own the data
+-  transition({O, E}, PUT) {
++  transition({O, E}, PUT) {} {
+     b_sendWriteBackNack;
+     i_popIncomingRequestQueue;
+   }
+@@ -1495,188 +1503,188 @@
+   transition({NO_B_X, O_B, NO_DR_B_W, NO_DW_B_W, NO_B_W, NO_DR_B_D, 
+               NO_DR_B, O_DR_B, O_B_W, O_DR_B_W, NO_DW_W, NO_B_S_W,
+               NO_W, O_W, WB, WB_E_W, WB_O_W, O_R, S_R, NO_R, NO_F_W}, 
+-             {GETS, GETX, GETF, PUT, Pf_Replacement}) {
++             {GETS, GETX, GETF, PUT, Pf_Replacement}) {} {
+     z_stallAndWaitRequest;
+   }
+ 
+-  transition(NO_F, {GETS, GETX, GETF, PUT, Pf_Replacement}){
++  transition(NO_F, {GETS, GETX, GETF, PUT, Pf_Replacement}) {} {
+     z_stallAndWaitRequest;
+   }
+ 
+-  transition(NO_B, {GETX, GETF}, NO_B_X) {
++  transition(NO_B, {GETX, GETF}, NO_B_X) {} {
+     z_stallAndWaitRequest;
+   }
+ 
+-  transition(NO_B, {PUT, Pf_Replacement}) {
++  transition(NO_B, {PUT, Pf_Replacement}) {} {
+     z_stallAndWaitRequest;
+   }
+ 
+-  transition(NO_B_S, {GETX, GETF, PUT, Pf_Replacement}) {
++  transition(NO_B_S, {GETX, GETF, PUT, Pf_Replacement}) {} {
+     z_stallAndWaitRequest;
+   }
+ 
+   transition({NO_B_X, NO_B, NO_B_S, O_B, NO_DR_B_W, NO_DW_B_W, NO_B_W, NO_DR_B_D, 
+               NO_DR_B, O_DR_B, O_B_W, O_DR_B_W, NO_DW_W, NO_B_S_W,
+               NO_W, O_W, WB, WB_E_W, WB_O_W, O_R, S_R, NO_R, NO_F_W}, 
+-             {DMA_READ, DMA_WRITE}) {
++             {DMA_READ, DMA_WRITE}) {} {
+     zd_stallAndWaitDMARequest;
+   }
+ 
+   // merge GETS into one response
+-  transition(NO_B, GETS, NO_B_S) {
++  transition(NO_B, GETS, NO_B_S) {} {
+     v_allocateTBE;
+     rs_recordGetSRequestor;
+     i_popIncomingRequestQueue;
+   }
+ 
+-  transition(NO_B_S, GETS) {
++  transition(NO_B_S, GETS) {} {
+     rs_recordGetSRequestor;
+     i_popIncomingRequestQueue;
+   }
+ 
+   // unblock responses
+-  transition({NO_B, NO_B_X}, UnblockS, NX) {
++  transition({NO_B, NO_B_X}, UnblockS, NX) {} {
+     us_updateSharerIfFBD;
+     k_wakeUpDependents;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition({NO_B, NO_B_X}, UnblockM, NO) {
++  transition({NO_B, NO_B_X}, UnblockM, NO) {} {
+     uo_updateOwnerIfPf;
+     us_updateSharerIfFBD;
+     k_wakeUpDependents;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(NO_B_S, UnblockS, NO_B_S_W) {
++  transition(NO_B_S, UnblockS, NO_B_S_W) {} {
+     us_updateSharerIfFBD;
+     fr_forwardMergeReadRequestsToOwner;
+     sp_setPendingMsgsToMergedSharers;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(NO_B_S, UnblockM, NO_B_S_W) {
++  transition(NO_B_S, UnblockM, NO_B_S_W) {} {
+     uo_updateOwnerIfPf;
+     fr_forwardMergeReadRequestsToOwner;
+     sp_setPendingMsgsToMergedSharers;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(NO_B_S_W, UnblockS) {
++  transition(NO_B_S_W, UnblockS) {} {
+     us_updateSharerIfFBD;
+     mu_decrementNumberOfUnblocks;
+     os_checkForMergedGetSCompletion;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(NO_B_S_W, All_Unblocks, NX) {
++  transition(NO_B_S_W, All_Unblocks, NX) {} {
+     w_deallocateTBE;
+     k_wakeUpDependents;
+     g_popTriggerQueue;
+   }
+ 
+-  transition(O_B, UnblockS, O) {
++  transition(O_B, UnblockS, O) {} {
+     us_updateSharerIfFBD;
+     k_wakeUpDependents;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(O_B, UnblockM, NO) {
++  transition(O_B, UnblockM, NO) {} {
+     us_updateSharerIfFBD;
+     uo_updateOwnerIfPf;
+     k_wakeUpDependents;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(NO_B_W, Memory_Data, NO_B) {
++  transition(NO_B_W, Memory_Data, NO_B) {} {
+     d_sendData;
+     w_deallocateTBE;
+     l_popMemQueue;
+   }
+ 
+-  transition(NO_F_W, Memory_Data, NO_F) {
++  transition(NO_F_W, Memory_Data, NO_F) {} {
+     d_sendData;
+     w_deallocateTBE;
+     l_popMemQueue;
+   }
+ 
+-  transition(NO_DR_B_W, Memory_Data, NO_DR_B) {
++  transition(NO_DR_B_W, Memory_Data, NO_DR_B) {} {
+     r_recordMemoryData;
+     o_checkForCompletion;
+     l_popMemQueue;
+   }
+ 
+-  transition(O_DR_B_W, Memory_Data, O_DR_B) {
++  transition(O_DR_B_W, Memory_Data, O_DR_B) {} {
+     r_recordMemoryData;
+     dr_sendDmaData;
+     o_checkForCompletion;
+     l_popMemQueue;
+   }
+ 
+-  transition({NO_DR_B, O_DR_B, NO_DR_B_D, NO_DW_B_W}, Ack) {
++  transition({NO_DR_B, O_DR_B, NO_DR_B_D, NO_DW_B_W}, Ack) {} {
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition({O_R, S_R, NO_R}, Ack) {
++  transition({O_R, S_R, NO_R}, Ack) {} {
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(S_R, Data) {
++  transition(S_R, Data) {} {
+     wr_writeResponseDataToMemory;
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(NO_R, {Data, Exclusive_Data}) {
++  transition(NO_R, {Data, Exclusive_Data}) {} {
+     wr_writeResponseDataToMemory;
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition({O_R, S_R, NO_R}, All_acks_and_data_no_sharers, E) {
++  transition({O_R, S_R, NO_R}, All_acks_and_data_no_sharers, E) {} {
+     w_deallocateTBE;
+     k_wakeUpDependents;
+     g_popTriggerQueue;
+   }
+ 
+-  transition({NO_DR_B_W, O_DR_B_W}, Ack) {
++  transition({NO_DR_B_W, O_DR_B_W}, Ack) {} {
+     m_decrementNumberOfMessages;
+     n_popResponseQueue;
+   }
+ 
+-  transition(NO_DR_B_W, Shared_Ack) {
++  transition(NO_DR_B_W, Shared_Ack) {} {
+     m_decrementNumberOfMessages;
+     r_setSharerBit;
+     n_popResponseQueue;
+   }
+ 
+-  transition(O_DR_B, Shared_Ack) {
++  transition(O_DR_B, Shared_Ack) {} {
+     m_decrementNumberOfMessages;
+     r_setSharerBit;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(O_DR_B_W, Shared_Ack) {
++  transition(O_DR_B_W, Shared_Ack) {} {
+     m_decrementNumberOfMessages;
+     r_setSharerBit;
+     n_popResponseQueue;
+   }
+ 
+-  transition({NO_DR_B, NO_DR_B_D}, Shared_Ack) {
++  transition({NO_DR_B, NO_DR_B_D}, Shared_Ack) {} {
+     m_decrementNumberOfMessages;
+     r_setSharerBit;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(NO_DR_B_W, Shared_Data) {
++  transition(NO_DR_B_W, Shared_Data) {} {
+     r_recordCacheData;
+     m_decrementNumberOfMessages;
+     so_setOwnerBit;
+@@ -1684,7 +1692,7 @@
+     n_popResponseQueue;
+   }
+ 
+-  transition({NO_DR_B, NO_DR_B_D}, Shared_Data) {
++  transition({NO_DR_B, NO_DR_B_D}, Shared_Data) {} {
+     r_recordCacheData;
+     m_decrementNumberOfMessages;
+     so_setOwnerBit;
+@@ -1692,20 +1700,20 @@
+     n_popResponseQueue;
+   }
+ 
+-  transition(NO_DR_B_W, {Exclusive_Data, Data}) {
++  transition(NO_DR_B_W, {Exclusive_Data, Data}) {} {
+     r_recordCacheData;
+     m_decrementNumberOfMessages;
+     n_popResponseQueue;
+   }
+ 
+-  transition({NO_DR_B, NO_DR_B_D, NO_DW_B_W}, {Exclusive_Data, Data}) {
++  transition({NO_DR_B, NO_DR_B_D, NO_DW_B_W}, {Exclusive_Data, Data}) {} {
+     r_recordCacheData;
+     m_decrementNumberOfMessages;
+     o_checkForCompletion;
+     n_popResponseQueue;
+   }
+ 
+-  transition(NO_DR_B, All_acks_and_owner_data, O) {
++  transition(NO_DR_B, All_acks_and_owner_data, O) {} {
+     //
+     // Note that the DMA consistency model allows us to send the DMA device
+     // a response as soon as we receive valid data and prior to receiving
+@@ -1718,7 +1726,7 @@
+     g_popTriggerQueue;
+   }
+ 
+-  transition(NO_DR_B, All_acks_and_shared_data, S) {
++  transition(NO_DR_B, All_acks_and_shared_data, S) {} {
+     //
+     // Note that the DMA consistency model allows us to send the DMA device
+     // a response as soon as we receive valid data and prior to receiving
+@@ -1731,7 +1739,7 @@
+     g_popTriggerQueue;
+   }
+ 
+-  transition(NO_DR_B_D, All_acks_and_owner_data, O) {
++  transition(NO_DR_B_D, All_acks_and_owner_data, O) {} {
+     //
+     // Note that the DMA consistency model allows us to send the DMA device
+     // a response as soon as we receive valid data and prior to receiving
+@@ -1744,7 +1752,7 @@
+     g_popTriggerQueue;
+   }
+ 
+-  transition(NO_DR_B_D, All_acks_and_shared_data, S) {
++  transition(NO_DR_B_D, All_acks_and_shared_data, S) {} {
+     //
+     // Note that the DMA consistency model allows us to send the DMA device
+     // a response as soon as we receive valid data and prior to receiving
+@@ -1757,14 +1765,14 @@
+     g_popTriggerQueue;
+   }
+ 
+-  transition(O_DR_B, All_acks_and_owner_data, O) {
++  transition(O_DR_B, All_acks_and_owner_data, O) {} {
+     wdt_writeDataFromTBE;
+     w_deallocateTBE;
+     k_wakeUpDependents;
+     g_popTriggerQueue;
+   }
+ 
+-  transition(O_DR_B, All_acks_and_data_no_sharers, E) {
++  transition(O_DR_B, All_acks_and_data_no_sharers, E) {} {
+     wdt_writeDataFromTBE;
+     w_deallocateTBE;
+     pfd_probeFilterDeallocate;
+@@ -1772,7 +1780,7 @@
+     g_popTriggerQueue;
+   }
+ 
+-  transition(NO_DR_B, All_acks_and_data_no_sharers, E) {
++  transition(NO_DR_B, All_acks_and_data_no_sharers, E) {} {
+     //
+     // Note that the DMA consistency model allows us to send the DMA device
+     // a response as soon as we receive valid data and prior to receiving
+@@ -1786,7 +1794,7 @@
+     g_popTriggerQueue;
+   }
+ 
+-  transition(NO_DR_B_D, All_acks_and_data_no_sharers, E) {
++  transition(NO_DR_B_D, All_acks_and_data_no_sharers, E) {} {
+     a_assertCacheData;
+     //
+     // Note that the DMA consistency model allows us to send the DMA device
+@@ -1801,13 +1809,13 @@
+     g_popTriggerQueue;
+   }
+ 
+-  transition(NO_DW_B_W, All_acks_and_data_no_sharers, NO_DW_W) {
++  transition(NO_DW_B_W, All_acks_and_data_no_sharers, NO_DW_W) {} {
+     dwt_writeDmaDataFromTBE;
+     ld_queueMemoryDmaWrite;
+     g_popTriggerQueue;
+   }
+ 
+-  transition(NO_DW_W, Memory_Ack, E) {
++  transition(NO_DW_W, Memory_Ack, E) {} {
+     da_sendDmaAck;
+     w_deallocateTBE;
+     ppfd_possibleProbeFilterDeallocate;
+@@ -1815,73 +1823,73 @@
+     l_popMemQueue;
+   }
+ 
+-  transition(O_B_W, Memory_Data, O_B) {
++  transition(O_B_W, Memory_Data, O_B) {} {
+     d_sendData;
+     w_deallocateTBE;
+     l_popMemQueue;
+   }
+ 
+-  transition(NO_B_W, UnblockM, NO_W) {
++  transition(NO_B_W, UnblockM, NO_W) {} {
+     uo_updateOwnerIfPf;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(NO_B_W, UnblockS, NO_W) {
++  transition(NO_B_W, UnblockS, NO_W) {} {
+     us_updateSharerIfFBD;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(O_B_W, UnblockS, O_W) {
++  transition(O_B_W, UnblockS, O_W) {} {
+     us_updateSharerIfFBD;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(NO_W, Memory_Data, NO) {
++  transition(NO_W, Memory_Data, NO) {} {
+     w_deallocateTBE;
+     k_wakeUpDependents;
+     l_popMemQueue;
+   }
+ 
+-  transition(O_W, Memory_Data, O) {
++  transition(O_W, Memory_Data, O) {} {
+     w_deallocateTBE;
+     k_wakeUpDependents;
+     l_popMemQueue;
+   }
+ 
+   // WB State Transistions
+-  transition(WB, Writeback_Dirty, WB_O_W) {
++  transition(WB, Writeback_Dirty, WB_O_W) {} {
+     l_writeDataToMemory;
+     rs_removeSharer;
+     l_queueMemoryWBRequest;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(WB, Writeback_Exclusive_Dirty, WB_E_W) {
++  transition(WB, Writeback_Exclusive_Dirty, WB_E_W) {} {
+     l_writeDataToMemory;
+     rs_removeSharer;
+     l_queueMemoryWBRequest;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(WB_E_W, Memory_Ack, E) {
++  transition(WB_E_W, Memory_Ack, E) {} {
+     pfd_probeFilterDeallocate;
+     k_wakeUpDependents;
+     l_popMemQueue;
+   }
+ 
+-  transition(WB_O_W, Memory_Ack, O) {
++  transition(WB_O_W, Memory_Ack, O) {} {
+     k_wakeUpDependents;
+     l_popMemQueue;
+   }
+ 
+-  transition(WB, Writeback_Clean, O) {
++  transition(WB, Writeback_Clean, O) {} {
+     ll_checkIncomingWriteback;
+     rs_removeSharer;
+     k_wakeUpDependents;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(WB, Writeback_Exclusive_Clean, E) {
++  transition(WB, Writeback_Exclusive_Clean, E) {} {
+     ll_checkIncomingWriteback;
+     rs_removeSharer;
+     pfd_probeFilterDeallocate;
+@@ -1889,19 +1897,19 @@
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(WB, Unblock, NX) {
++  transition(WB, Unblock, NX) {} {
+     auno_assertUnblockerNotOwner;
+     k_wakeUpDependents;
+     j_popIncomingUnblockQueue;
+   }
+ 
+-  transition(NO_F, PUTF, WB) {
++  transition(NO_F, PUTF, WB) {} {
+     a_sendWriteBackAck;
+     i_popIncomingRequestQueue;
+   }
+ 
+   //possible race between GETF and UnblockM -- not sure needed any more?
+-  transition(NO_F, UnblockM) {
++  transition(NO_F, UnblockM) {} {
+     us_updateSharerIfFBD;
+     uo_updateOwnerIfPf;
+     j_popIncomingUnblockQueue;
+diff --git a/src/mem/protocol/MOESI_hammer-dma.sm b/src/mem/protocol/MOESI_hammer-dma.sm
+--- a/src/mem/protocol/MOESI_hammer-dma.sm
++++ b/src/mem/protocol/MOESI_hammer-dma.sm
+@@ -50,16 +50,24 @@
+     Ack,          desc="DMA write to memory completed";
+   }
+ 
++  enumeration(Statistic, desc="To communicate stats from transitions to recordStats") {
++    Default,   desc="Replace this with statistics specific to this protocol";
++  }
++
+   MessageBuffer mandatoryQueue, ordered="false", no_vector="true";
+   State cur_state, no_vector="true";
+ 
+   State getState(Address addr) {
+     return cur_state;
+   }
++
+   void setState(Address addr, State state) {
+     cur_state := state;
+   }
+ 
++  void recordStatistic(Statistic stat) {
++  }
++
+   AccessPermission getAccessPermission(Address addr) {
+     return AccessPermission:NotPresent;
+   }
+@@ -151,22 +159,22 @@
+     dmaResponseQueue_in.dequeue();
+   }
+ 
+-  transition(READY, ReadRequest, BUSY_RD) {
++  transition(READY, ReadRequest, BUSY_RD) {} {
+     s_sendReadRequest;
+     p_popRequestQueue;
+   }
+ 
+-  transition(READY, WriteRequest, BUSY_WR) {
++  transition(READY, WriteRequest, BUSY_WR) {} {
+     s_sendWriteRequest;
+     p_popRequestQueue;
+   }
+ 
+-  transition(BUSY_RD, Data, READY) {
++  transition(BUSY_RD, Data, READY) {} {
+     d_dataCallback;
+     p_popResponseQueue;
+   }
+ 
+-  transition(BUSY_WR, Ack, READY) {
++  transition(BUSY_WR, Ack, READY) {} {
+     a_ackCallback;
+     p_popResponseQueue;
+   }
