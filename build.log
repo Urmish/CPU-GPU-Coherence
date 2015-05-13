@@ -1,3 +1,0 @@
-
-scons: *** No SConstruct file found.
-File "/usr/lib/scons/SCons/Script/Main.py", line 904, in _main
