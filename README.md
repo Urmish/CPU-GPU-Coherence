@@ -8,12 +8,10 @@ gem5/build.log - last build log
 
 Files to modified -
 
-gem5-gpu/src/mem/protocol/VI_hammer-GPUL2cache.sm
-
-gem5-gpu/src/mem/protocol/VI_hammer-dir.sm
-gem5-gpu/src/mem/protocol/VI_hammer-CPUCache.sm
-
-gem5/src/mem/slicc/symbols/
+1. gem5-gpu/src/mem/protocol/VI_hammer-GPUL2cache.sm
+1. gem5-gpu/src/mem/protocol/VI_hammer-dir.sm
+1. gem5-gpu/src/mem/protocol/VI_hammer-CPUCache.sm
+1. gem5/src/mem/slicc/symbols/*
 
 File added -
 
